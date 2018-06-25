@@ -32,7 +32,7 @@ def filter_stock_type(raw_root_path, adj_save_path):
     print('^^^^^^^^^^^^^^^^^^^^^^^^')
     print(len(file_list))
     info = pd.read_pickle('/media/hdd1/whs_data/raw_data/base_info/CDSY_SECUCODE.pkl')
-    universe_EQA2 = info[(info['SECURITYTYPECODE'] == '058001001') & (info['LISTSTATE'] != '9')]['SECURITYCODE'].values
+    universe_EQA2 = info[info['SECURITYTYPECODE'] == '058001001']['SECURITYCODE'].values
 
     for file_name in file_list:
         print('**********************************')
@@ -50,7 +50,7 @@ def filter_stock_type(raw_root_path, adj_save_path):
         if 'SECURITYCODE' in data.columns:
             # 筛选A股数据
             universe_EQA = sorted(list(set(universe_EQA2) & set(data['SECURITYCODE'])))
-            data.index = data['SECURITYCODE']
+
             if 'TRADEDATE' in data.index:
                 data_EQA = data.loc[universe_EQA].sort_values(by='TRADEDATE')
             else:

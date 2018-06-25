@@ -42,7 +42,7 @@ down_dict = OrderedDict({'相对估值指标': 'TRAD_SK_REVALUATION', '新股首
 start = time.time()
 usr_name = 'whs'
 pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
-engine = create_engine('mysql+pymysql://{}:{}@192.168.5.224:3306/choice_fndb?charset=utf8'.format(usr_name, pass_word))
+engine = create_engine('mysql+pymysql://{}:{}@192.168.16.10:3306/choice_fndb?charset=utf8'.format(usr_name, pass_word))
 
 conn = engine.connect()
 
@@ -52,8 +52,9 @@ path_create(root_save_path)
 for value in list(down_dict.values())[:1]:
     value = 'CDSY_SECUCODE'
     df = pd.read_sql('SELECT * FROM choice_fndb.{}'.format(value), conn)
+    print(df)
     file_name = value
-    pd.to_pickle(df, os.path.join(root_save_path, '{}.pkl'.format(value)))
-    print(value)
+    # pd.to_pickle(df, os.path.join(root_save_path, '{}.pkl'.format(value)))
+    # print(value)
 end = time.time()
 print('Processing Cost:{} second'.format(end - start))

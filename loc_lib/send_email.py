@@ -2,7 +2,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 import os
-# python 2.3.*: email.Utils email.Encoders
 from email.utils import COMMASPACE, formatdate
 from email import encoders
 from email.mime.text import MIMEText

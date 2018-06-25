@@ -15,8 +15,6 @@ import math
 # combinations 组合,没有重复　　（不放回抽样组合）
 # combinations_with_replacement 组合,有重复　　（有放回抽样组合）
 
-# 王海硕 = True
-
 
 def mul_fun(a, b):
     return a * b

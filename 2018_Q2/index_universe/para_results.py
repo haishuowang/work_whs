@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from itertools import product, permutations, combinations
 import random
 import sys
-sys.path.append('../../../../shared_box/open_lib/shared_tools')
+sys.path.append('/mnt/mfs/open_lib/shared_tools')
 import send_email
 
 
@@ -58,7 +58,7 @@ def AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250, cut_point_list=None, ou
         return rolling_sharpe.dropna(), cut_sharpe
 
 
-def para_result(i, fun_name, factor_load_path, return_load_path, name_1, name_2, name_3, return_name, ic, ir):
+def para_result(i, fun_name, factor_load_path, return_load_path, name_1, name_2, name_3, return_name, *result):
     figure_save_path = '/media/hdd0/whs/tmp_figure'
     fun_set = [mul_fun, sub_fun, add_fun]
     mix_fun_set = create_fun_set_2(fun_set)
@@ -78,7 +78,8 @@ def para_result(i, fun_name, factor_load_path, return_load_path, name_1, name_2,
     ax3 = fig.add_subplot(2, 2, 3)
     ax4 = fig.add_subplot(2, 2, 4)
     ax1.plot(pnl_df.index, pnl_df.cumsum(),
-             label='fun_name={},\nname1={},\nname2={},\nname3={}\nic={},\nir={}'.format(fun_name, name_1, name_2, name_3, ic, ir))
+             label='fun_name={},\nname1={},\nname2={},\nname3={}\nresult={}'
+             .format(fun_name, name_1, name_2, name_3, *result))
     ax1.grid(1)
     ax1.legend()
 
@@ -100,9 +101,9 @@ def result_get_random(result_load_path, n_random=20):
     result_data = pd.read_table(result_load_path, sep='|', header=None)
     return_name = 'pct_f5d'
     for i in random.sample(list(result_data.index), n_random):
-        fun_name, name_1, name_2, name_3, ic, ir = result_data.loc[i]
-        print(fun_name, name_1, name_2, name_3, ic, ir)
-        para_result(i, fun_name, factor_load_path, return_load_path, name_1, name_2, name_3, return_name, ic, ir)
+        fun_name, name_1, name_2, name_3, *result = result_data.loc[i]
+        print(fun_name, name_1, name_2, name_3, *result)
+        para_result(i, fun_name, factor_load_path, return_load_path, name_1, name_2, name_3, return_name, *result)
 
 
 def result_compare_extreme(result_load_path):
@@ -116,6 +117,5 @@ def result_compare_extreme(result_load_path):
 if __name__ == '__main__':
     factor_load_path = '/media/hdd0/whs/data/adj_data/index_universe_f'
     return_load_path = '/media/hdd0/whs/data/adj_data/fnd_pct'
-    result_load_path = '/home/whs/Work/result/factor_search/result_20180612_1143.txt'
+    result_load_path = '/media/hdd0/whs/result/result/20180614_1847.txt'
     # result_get_random(result_load_path, n_random=20)
-
