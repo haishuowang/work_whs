@@ -15,6 +15,8 @@ import random
 # combinations 组合,没有重复　　（不放回抽样组合）
 # combinations_with_replacement 组合,有重复　　（有放回抽样组合）
 
+root_path = '/mnt/mfs/dat_whs'
+
 
 def load_stock_universe():
     market_top_n = pd.read_pickle('/mnt/mfs/DAT_EQT/STK_Groups1/market_top_1000.pkl')
@@ -22,7 +24,8 @@ def load_stock_universe():
 
 
 def load_pct(begin_date, stock_universe):
-    load_path = r'/media/hdd0/whs/data/adj_data/fnd_pct/pct_f5d.pkl'
+    # load_path = r'/media/hdd0/whs/data/adj_data/fnd_pct/pct_f5d.pkl'
+    load_path = os.path.join(root_path, 'data/adj_data/fnd_pct/pct_f5d.pkl')
     target_df = pd.read_pickle(load_path)
     target_df = target_df[target_df.index >= begin_date]
     target_df = target_df * stock_universe
@@ -34,7 +37,8 @@ def load_pct(begin_date, stock_universe):
 def load_part_factor(begin_date, stock_universe, file_list):
     factor_set = OrderedDict()
     for file_name in file_list:
-        load_path = '/media/hdd0/whs/data/adj_data/index_universe_f'
+        # load_path = '/media/hdd0/whs/data/adj_data/index_universe_f'
+        load_path = os.path.join(root_path, 'data/adj_data/index_universe_f')
         target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl'))
         target_df = target_df[target_df.index >= begin_date]
         target_df = target_df * stock_universe
@@ -80,14 +84,20 @@ def create_log_save_path(target_path):
 def out_sample_perf(pnl_df_out, way=1, cut_point_list=None):
     if cut_point_list is None:
         cut_point_list = [0.30]
-    rolling_sharpe, cut_sharpe = \
-        bt.AZ_Rolling_sharpe(pnl_df_out, roll_year=0.5, year_len=250, cut_point_list=cut_point_list, output=True)
-    sharpe_quantile = cut_sharpe.values[0] * way
+
+    if way == 1:
+        rolling_sharpe, cut_sharpe = \
+            bt.AZ_Rolling_sharpe(pnl_df_out, roll_year=0.5, year_len=250, cut_point_list=cut_point_list, output=True)
+    else:
+        rolling_sharpe, cut_sharpe = \
+            bt.AZ_Rolling_sharpe(-pnl_df_out, roll_year=0.5, year_len=250, cut_point_list=cut_point_list, output=True)
+
+    sharpe_quantile = cut_sharpe.values[0]
     out_condition = sharpe_quantile > 0.8
-    return out_condition, sharpe_quantile
+    return out_condition, sharpe_quantile * way
 
 
-def filter_mod_1(cut_date, end_date, signal, pct_n, lag=1):
+def filter_mod_1(cut_date, signal, pct_n, lag=1):
     signal = signal.shift(lag)
     signal = signal.replace(0, np.nan)
 
@@ -96,9 +106,6 @@ def filter_mod_1(cut_date, end_date, signal, pct_n, lag=1):
 
     corr_df_in = corr_df[corr_df.index < cut_date]
     pnl_df_in = pnl_df[pnl_df.index < cut_date]
-
-    # corr_df_out = corr_df[(corr_df.index >= cut_date) & (corr_df.index <= end_date)]
-    # pnl_df_out = pnl_df[(pnl_df.index >= cut_date) & (corr_df.index <= end_date)]
 
     corr_df_out = corr_df[corr_df.index >= cut_date]
     pnl_df_out = pnl_df[pnl_df.index >= cut_date]
@@ -121,43 +128,17 @@ def filter_mod_1(cut_date, end_date, signal, pct_n, lag=1):
 
     out_condition, sharpe_quantile = out_sample_perf(pnl_df_out, way=way)
     return ic_in_condition, out_condition, ic_rolling_5_y_mean, ic_rolling_half_y_quantile, sharpe_quantile
-    # return ic_in_condition, ic_rolling_5_y_mean, ic_rolling_half_y_quantile
-
-
-def filter_leverage_ratio(pnl_df):
-    pnl_df = pd.Series(pnl_df)
-    pnl_df_20 = pnl_df - pnl_df.shift(20)
-    pnl_df_250 = pnl_df - pnl_df.shift(250)
-    if pnl_df_20.min().values != 0:
-        leve_ratio = round(pnl_df_250.mean().values / (-pnl_df_20.min().values), 4)
-        if leve_ratio < 0:
-            return leve_ratio
-        else:
-            return 0
-    else:
-        return 0
-
-
-def rolling_sharpe_fun(pnl_df, roll_year=1, year_len=240, cut_point_list=None, output=False):
-    if cut_point_list is None:
-        cut_point_list = [0.05, 0.33, 0.5, 0.66, 0.95]
-    rolling_sharpe = pnl_df.rolling(int(roll_year * year_len)) \
-        .apply(lambda x: np.sqrt(year_len) * x.mean() / x.std())
-    cut_sharpe = rolling_sharpe.quantile(cut_point_list).round(4).values
-    if output:
-        return rolling_sharpe, cut_sharpe
-    else:
-        return cut_sharpe
 
 
 def create_all_para():
-    load_path = r'/media/hdd0/whs/data/adj_data/index_universe'
+    # load_path = r'/media/hdd0/whs/data/adj_data/index_universe'
+    load_path = os.path.join(root_path, 'data/adj_data/index_universe')
     file_list = sorted(os.listdir(load_path))
     file_name_list = [x[:-4] for x in file_list]
     return combinations(file_name_list, 3)
 
 
-def part_test_index_3_smart(key, name_1, name_2, name_3, begin_date, cut_date, end_date, stock_universe, return_choose,
+def part_test_index_3_smart(key, name_1, name_2, name_3, begin_date, cut_date, stock_universe, return_choose,
                             log_save_file, result_save_file, if_save=True):
     lock = Lock()
     start_time = time.time()
@@ -171,15 +152,15 @@ def part_test_index_3_smart(key, name_1, name_2, name_3, begin_date, cut_date, e
 
     for fun in fun_mix_2_set:
         mix_factor = fun(factor_set[name_1], factor_set[name_2], factor_set[name_3])
-        ic_in_condition, *filter_result = filter_mod_1(cut_date, end_date, mix_factor, return_choose, lag=1)
-        if ic_in_condition:
+        in_condition, *filter_result = filter_mod_1(cut_date, mix_factor, return_choose, lag=1)
+        if in_condition:
             if if_save:
                 with lock:
                     f = open(result_save_file, 'a')
-                    write_list = [key, fun.__name__, name_1, name_2, name_3, ic_in_condition] + filter_result
+                    write_list = [key, fun.__name__, name_1, name_2, name_3, in_condition] + filter_result
                     f.write('|'.join([str(x) for x in write_list]) + '\n')
                     f.close()
-            print([ic_in_condition] + filter_result)
+            print([in_condition] + filter_result)
     end_time = time.time()
     if if_save:
         with lock:
@@ -191,17 +172,19 @@ def part_test_index_3_smart(key, name_1, name_2, name_3, begin_date, cut_date, e
           .format(key, name_1, name_2, name_3, round(end_time - start_time, 4), load_delta))
 
 
-def test_index_3_smart(stock_universe, para_ready_df, begin_date, cut_date, end_date, log_save_file, result_save_file, if_save):
+def test_index_3_smart(stock_universe, para_ready_df, begin_date, cut_date, log_save_file, result_save_file, if_save):
     a_time = time.time()
     return_choose = load_pct(begin_date, stock_universe)
     pool = Pool(20)
-    for key in sorted(random.sample(list(para_ready_df.index), 8000)):
+    for key in sorted(random.sample(list(para_ready_df.index), 4000)):
         name_1, name_2, name_3 = para_ready_df.loc[key]
-        # part_test_index_3_smart(key, name_1, name_2, name_3, begin_date, cut_date, end_date, stock_universe,
-        #                         return_choose, log_save_file, result_save_file, if_save)
-        pool.apply_async(part_test_index_3_smart, args=(key, name_1, name_2, name_3, begin_date, cut_date, end_date,
-                                                        stock_universe, return_choose, log_save_file,
-                                                        result_save_file, if_save))
+
+        args_list = key, name_1, name_2, name_3, begin_date, cut_date, stock_universe, \
+                    return_choose, log_save_file, result_save_file, if_save
+
+        # part_test_index_3_smart(*args_list)
+        pool.apply_async(part_test_index_3_smart, args=args_list)
+
     pool.close()
     pool.join()
 
@@ -212,9 +195,9 @@ def test_index_3_smart(stock_universe, para_ready_df, begin_date, cut_date, end_
 def save_load_control(if_save=True, if_new_program=True):
     if if_new_program:
         now_time = datetime.now().strftime('%Y%m%d_%H%M')
-        log_save_file = '/media/hdd0/whs/result/log/{}.txt'.format(now_time)
-        result_save_file = '/media/hdd0/whs/result/result/{}.txt'.format(now_time)
-        para_save_file = '/media/hdd0/whs/result/para/{}.txt'.format(now_time)
+        log_save_file = os.path.join(root_path, 'result/log/{}.txt'.format(now_time))
+        result_save_file = os.path.join(root_path, 'result/result/{}.txt'.format(now_time))
+        para_save_file = os.path.join(root_path, 'result/para/{}.txt'.format(now_time))
         para_ready_df = pd.DataFrame(list(create_all_para()))
         if if_save:
             create_log_save_path(log_save_file)
@@ -224,9 +207,9 @@ def save_load_control(if_save=True, if_new_program=True):
 
     else:
         old_time = '20180613_1940'
-        log_save_file = '/media/hdd0/whs/result/log/{}.txt'.format(old_time)
-        result_save_file = '/media/hdd0/whs/result/result/{}.txt'.format(old_time)
-        para_save_file = '/media/hdd0/whs/result/para/{}.txt'.format(old_time)
+        log_save_file = os.path.join(root_path, 'result/log/{}.txt'.format(old_time))
+        result_save_file = os.path.join(root_path, 'result/result/{}.txt'.format(old_time))
+        para_save_file = os.path.join(root_path, 'result/para/{}.txt'.format(old_time))
 
         para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
         para_all_df = pd.read_pickle(para_save_file)
@@ -239,9 +222,9 @@ if __name__ == '__main__':
     cut_date = pd.to_datetime('20160401')
     end_date = pd.to_datetime('20180401')
 
-    if_save = True
+    if_save = False
     if_new_program = True
 
     para_ready_df, log_save_file, result_save_file = save_load_control(if_save, if_new_program)
     stock_universe = load_stock_universe()
-    test_index_3_smart(stock_universe, para_ready_df, begin_date, cut_date, end_date, log_save_file, result_save_file, if_save)
+    test_index_3_smart(stock_universe, para_ready_df, begin_date, cut_date, log_save_file, result_save_file, if_save)
