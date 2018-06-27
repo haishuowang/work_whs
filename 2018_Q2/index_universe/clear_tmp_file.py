@@ -12,7 +12,8 @@ if __name__ == '__main__':
     log_root_path = '/mnt/mfs/dat_whs/result/log'
     result_root_path = '/mnt/mfs/dat_whs/result/result'
     para_root_path = '/mnt/mfs/dat_whs/result/para'
-    except_list = ['20180625_1758.txt']
+    except_list = ['20180626_1047.txt', '20180626_1106.txt', '20180626_1148.txt', '20180626_1224.txt',
+                   '20180626_1555.txt']
     # except_list = []
 
     delete_all_file(log_root_path, except_list)

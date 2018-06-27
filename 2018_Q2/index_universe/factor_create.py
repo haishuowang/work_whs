@@ -3,7 +3,8 @@ import numpy as np
 import os
 from functools import reduce
 
-load_path = '/media/hdd0/whs/data/AllStock'
+# load_path = '/media/hdd0/whs/data/AllStock'
+load_path = '/data/AllStock'
 all_open = pd.read_csv(os.path.join(load_path, 'all_open.csv'), index_col=0)
 all_high = pd.read_csv(os.path.join(load_path, 'all_high.csv'), index_col=0)
 all_low = pd.read_csv(os.path.join(load_path, 'all_low.csv'), index_col=0)

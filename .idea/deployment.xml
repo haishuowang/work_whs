@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="whs_git">
+  <component name="PublishConfigData" serverName="delta">
     <serverData>
-      <paths name="whs_git">
+      <paths name="beta">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/work_whs" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="delta">
         <serverdata>
           <mappings>
             <mapping deploy="/work_whs" local="$PROJECT_DIR$" web="/" />

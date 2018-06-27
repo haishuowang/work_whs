@@ -29,6 +29,7 @@ def path_create(target_path):
 down_dict = OrderedDict({'相对估值指标': 'TRAD_SK_REVALUATION', '新股首日交易营业部统计': 'TRAD_SK_FISTDPLACE',
                          '新股首日投资者类型统计': 'TRAD_SK_FISTDCOUNT', '行业市盈率表（申万发布）': 'LICO_IR_PESW',
                          '行业市盈率表（中证发布）': 'LICO_IR_PECSI'})
+
 # # table 01
 # down_dict = OrderedDict({'公司概况变动': 'LICO_BS_COPMCHG', '机构别名表': 'ORGA_BI_INSTOTHERNAME',
 #                          '机构当事人': 'ORGA_BI_ORGPARTY', '机构基本资料表': 'ORGA_BI_ORGBASEINFO',
