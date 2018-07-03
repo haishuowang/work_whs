@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 import os
-import sys
-sys.path.append('/home/haishuowang')
 
 
 def sort_fun(x, n=1000):
@@ -28,6 +26,6 @@ if __name__ == '__main__':
     data = pd.read_pickle('/mnt/mfs/DAT_EQT/EM_Funda/daily/R_MarketCap_Only.pkl')
     data_df = pd.DataFrame(data['values'], columns=data['columns'], index=data['index'])
     data_df.index = pd.to_datetime(data_df.index)
-    n = 1400
+    n = 500
     save_way = '/mnt/mfs/DAT_EQT/STK_Groups1'
-    # market_top_n = market_top_n_fun(begin_date, end_date, data_df, n, save_way)
+    market_top_n = market_top_n_fun(begin_date, end_date, data_df, n, save_way)

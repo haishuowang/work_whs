@@ -56,7 +56,7 @@ def position_1(signal, limit=0):
     signal[signal > limit] = 1
     signal[signal < -limit] = -1
 
-    signal.fillna(method='ffill', inplace=True)`
+    signal.fillna(method='ffill', inplace=True)
     signal.fillna(0, inplace=True)
     return signal
 

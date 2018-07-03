@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="bcaa16cb-a1a2-4413-89a1-c365b0c6e9b6" name="delta" url="http://192.168.16.21">
-        <fileTransfer host="192.168.16.21" port="32514" rootFolder="/mnt/mfs" accessType="SFTP">
+        <fileTransfer host="192.168.16.21" port="32514" rootFolder="/mnt/mfs/work_whs" accessType="SFTP">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />
           </advancedOptions>
@@ -11,7 +11,7 @@
         </fileTransfer>
       </webServer>
       <webServer id="b598312e-87a6-470c-b131-384fa89fe4ea" name="beta" url="http://192.168.16.23">
-        <fileTransfer host="192.168.16.23" port="32514" rootFolder="/mnt/mfs" accessType="SFTP">
+        <fileTransfer host="192.168.16.23" port="32514" rootFolder="/mnt/mfs/work_whs" accessType="SFTP">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />
           </advancedOptions>

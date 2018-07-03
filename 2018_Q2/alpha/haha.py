@@ -1,5 +1,5 @@
-# from multiprocessing import Pool
-#
+from multiprocessing import Pool
+
 import copy
 #
 # def parameter_fun():
@@ -25,10 +25,18 @@ import copy
 # pool.close()
 # pool.join()
 
-# pool = Pool(4)
-# a = [0] * 10
-# for i in range(10):
-#     a[i] = pool.apply_async(haha, (i,)).get()
-# pool.close()
-# pool.join()
+# haha = lambda x: x**2
+
+
+def haha(x):
+    print(x)
+    return x**2
+
+
+pool = Pool(4)
+a = [0] * 10
+for i in range(10):
+    a[i] = pool.apply_async(haha, (i,)).get()
+pool.close()
+pool.join()
 

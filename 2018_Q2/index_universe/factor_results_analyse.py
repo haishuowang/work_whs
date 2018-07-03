@@ -4,9 +4,11 @@ import os
 import matplotlib.pyplot as plt
 from itertools import product, permutations, combinations
 import random
-import sys
 from open_lib.shared_tools import send_email
 import open_lib.shared_tools.back_test as bt
+
+from index_universe.script_load_data import load_sector_data, load_locked_data, load_pct, \
+    load_part_factor, create_log_save_path
 
 
 def mul_fun(a, b):
@@ -26,33 +28,9 @@ def position_daily_fun(df, n=5):
     return df.rolling(window=n, min_periods=1).sum()
 
 
-def load_stock_universe(begin_date=pd.to_datetime('20100101')):
-    market_top_n = pd.read_pickle('/mnt/mfs/DAT_EQT/STK_Groups1/market_top_1000.pkl')
-    market_top_n = market_top_n[market_top_n.index >= begin_date]
-    return market_top_n
-
-
-def load_locked_date(begin_date=pd.to_datetime('20100101')):
-    suspendday_df = pd.read_pickle('/mnt/mfs/DAT_EQT/EM_Tab14/adj_data/TRAD_TD_SUSPENDDAY/SUSPENDREASON_adj.pkl')
-    limit_updn_df = pd.read_pickle('/mnt/mfs/dat_whs/data/locked_date/limit_updn_table.pkl')
-    locked_df = limit_updn_df * suspendday_df
-    locked_df.dropna(how='all', axis=0, inplace=True)
-    locked_df = locked_df[locked_df.index >= begin_date]
-    return locked_df
-
-
 def load_factor(file_name, stock_universe):
     load_path = os.path.join(root_path, 'data/adj_data/index_universe_f')
     target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl'))
-    target_df = target_df * stock_universe
-    target_df.dropna(how='all', axis=0, inplace=True)
-    target_df = target_df[target_df.index >= begin_date]
-    return target_df
-
-
-def load_pct(stock_universe):
-    load_path = os.path.join(root_path, 'data/adj_data/fnd_pct/pct_f5d.pkl')
-    target_df = pd.read_pickle(load_path)
     target_df = target_df * stock_universe
     target_df.dropna(how='all', axis=0, inplace=True)
     target_df = target_df[target_df.index >= begin_date]
@@ -105,24 +83,28 @@ def plot_send_result(pnl_df, sharpe_ratio):
     send_email.send_email(text, to, filepath, subject)
 
 
-def para_result(stock_universe, locked_df, i, fun_name, factor_load_path, return_load_path,
-                name_1, name_2, name_3, return_name, *result):
+def para_result(begin_date, end_date, sector_df, locked_df, i, fun_name, name_1, name_2, name_3, result):
     cost_1 = 0.001
     cost_2 = 0.002
     figure_save_path = os.path.join(root_path, 'tmp_figure')
     fun_set = [mul_fun, sub_fun, add_fun]
     mix_fun_set = create_fun_set_2(fun_set)
     fun = mix_fun_set[fun_name]
-    choose_1 = load_factor(name_1, stock_universe)
-    choose_2 = load_factor(name_2, stock_universe)
-    choose_3 = load_factor(name_3, stock_universe)
 
-    return_data = load_pct(stock_universe)
+    factor_set = load_part_factor(begin_date, end_date, sector_df, locked_df, [name_1, name_2, name_3])
+    choose_1 = factor_set[name_1]
+    choose_2 = factor_set[name_2]
+    choose_3 = factor_set[name_3]
+
+    return_data = load_pct(begin_date, end_date, sector_df.columns)
     mix_factor = fun(choose_1, choose_2, choose_3).shift(1)
     mix_factor = mix_factor.fillna(0) * locked_df
     mix_factor.dropna(how='all', axis=0, inplace=True)
     mix_factor.fillna(method='ffill', inplace=True)
 
+    # sharpe, pot, leve_ratio, total_asset = bt.AZ_Back_test(mix_factor, return_data, usr_email='whs@malpha.info',
+    #                                                        if_file=False)
+    # print(sharpe, pot, leve_ratio, total_asset)
     pnl_df = (return_data * mix_factor).sum(axis=1)
     AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250)
     fig = plt.figure(figsize=(12, 8))
@@ -153,30 +135,27 @@ def para_result(stock_universe, locked_df, i, fun_name, factor_load_path, return
     ax2.grid(axis='y')
     # plt.show()
 
-
-
-
     plt.savefig(os.path.join(figure_save_path, '|'.join([fun_name, name_1, name_2, name_3]))+'.png')
 
-    text = '|'.join([fun_name, name_1, name_2, name_3])
+    text = '|'.join([str(x) for x in [fun_name, name_1, name_2, name_3] + list(result)])
     to = ['whs@malpha.info']
     subject = '|'.join([fun_name, name_1, name_2, name_3])
     filepath = [os.path.join(figure_save_path, '|'.join([fun_name, name_1, name_2, name_3]))+'.png']
     send_email.send_email(text, to, filepath, subject)
 
 
-def result_get_random(result_load_path, n_random=20):
-    stock_universe = load_stock_universe()
-    locked_df = load_locked_date()
+def result_get_random(begin_date, end_date, result_load_path, n_random=20):
+    sector_df = load_sector_data(begin_date, end_date)
+    locked_df = load_locked_data(begin_date, end_date, sector_df.columns)
     result_data = pd.read_table(result_load_path, sep='|', header=None)
     return_name = 'pct_f5d'
     for i in random.sample(list(result_data.index), n_random):
         key, fun_name, name_1, name_2, name_3, *result = result_data.loc[i]
         print(key, fun_name, name_1, name_2, name_3, *result)
-        para_result(stock_universe, locked_df, i, fun_name, factor_load_path, return_load_path, name_1, name_2, name_3, return_name, *result)
+        para_result(begin_date, end_date, sector_df, locked_df, i, fun_name, name_1, name_2, name_3, result)
 
 
-def result_analyse(file_list):
+def analyse_result(file_list):
     for file_name in file_list:
         result_load_path = os.path.join(root_path, 'result/result/{}'.format(file_name))
         result_data = pd.read_table(result_load_path, sep='|', header=None)
@@ -189,9 +168,10 @@ def result_analyse(file_list):
 
 
 def result_factor_sum(file_name='20180626_1148.txt', n_random=20, cut_date=pd.to_datetime('20160401')):
-    stock_universe = load_stock_universe()
-    locked_df = load_locked_date()
-    return_data = load_pct(stock_universe)
+    sector_df = load_sector_data(begin_date, end_date)
+    locked_df = load_locked_data(begin_date, end_date, sector_df.columns)
+    return_data = load_pct(begin_date, end_date, sector_df.columns)
+
     result_load_path = os.path.join(root_path, 'result/result/{}'.format(file_name))
     result_data = pd.read_table(result_load_path, sep='|', header=None)
     multy_mix_factor = pd.DataFrame()
@@ -200,9 +180,9 @@ def result_factor_sum(file_name='20180626_1148.txt', n_random=20, cut_date=pd.to
         fun_set = [mul_fun, sub_fun, add_fun]
         mix_fun_set = create_fun_set_2(fun_set)
         fun = mix_fun_set[fun_name]
-        choose_1 = load_factor(name_1, stock_universe)
-        choose_2 = load_factor(name_2, stock_universe)
-        choose_3 = load_factor(name_3, stock_universe)
+        choose_1 = load_factor(name_1, sector_df)
+        choose_2 = load_factor(name_2, sector_df)
+        choose_3 = load_factor(name_3, sector_df)
 
         mix_factor = fun(choose_1, choose_2, choose_3).shift(1)
         mix_factor = mix_factor.fillna(0) * locked_df
@@ -221,20 +201,44 @@ def result_factor_sum(file_name='20180626_1148.txt', n_random=20, cut_date=pd.to
     print(sharpe_ratio)
 
 
-root_path = '/mnt/mfs/dat_whs'
+def analyse_pot(result_load_path):
+    result_data = pd.read_table(result_load_path, sep='|', header=None)
+    pot_data = result_data[11].abs()
+    figure_save_path = os.path.join(root_path, 'tmp_figure')
+    plt.hist(pot_data.values, bins=200)
+    file_name = os.path.split(result_load_path)[1]
+    plt.savefig(os.path.join(figure_save_path, file_name.split('.')[1] + '.png'))
+
+    text = file_name
+    to = ['whs@malpha.info']
+    subject = ''
+    filepath = [os.path.join(figure_save_path, file_name.split('.')[1] + '.png')]
+    send_email.send_email(text, to, filepath, subject)
+
+    bt.AZ_Delete_file(figure_save_path)
+
 
 if __name__ == '__main__':
+    root_path = '/mnt/mfs/dat_whs'
     begin_date = pd.to_datetime('20100101')
     cut_date = pd.to_datetime('20160401')
+    end_date = pd.to_datetime('20180401')
 
     factor_load_path = os.path.join(root_path, 'data/adj_data/index_universe_f')
     return_load_path = os.path.join(root_path, 'data/adj_data/fnd_pct')
-    result_load_path = os.path.join(root_path, 'result/result/20180626_1224.txt')
+    result_load_path = os.path.join(root_path, 'result/result/20180702_0915.txt')
 
-    result_get_random(result_load_path, n_random=5)
+    # analyse_pot(result_load_path)
 
+    result_get_random(begin_date, end_date, result_load_path, n_random=5)
+    # analyse_result(['20180702_0915.txt'])
     # result_factor_sum()
 
     # file_list = ['20180626_1047.txt', '20180626_1106.txt', '20180626_1148.txt', '20180626_1224.txt',
     #              '20180626_1555.txt']
-    # result_analyse(file_list)
+    # file_list = ['20180628_0844.txt']
+    # analyse_result(file_list)
+
+    # sector_df = load_sector_data(begin_date, end_date)
+    # locked_df = load_locked_data(begin_date, end_date, sector_df.columns)
+

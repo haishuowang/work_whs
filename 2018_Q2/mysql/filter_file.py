@@ -373,9 +373,15 @@ def common_deal(file_name):
         target.to_pickle(os.path.join(root_path, file_name, col_name + '.pkl'))
 
 
-down_dict = OrderedDict({'相对估值指标': 'TRAD_SK_REVALUATION',
-                         '新股首日交易营业部统计': 'TRAD_SK_FISTDPLACE', '新股首日投资者类型统计': 'TRAD_SK_FISTDCOUNT',
-                         '行业市盈率表（申万发布）': 'LICO_IR_PESW', '行业市盈率表（中证发布）': 'LICO_IR_PECSI'})
+def FUND_BS_ATYPE_deal():
+    fund_type = pd.read_pickle('/mnt/mfs/DAT_EQT/EM_Tab16/raw_data/FUND_BS_ATYPE.pkl')
+    fund_data = pd.read_pickle('/mnt/mfs/DAT_EQT/EM_Tab16/raw_data/TRAD_FD_DAILY.pkl')
+    etf_data = fund_type[fund_type['TYPECODE'] == 180115]['SECURITYCODE']
+
+
+# down_dict = OrderedDict({'相对估值指标': 'TRAD_SK_REVALUATION',
+#                          '新股首日交易营业部统计': 'TRAD_SK_FISTDPLACE', '新股首日投资者类型统计': 'TRAD_SK_FISTDCOUNT',
+#                          '行业市盈率表（申万发布）': 'LICO_IR_PESW', '行业市盈率表（中证发布）': 'LICO_IR_PECSI'})
 
 if __name__ == '__main__':
 
@@ -392,3 +398,4 @@ if __name__ == '__main__':
     # for file_name in down_dict.values():
     #     common_deal(file_name)
     TIT_S_PUB_STOCK()
+

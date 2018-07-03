@@ -2,9 +2,12 @@ import pandas as pd
 import numpy as np
 import os
 from functools import reduce
+import open_lib.shared_tools.back_test as bt
 
+
+root_path = '/mnt/mfs/dat_whs'
 # load_path = '/media/hdd0/whs/data/AllStock'
-load_path = '/data/AllStock'
+load_path = root_path + '/data/AllStock'
 all_open = pd.read_csv(os.path.join(load_path, 'all_open.csv'), index_col=0)
 all_high = pd.read_csv(os.path.join(load_path, 'all_high.csv'), index_col=0)
 all_low = pd.read_csv(os.path.join(load_path, 'all_low.csv'), index_col=0)
@@ -47,15 +50,6 @@ def add_stock_suffix(stock_list):
     return list(map(lambda x: x + '.SH' if x.startswith('6') else x + '.SZ', stock_list))
 
 
-def row_zscore(df, n):
-    target = df.rolling(window=n).apply(lambda x: (x[-1] - x.mean()) / x.std())
-    return target
-
-
-def col_zscore(df):
-    return (df - df.mean(axis=1))/df.std(axis=1)
-
-
 def split_fun(df, n=3):
     split_list = [0.] + [1 / n * (i + 1) for i in range(n)]
     mid = (n + 1) / 2
@@ -73,7 +67,7 @@ def split_fun(df, n=3):
 
 def fnd_pct_adj(adj_r, n=5):
     adj_r_fillna = adj_r.fillna(0)
-    return (adj_r_fillna + 1).rolling(window=n)\
+    return (adj_r_fillna + 1).rolling(window=n, min_periods=1)\
         .apply(lambda a: reduce(lambda x, y: x * y, a) - 1).fillna(0).shift(-n)
 
 
@@ -81,8 +75,8 @@ def fnd_pct_adj(adj_r, n=5):
 
 
 def pnd_hl(high, low, close, n):
-    high_n = high.rolling(window=n).max().shift(1)
-    low_n = low.rolling(window=n).min().shift(1)
+    high_n = high.rolling(window=n, min_periods=1).max().shift(1)
+    low_n = low.rolling(window=n, min_periods=1).min().shift(1)
     h_diff = (close - high_n)
     l_diff = (close - low_n)
 
@@ -97,17 +91,17 @@ def pnd_hl(high, low, close, n):
 
 
 def pnd_vol(close, n=5, n_split=3):
-    vol = close.rolling(window=n).std() / close.rolling(window=n).mean()
+    vol = close.rolling(window=n, min_periods=1).std() / close.rolling(window=n, min_periods=1).mean()
     return split_fun(vol, n_split)
 
 
 def pnd_volume(volume, n=5, n_split=3):
-    volume_n = volume.rolling(window=n).sum()
+    volume_n = volume.rolling(window=n, min_periods=1).sum()
     return split_fun(volume_n, n_split)
 
 
 def pnd_std(close, n=5, limit=2.5):
-    signal = (close - close.rolling(window=n).mean()) / close.rolling(window=n).std()
+    signal = (close - close.rolling(window=n, min_periods=1).mean()) / close.rolling(window=n, min_periods=1).std()
     signal[(signal < limit) & (signal < limit)] = 0
     signal[signal >= limit] = 1
     signal[signal <= -limit] = -1
@@ -115,30 +109,28 @@ def pnd_std(close, n=5, limit=2.5):
 
 
 def return_r(n=5):
-    pct_n = pd.read_pickle('/media/hdd0/whs/data/adj_data/fnd_pct/pct_f{0}d.pkl'.format(n))
+    pct_n = pd.read_pickle(root_path + '/data/adj_data/fnd_pct/pct_f{0}d.pkl'.format(n))
     pct_n.shift(n)
-    # pct_n = fnd_pct_adj(close, n)
-    r_r_zscore = row_zscore(pct_n, n)
+    r_r_zscore = bt.AZ_Row_zscore(pct_n, n)
     return r_r_zscore
 
 
 def return_c(n=5):
-    pct_n = pd.read_pickle('/media/hdd0/whs/data/adj_data/fnd_pct/pct_f{0}d.pkl'.format(n))
+    pct_n = pd.read_pickle(root_path + '/data/adj_data/fnd_pct/pct_f{0}d.pkl'.format(n))
     pct_n.shift(n)
-    # pct_n = fnd_pct_adj(adj, n)
-    r_c_zscore = col_zscore(pct_n)
+    r_c_zscore = bt.AZ_Row_zscore(pct_n)
     return r_c_zscore
 
 
 def volume_r(volume, n=5):
-    volume_n = volume.rolling(window=n).sum()
-    v_r_zscore = row_zscore(volume_n, n)
+    volume_n = volume.rolling(window=n, min_periods=1).sum()
+    v_r_zscore = bt.AZ_Row_zscore(volume_n, n)
     return v_r_zscore
 
 
 def volume_c(volume, n=5):
-    volume_n = volume.rolling(window=n).sum()
-    v_c_zscore = col_zscore(volume_n)
+    volume_n = volume.rolling(window=n, min_periods=1).sum()
+    v_c_zscore = bt.AZ_Row_zscore(volume_n)
     return v_c_zscore
 
 
@@ -150,13 +142,13 @@ def extreme_data(zscore_df, limit=2):
 
 
 def pnd_continue_ud(close, n=3):
-    return close.rolling(window=n).apply(lambda x: 1 if (np.diff(x) >= 0).all() and sum(np.diff(x)) > 0
+    return close.rolling(window=n, min_periods=1).apply(lambda x: 1 if (np.diff(x) >= 0).all() and sum(np.diff(x)) > 0
     else (-1 if (np.diff(x) <= 0).all() and sum(np.diff(x)) < 0 else 0))
 
 
 def pnd_sep_1d_ud(close, n=5):
     use_list = [i for i in range(n) if i % 2 == 0]
-    return close.rolling(window=n).apply(
+    return close.rolling(window=n, min_periods=1).apply(
         lambda x: 1 if (np.diff(x[use_list]) >= 0).all() and sum(np.diff(x[use_list])) > 0
         else (-1 if (np.diff(x[use_list]) <= 0).all() and sum(np.diff(x[use_list])) < 0
               else 0))
@@ -173,8 +165,8 @@ def p1d_jump_hl(close, open, split_float=0.05):
 
 
 def pnnd_moment(close, n_short=10, n_long=60):
-    ma_long = close.rolling(window=n_long).mean()
-    ma_short = close.rolling(window=n_short).mean()
+    ma_long = close.rolling(window=n_long, min_periods=1).mean()
+    ma_short = close.rolling(window=n_short, min_periods=1).mean()
     ma_dif = ma_short - ma_long
     ma_dif[ma_dif == 0] = 0
     ma_dif[ma_dif > 0] = 1
@@ -183,8 +175,8 @@ def pnnd_moment(close, n_short=10, n_long=60):
 
 
 def pnnd_liquid(amount, n_short=10, n_long=60):
-    ma_long = amount.rolling(window=n_long).mean()
-    ma_short = amount.rolling(window=n_short).mean()
+    ma_long = amount.rolling(window=n_long, min_periods=1).mean()
+    ma_short = amount.rolling(window=n_short, min_periods=1).mean()
     ma_dif = ma_short - ma_long
     ma_dif[ma_dif == 0] = 0
     ma_dif[ma_dif > 0] = 1
@@ -196,7 +188,7 @@ def pnnd_liquid(amount, n_short=10, n_long=60):
 def fnd_pct_adj_set(para_list):
     for n in para_list:
         print('pct_f{0}d'.format(n))
-        index_save_path = '/media/hdd0/whs/data/adj_data/fnd_pct/pct_f{0}d.pkl'.format(n)
+        index_save_path = root_path + '/data/adj_data/fnd_pct/pct_f{0}d.pkl'.format(n)
         fnd_pct_adj_df = fnd_pct_adj(EQA_adj_r, n)
         fnd_pct_adj_df.to_pickle(index_save_path)
 
@@ -305,8 +297,24 @@ def pnnd_liquid_set(short_long_list):
         pnnd_liquid_df.to_pickle(index_save_path)
 
 
+####################################################################################################################
+# create signal
+def pnd_hl_signal(high, low, close, n):
+    high_n = high.rolling(window=n, min_periods=1).max().shift(1)
+    low_n = low.rolling(window=n, min_periods=1).min().shift(1)
+    h_diff = (close - high_n)
+    l_diff = (close - low_n)
+
+    h_diff[h_diff <= 0] = 0
+
+    l_diff[l_diff >= 0] = 0
+
+    hl_signal = h_diff + l_diff
+    return hl_signal
+
+
 if __name__ == '__main__':
-    index_root_path = '/media/hdd0/whs/data/adj_data/index_universe'
+    index_root_path = root_path + '/data/adj_data/index_universe'
 
     para_list = [5, 10, 20, 60]
     # fnd_pct_adj_set(para_list)

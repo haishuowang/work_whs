@@ -3,7 +3,7 @@
 # 接口相当不稳定，程序开启时有可能崩溃，要多开几次
 import pandas as pd
 from EmQuantAPI import *
-from datetime import timedelta, datetime, timedelta
+from datetime import datetime, timedelta
 import time
 
 

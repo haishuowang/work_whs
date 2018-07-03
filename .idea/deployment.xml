@@ -5,14 +5,14 @@
       <paths name="beta">
         <serverdata>
           <mappings>
-            <mapping deploy="/work_whs" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
       <paths name="delta">
         <serverdata>
           <mappings>
-            <mapping deploy="/work_whs" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
