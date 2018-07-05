@@ -33,18 +33,19 @@ def AZ_Pot(pos_df_daily, last_asset):
         return round(pot, 2)
 
 
-def filter_ic(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1):
+def filter_ic(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1, if_hedge=True):
     # signal向下移动一天,避免未来函数
     signal = signal.shift(lag)
     # 将所有的0替换为nan,使得计算ic时更加合理
     signal = signal.replace(0, np.nan)
 
     corr_df = signal.corrwith(pct_n, axis=1)
-    pos_daily_df = pos_daily_fun(signal, n=5)
-
-    hedge_df = hedge_ratio * pos_daily_df.sum(axis=1) * index_df
-    pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
-
+    if if_hedge:
+        pos_daily_df = pos_daily_fun(signal, n=5)
+        hedge_df = hedge_ratio * pos_daily_df.sum(axis=1) * index_df
+        pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
+    else:
+        pnl_df = (signal * pct_n).sum(axis=1)
     # 样本内表现
     corr_df_in = corr_df[corr_df.index < cut_date]
 
@@ -68,16 +69,17 @@ def filter_ic(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1):
     return in_condition, out_condition, ic_rolling_5_y_mean, ic_rolling_half_y_quantile, sharpe_q_out
 
 
-def filter_ic_sharpe(cut_date, signal, pct_n,  index_df, lag=1, hedge_ratio=1):
+def filter_ic_sharpe(cut_date, signal, pct_n,  index_df, lag=1, hedge_ratio=1, if_hedge=True):
     signal = signal.shift(lag)
     signal = signal.replace(0, np.nan)
 
     corr_df = signal.corrwith(pct_n, axis=1)
-    pos_daily_df = pos_daily_fun(signal, n=5)
-
-    hedge_df = hedge_ratio * pos_daily_df.sum(axis=1) * index_df
-    pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
-
+    if if_hedge:
+        pos_daily_df = pos_daily_fun(signal, n=5)
+        hedge_df = hedge_ratio * pos_daily_df.sum(axis=1) * index_df
+        pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
+    else:
+        pnl_df = (signal * pct_n).sum(axis=1)
     # 样本内表现
     corr_df_in = corr_df[corr_df.index < cut_date]
     pnl_df_in = pnl_df[pnl_df.index < cut_date]
@@ -108,16 +110,17 @@ def filter_ic_sharpe(cut_date, signal, pct_n,  index_df, lag=1, hedge_ratio=1):
     return in_condition, out_condition, ic_rolling_5_y_mean, ic_rolling_half_y_quantile, leve_ratio, sharpe_q_out
 
 
-def filter_ic_leve(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1):
+def filter_ic_leve(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1, if_hedge=True):
     signal = signal.shift(lag)
     signal = signal.replace(0, np.nan)
 
     corr_df = signal.corrwith(pct_n, axis=1)
-    pos_daily_df = pos_daily_fun(signal, n=5)
-
-    hedge_df = hedge_ratio * pos_daily_df.sum(axis=1) * index_df
-    pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
-
+    if if_hedge:
+        pos_daily_df = pos_daily_fun(signal, n=5)
+        hedge_df = hedge_ratio * pos_daily_df.sum(axis=1) * index_df
+        pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
+    else:
+        pnl_df = (signal * pct_n).sum(axis=1)
     # 样本内表现
     corr_df_in = corr_df[corr_df.index < cut_date]
     pnl_df_in = pnl_df[pnl_df.index < cut_date]
@@ -143,16 +146,17 @@ def filter_ic_leve(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1):
     return in_condition, out_condition, ic_rolling_5_y_mean, leve_ratio, sharpe_q_out
 
 
-def filter_pot_sharpe(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1):
+def filter_pot_sharpe(cut_date, signal, pct_n, index_df, lag=1, hedge_ratio=1, if_hedge=True):
     # signal向下移动一天,避免未来函数
     signal = signal.shift(lag)
     # # 将所有的0替换为nan,使得计算ic时更加合理, 计算pnl时没影响
     # signal = signal.replace(0, np.nan)
-
-    pos_daily_df = pos_daily_fun(signal, n=5)
-    hedge_df = hedge_ratio * pos_daily_df.sum(axis=1) * index_df
-    pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
-
+    if if_hedge:
+        pos_daily_df = pos_daily_fun(signal, n=5)
+        hedge_df = hedge_ratio * index_df.mul(pos_daily_df.sum(axis=1), axis=0)
+        pnl_df = (signal * pct_n).sum(axis=1) - hedge_df
+    else:
+        pnl_df = (signal * pct_n).sum(axis=1)
     # 样本内表现
     pnl_df_in = pnl_df[pnl_df.index < cut_date]
     signal_in = signal[signal.index < cut_date]
