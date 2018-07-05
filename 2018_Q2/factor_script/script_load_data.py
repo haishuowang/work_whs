@@ -7,8 +7,8 @@ root_path = '/mnt/mfs/dat_whs'
 
 
 # 读取 sector(行业 最大市值等)
-def load_sector_data(begin_date, end_date):
-    market_top_n = pd.read_pickle('/mnt/mfs/DAT_EQT/STK_Groups1/market_top_1000.pkl')
+def load_sector_data(begin_date, end_date, sector_name):
+    market_top_n = pd.read_pickle('/mnt/mfs/DAT_EQT/STK_Groups1/' + sector_name + '.pkl')
     market_top_n = market_top_n[(market_top_n.index >= begin_date) & (market_top_n.index < end_date)]
     market_top_n = market_top_n[market_top_n.index >= begin_date]
     market_top_n.dropna(how='all', axis='columns', inplace=True)
@@ -27,19 +27,12 @@ def load_locked_data(begin_date, end_date, sector_set):
 
 
 # 读取 上证50,沪深300等数据
-def load_index_data(begin_date, end_date):
-    # 上证50
-    target_df_50 = pd.read_csv('/mnt/mfs/dat_whs/data/index_data/510050.SH_f1d.csv', index_col=0, header=None)
-    # 沪深300
-    target_df_300 = pd.read_csv('/mnt/mfs/dat_whs/data/index_data/510330.SH_f1d.csv', index_col=0, header=None)
-    # 中证500
-    target_df_500 = pd.read_csv('/mnt/mfs/dat_whs/data/index_data/512500.SH_f1d.csv', index_col=0, header=None)
+def load_index_data(begin_date, end_date, index_name):
+    root_index_path = '/mnt/mfs/DAT_EQT/EM_Tab09/adj_data/INDEX_TD_DAILYSYS'
+    target_df = pd.read_pickle(os.path.join(root_index_path, index_name + '.pkl'))
 
-    target_df = (target_df_50 + target_df_300 + target_df_500) * 1/3
-
-    target_df.index = pd.to_datetime(target_df.index)
     target_df = target_df[(target_df.index >= begin_date) & (target_df.index < end_date)]
-    return target_df[1]
+    return target_df
 
 
 # 读取return

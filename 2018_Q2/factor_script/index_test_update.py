@@ -42,7 +42,7 @@ def create_fun_set_2(fun_set):
 
 
 def split_file_fun(limit=1000, file_size=40):
-    load_path = r'/media/hdd0/whs/data/adj_data/index_universe'
+    load_path = r'/media/hdd0/whs/data/adj_data/factor_script'
     file_list = sorted(os.listdir(load_path))
     sub_step = int(limit / (3 * file_size))
     sub_n = int(math.ceil(len(file_list) / sub_step))
@@ -50,7 +50,7 @@ def split_file_fun(limit=1000, file_size=40):
 
 
 def load_split_index(begin_date, end_date, key_set, split_file_set):
-    load_path = r'/media/hdd0/whs/data/adj_data/index_universe'
+    load_path = r'/media/hdd0/whs/data/adj_data/factor_script'
     index_set = OrderedDict()
     for key in key_set:
         sub_index_set = OrderedDict()

@@ -19,8 +19,12 @@ def path_create(target_path):
 #                          '证券名称变更表': 'CDSY_CHANGEINFO', '证券上市状态变动': 'CDSY_CHANGESTATE',
 #                          })
 
-# table 09
 
+# table 09
+down_dict = OrderedDict({'系列指数分类表': 'INDEX_BA_SMTYPE', '指数概况': 'INDEX_BA_INFO',
+                         '指数年行情指标表': 'TRAD_ID_YEARSYS', '指数日行情': 'INDEX_TD_DAILY',
+                         '指数日行情指标表': 'INDEX_TD_DAILYSYS', '指数入选样本券表': 'INDEX_BA_SAMPLE',
+                         '指数资金流向': 'INDEX_TD_FUNDFLOW'})
 
 # # table 14
 # down_dict = OrderedDict({'大宗交易': 'TRAD_BT_DAILY', '个股日行情筹码分布': 'TRAD_SK_DAILYCH',
@@ -38,8 +42,8 @@ def path_create(target_path):
 #                          '转融通可充抵保证金证券及折算率': 'TRAD_MT_ZRTBZJJZSL', '转融通期限费率': 'TRAD_MT_ZRTQXFL',
 #                          '转融资每日交易汇总表': 'TRAD_MT_ZRZMRJYHZ'})
 
-# table 16 基金数据
-down_dict = OrderedDict({'基金分红表': 'FUND_IA_DIVIDEND', '基金日行情': 'TRAD_FD_DAILY', '基金分类表': 'FUND_BS_ATYPE'})
+# # table 16 基金数据
+# down_dict = OrderedDict({'基金分红表': 'FUND_IA_DIVIDEND', '基金日行情': 'TRAD_FD_DAILY', '基金分类表': 'FUND_BS_ATYPE'})
 
 # down_dict = OrderedDict({
 #
@@ -80,27 +84,60 @@ def Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_lis
     print('Processing Cost:{} second'.format(end - start))
 
 
-# def Mysql_select_column_data(table_name, column_list, root_save_path):
-#     start = time.time()
+def Mysql_select_column_data(table_name, root_save_path, except_columns=None):
+    if except_columns is None:
+        except_columns = []
     usr_name = 'whs'
     pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
     engine = create_engine(
         'mysql+pymysql://{}:{}@192.168.16.10:3306/choice_fndb?charset=utf8'.format(usr_name, pass_word))
 
     conn = engine.connect()
-#
-#     path_create(root_save_path)
-#
-#     df = pd.read_sql('SELECT {} FROM choice_fndb.{}'.format(','.join(column_list), table_name), conn)
-#     print(df)
-#     # pd.to_pickle(df, os.path.join(root_save_path, '{}.pkl'.format(value)))
-#     # print(value)
-#     end = time.time()
-#     print('Processing Cost:{} second'.format(end - start))
+    usr_name = 'whs'
+    pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
+    engine = create_engine(
+        'mysql+pymysql://{}:{}@192.168.16.10:3306/choice_fndb?charset=utf8'.format(usr_name, pass_word))
+
+    info_df = pd.read_sql('SHOW FULL COLUMNS FROM {}'.format(table_name), conn)['Field']
+    for column in list(set(info_df.values) - set(except_columns)):
+        print(column)
+        column_df = pd.read_sql('SELECT {} FROM {}'.format(column, table_name), conn)
+        save_path = os.path.join(root_save_path, table_name, 'split_data')
+        path_create(save_path)
+        column_df.to_pickle(os.path.join(save_path, column + 'pkl'))
+
+
+def Mysql_select_columns_data(table_name, root_save_path):
+    usr_name = 'whs'
+    pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
+    engine = create_engine(
+        'mysql+pymysql://{}:{}@192.168.16.10:3306/choice_fndb?charset=utf8'.format(usr_name, pass_word))
+
+    conn = engine.connect()
+    usr_name = 'whs'
+    pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
+    engine = create_engine(
+        'mysql+pymysql://{}:{}@192.168.16.10:3306/choice_fndb?charset=utf8'.format(usr_name, pass_word))
+
+    info_df = pd.read_sql('SHOW FULL COLUMNS FROM {}'.format(table_name), conn)['Field']
+    column_list = ['SECURITYCODE', 'TRADEDATE', 'CHG']
+    print(','.join(column_list))
+    column_df = pd.read_sql('SELECT {} FROM {}'.format(','.join(column_list), table_name), conn)
+    save_path = os.path.join(root_save_path, table_name, 'split_data')
+    path_create(save_path)
+    column_df.to_pickle(os.path.join(save_path, ','.join(column_list) + 'pkl'))
 
 
 if __name__ == '__main__':
     down_list = down_dict.values()
-    root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab16/raw_data'
-    # except_list = [x[:-4] for x in os.listdir('/mnt/mfs/DAT_EQT/EM_Tab14/raw_data')]
-    Mysql_select_all_data(down_list, root_save_path, file_type='pkl')
+    root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab09/raw_data'
+    # except_columns = [x[:-3] for x in os.listdir('/mnt/mfs/DAT_EQT/EM_Tab14/raw_data/TRAD_SK_REVALUATION/split_data')]
+    Mysql_select_column_data('INDEX_TD_DAILYSYS', root_save_path)
+
+    # Mysql_select_columns_data('INDEX_TD_DAILYSYS', root_save_path)
+
+    # root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab09/raw_data'
+    # except_list = [x[:-4] for x in os.listdir('/mnt/mfs/DAT_EQT/EM_Tab09/raw_data')]
+    # Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_list=except_list)
+
+

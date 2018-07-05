@@ -72,7 +72,7 @@ def adj_factor(load_path):
 
 
 if __name__ == '__main__':
-    load_path = '/media/hdd0/whs/data/adj_data/index_universe'
+    load_path = '/media/hdd0/whs/data/adj_data/factor_script'
     # pkl_feather_df(load_path)
     # load_path = '/media/hdd0/whs/data/adj_data/fnd_pct'
     # pkl_feather_df(load_path)

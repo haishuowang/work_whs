@@ -18,6 +18,14 @@
           <option name="port" value="32514" />
         </fileTransfer>
       </webServer>
+      <webServer id="08402c36-f6b3-4f4b-aebf-f0b374ee1f55" name="data" url="http://192.168.16.23">
+        <fileTransfer host="192.168.16.23" port="32514" rootFolder="/mnt/mfs/DAT_EQT" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="32514" />
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>

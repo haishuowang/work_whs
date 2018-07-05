@@ -8,10 +8,10 @@ from datetime import datetime
 import open_lib.shared_tools.back_test as bt
 import random
 # 读取数据的函数 以及
-from index_universe.script_load_data import load_index_data, load_sector_data, load_locked_data, load_pct, \
+from factor_script.script_load_data import load_index_data, load_sector_data, load_locked_data, load_pct, \
     load_part_factor, create_log_save_path
 
-from index_universe.script_filter_fun import pos_daily_fun, out_sample_perf, \
+from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, \
     filter_ic, filter_ic_sharpe, filter_ic_leve, filter_pot_sharpe
 # product 笛卡尔积　　（有放回抽样排列）
 # permutations 排列　　（不放回抽样排列）
@@ -46,15 +46,15 @@ def create_fun_set_2(fun_set):
     return mix_fun_set
 
 
-def create_all_para():
-    load_path = os.path.join(root_path, 'data/adj_data/index_universe')
+def create_all_para(sector_name):
+    load_path = os.path.join(root_path, '/mnt/mfs/dat_whs/data/factor_data/' + sector_name)
     file_list = sorted(os.listdir(load_path))
     file_name_list = [x[:-4] for x in file_list]
     return combinations(file_name_list, 3)
 
 
 def part_test_index_3(key, name_1, name_2, name_3, sector_df, locked_df, return_choose, index_df,
-                      begin_date, cut_date, end_date, log_save_file, result_save_file, if_save):
+                      begin_date, cut_date, end_date, log_save_file, result_save_file, if_save, if_hedge):
     lock = Lock()
     start_time = time.time()
     load_time_1 = time.time()
@@ -74,7 +74,8 @@ def part_test_index_3(key, name_1, name_2, name_3, sector_df, locked_df, return_
     for fun in fun_mix_2_set:
         mix_factor = fun(factor_set[name_1], factor_set[name_2], factor_set[name_3])
         # 返回样本内筛选结果
-        in_condition, *filter_result = filter_fun(cut_date, mix_factor, return_choose, index_df, lag=1, hedge_ratio=1)
+        in_condition, *filter_result = filter_fun(cut_date, mix_factor, return_choose, index_df,
+                                                  lag=1, hedge_ratio=1, if_hedge=if_hedge)
         # result 存储
         if in_condition:
             if if_save:
@@ -98,19 +99,19 @@ def part_test_index_3(key, name_1, name_2, name_3, sector_df, locked_df, return_
 
 
 def test_index_3(sector_df, locked_df, return_choose, index_df, para_ready_df, begin_date, cut_date, end_date,
-                 log_save_file, result_save_file, if_save):
+                 log_save_file, result_save_file, if_save, if_hedge):
 
     a_time = time.time()
 
     pool = Pool(12)
     # for key in sorted(random.sample(list(para_ready_df.index), 8000)):
-    for key in list(para_ready_df.index)[:8000]:
+    for key in list(para_ready_df.index):
         name_1, name_2, name_3 = para_ready_df.loc[key]
 
         args_list = (key, name_1, name_2, name_3, sector_df, locked_df, return_choose, index_df,
-                     begin_date, cut_date, end_date, log_save_file, result_save_file, if_save)
-        # part_test_index_3_smart(*args_list)
-        pool.apply_async(part_test_index_3, args=args_list)
+                     begin_date, cut_date, end_date, log_save_file, result_save_file, if_save, if_hedge)
+        part_test_index_3(*args_list)
+        # pool.apply_async(part_test_index_3, args=args_list)
 
     pool.close()
     pool.join()
@@ -119,14 +120,14 @@ def test_index_3(sector_df, locked_df, return_choose, index_df, para_ready_df, b
     print('Success!Processing end, Cost {} seconds'.format(round(b_time - a_time, 2)))
 
 
-def save_load_control(if_save=True, if_new_program=True):
+def save_load_control(sector_name, if_save=True, if_new_program=True):
     # 参数存储与加载的路径控制
     if if_new_program:
         now_time = datetime.now().strftime('%Y%m%d_%H%M')
         log_save_file = os.path.join(root_path, 'result/log/{}.txt'.format(now_time))
         result_save_file = os.path.join(root_path, 'result/result/{}.txt'.format(now_time))
         para_save_file = os.path.join(root_path, 'result/para/{}.txt'.format(now_time))
-        para_ready_df = pd.DataFrame(list(create_all_para()))
+        para_ready_df = pd.DataFrame(list(create_all_para(sector_name)))
         if if_save:
             create_log_save_path(log_save_file)
             create_log_save_path(result_save_file)
@@ -134,7 +135,7 @@ def save_load_control(if_save=True, if_new_program=True):
             para_ready_df.to_pickle(para_save_file)
 
     else:
-        old_time = '20180613_1940'
+        old_time = '20180703_1624'
         log_save_file = os.path.join(root_path, 'result/log/{}.txt'.format(old_time))
         result_save_file = os.path.join(root_path, 'result/result/{}.txt'.format(old_time))
         para_save_file = os.path.join(root_path, 'result/para/{}.txt'.format(old_time))
@@ -152,18 +153,22 @@ if __name__ == '__main__':
 
     if_save = True
     if_new_program = True
+    if_hedge = True
 
-    para_ready_df, log_save_file, result_save_file = save_load_control(if_save, if_new_program)
+    sector_name = 'market_top_100'
+    index_name = '000016'
+
+    para_ready_df, log_save_file, result_save_file = save_load_control(sector_name, if_save, if_new_program)
     # sector
-    sector_df = load_sector_data(begin_date, end_date)
+    sector_df = load_sector_data(begin_date, end_date, sector_name)
     sector_set = sector_df.columns
     # suspend or limit up_dn
     locked_df = load_locked_data(begin_date, end_date, sector_set)
     # return
     return_choose = load_pct(begin_date, end_date, sector_set)
     # index data
-    index_df = load_index_data(begin_date, end_date)
+    index_df = load_index_data(begin_date, end_date, index_name)
     test_index_3(sector_df, locked_df, return_choose, index_df, para_ready_df, begin_date, cut_date, end_date,
-                 log_save_file, result_save_file, if_save)
+                 log_save_file, result_save_file, if_save, if_hedge)
 
 

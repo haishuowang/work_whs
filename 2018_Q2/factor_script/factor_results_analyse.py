@@ -8,7 +8,10 @@ from open_lib.shared_tools import send_email
 import open_lib.shared_tools.back_test as bt
 
 from index_universe.script_load_data import load_sector_data, load_locked_data, load_pct, \
-    load_part_factor, create_log_save_path
+    load_part_factor, create_log_save_path, load_index_data
+
+from index_universe.script_filter_fun import pos_daily_fun, out_sample_perf, \
+    filter_ic, filter_ic_sharpe, filter_ic_leve, filter_pot_sharpe
 
 
 def mul_fun(a, b):
@@ -105,7 +108,11 @@ def para_result(begin_date, end_date, sector_df, locked_df, i, fun_name, name_1,
     # sharpe, pot, leve_ratio, total_asset = bt.AZ_Back_test(mix_factor, return_data, usr_email='whs@malpha.info',
     #                                                        if_file=False)
     # print(sharpe, pot, leve_ratio, total_asset)
+    hedge_df = load_index_data(begin_date, end_date)
     pnl_df = (return_data * mix_factor).sum(axis=1)
+    pos_daily_df = pos_daily_fun(mix_factor)
+    pnl_daily_df = pnl_df - pos_daily_df.sum(axis=1).mul(hedge_df, fill_value=1)
+
     AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250)
     fig = plt.figure(figsize=(12, 8))
     fig.suptitle('{} factor figure'.format(i), fontsize=40)
@@ -115,6 +122,7 @@ def para_result(begin_date, end_date, sector_df, locked_df, i, fun_name, name_1,
     ax4 = fig.add_subplot(2, 2, 4)
 
     asset = pnl_df.cumsum()
+    asset_hedge = pnl_daily_df.cumsum()
     if asset.values[-1] < 0:
         asset = -asset
     mix_factor_day = position_daily_fun(mix_factor, n=5)
@@ -125,7 +133,8 @@ def para_result(begin_date, end_date, sector_df, locked_df, i, fun_name, name_1,
              label='fun_name={},\nname1={},\nname2={},\nname3={}\nfilter_fun={}'
              .format(fun_name, name_1, name_2, name_3, result[0]))
     ax1.plot(pnl_df.index, asset - cost_matrix_1)
-    ax1.plot(pnl_df.index, asset - cost_matrix_2)
+    ax1.plot(pnl_df.index, asset_hedge)
+    # ax1.plot(pnl_df.index, asset - cost_matrix_2)
 
     ax1.grid(1)
     ax1.legend()
@@ -135,10 +144,13 @@ def para_result(begin_date, end_date, sector_df, locked_df, i, fun_name, name_1,
     ax2.grid(axis='y')
     # plt.show()
 
+    ax3.plot(mix_factor_day.sum(axis=1))
+    ax3.plot(bt.AZ_Rolling(mix_factor_day.sum(axis=1), 250).mean())
+
     plt.savefig(os.path.join(figure_save_path, '|'.join([fun_name, name_1, name_2, name_3]))+'.png')
 
     text = '|'.join([str(x) for x in [fun_name, name_1, name_2, name_3] + list(result)])
-    to = ['whs@malpha.info']
+    to = ['whs@yingpei.com']
     subject = '|'.join([fun_name, name_1, name_2, name_3])
     filepath = [os.path.join(figure_save_path, '|'.join([fun_name, name_1, name_2, name_3]))+'.png']
     send_email.send_email(text, to, filepath, subject)
@@ -241,4 +253,3 @@ if __name__ == '__main__':
 
     # sector_df = load_sector_data(begin_date, end_date)
     # locked_df = load_locked_data(begin_date, end_date, sector_df.columns)
-

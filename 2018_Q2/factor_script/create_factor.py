@@ -3,7 +3,7 @@ import numpy as np
 import os
 from functools import reduce
 import open_lib.shared_tools.back_test as bt
-
+bt.AZ_Rolling()
 
 root_path = '/mnt/mfs/dat_whs'
 # load_path = '/media/hdd0/whs/data/AllStock'
@@ -46,9 +46,13 @@ def pnd_hl(high, low, close, n):
     h_diff = (close - high_n)
     l_diff = (close - low_n)
 
+    h_diff[h_diff > 0] = 1
     h_diff[h_diff <= 0] = 0
 
     l_diff[l_diff >= 0] = 0
+    l_diff[l_diff < 0] = -1
 
     pos = h_diff + l_diff
     return pos
+
+

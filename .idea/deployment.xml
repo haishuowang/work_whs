@@ -9,6 +9,13 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="data">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/" local="$PROJECT_DIR$/../DAT_EQT" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="delta">
         <serverdata>
           <mappings>
