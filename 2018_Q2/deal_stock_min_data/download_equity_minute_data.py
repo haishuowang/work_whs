@@ -88,11 +88,11 @@ def download_minute_data(update_time, save_root_path):
 
 
 if __name__ == '__main__':
-    save_root_path = r'/media/hdd0/data/adj_data/equity/intraday/eqt_1mbar'
+    save_root_path = r'/mnt/mfs/DAT_PUBLIC/intraday/eqt_1mbar'
     update_time = (datetime.today() - timedelta(1)).strftime('%Y%m%d')
     # update_time = '20180511'
     if pd.to_datetime(update_time).weekday() <= 4:
-        print(pd.to_datetime(update_time).weekday(), 4)
+        print(update_time, pd.to_datetime(update_time).weekday(), 4)
         loginResult = c.start("ForceLogin=1")
         download_minute_data(update_time, save_root_path)
         day_path = os.path.join(save_root_path, update_time[:4], update_time[:6], update_time)

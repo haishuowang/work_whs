@@ -19,7 +19,15 @@
         </fileTransfer>
       </webServer>
       <webServer id="08402c36-f6b3-4f4b-aebf-f0b374ee1f55" name="data" url="http://192.168.16.23">
-        <fileTransfer host="192.168.16.23" port="32514" rootFolder="/mnt/mfs/DAT_EQT" accessType="SFTP">
+        <fileTransfer host="192.168.16.23" port="32514" rootFolder="/mnt/mfs/dat_whs" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="32514" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="40e77b9e-50c0-4194-b863-2e22d9f95a59" name="alpha" url="http://192.168.16.10">
+        <fileTransfer host="192.168.16.10" port="32514" rootFolder="/mnt/mfs/work_whs" accessType="SFTP">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />
           </advancedOptions>

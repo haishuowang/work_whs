@@ -1,24 +1,18 @@
 import pandas as pd
+import numpy as np
+import os
+from itertools import combinations
 
 
-# def add_stock_suffix(stock_list):
-#     return list(map(lambda x: x + '.SH' if x.startswith('6') else x + '.SZ', stock_list))
-#
-# # info = pd.read_pickle('/mnt/mfs/DAT_EQT/EM_Tab1/CDSY_SECUCODE.pkl')
-# # universe_EQA2 = info[(info['SECURITYTYPECODE'] == '058001001') & (info['LISTSTATE'] != '9')]['SECURITYCODE'].values
-# # data_path = '/mnt/mfs/DAT_EQT/EM_Tab14/TRAD_TD_SUSPENDDAY.pkl'
-# # data = pd.read_pickle(data_path)
-# # universe_EQA = sorted(list(set(universe_EQA2) & set(data['SECURITYCODE'])))
-# # data.index = data['SECURITYCODE']
-# # data_path = '/mnt/mfs/DAT_EQT/EM_Tab14/EQA/TRAD_TD_SUSPEND.pkl'
-#
-#
-# data_1_path = '/mnt/mfs/DAT_EQT/EM_Tab14/EQA/TRAD_TD_SUSPENDDAY.pkl'
-# # data = pd.read_pickle(data_path)
-# data_1 = pd.read_pickle(data_1_path)
-#
-# a = data_1.groupby(['TDATE', 'SECURITYCODE'])['SUSPENDREASON'].apply(lambda x: x.values[0]).unstack()
-# a.columns = add_stock_suffix(a.columns)
-# a.to_pickle('/mnt/mfs/DAT_EQT/EM_Tab14/adj_data/TRAD_TD_SUSPENDDAY/SUSPENDREASON.pkl')
-from open_lib.shared_tools import send_email
-send_email.send_email('good idea', ['whs@yingpei.com'], [], 'Wonderfully')
+# zhongxin_level1 = pd.read_pickle('/mnt/mfs/DAT_EQT/STK_Groups3/ZhongXing_Level1.pkl')
+# for key in zhongxin_level1.keys():
+#     tmp_data = zhongxin_level1[key]
+#     tmp_data.to_pickle('/mnt/mfs/dat_whs/data/sector_data/' + key + '.pkl')
+root_path = '/mnt/mfs/DAT_EQT/EM_Tab14/adj_data/TRAD_MT_MARGIN'
+name_list = ['RZRQYE', 'RZMRE', 'RZYE', 'RQMCL', 'RQYE', 'RQYL', 'RQCHL', 'RZCHE']
+for tab_name_1, tab_name_2 in list(combinations(name_list, 2))[2:3]:
+    data_1 = pd.read_pickle(os.path.join(root_path, tab_name_1 + '.pkl'))
+    data_2 = pd.read_pickle(os.path.join(root_path, tab_name_2 + '.pkl'))
+
+    data_df = data_1.div(data_2, fill_value=0)
+    data_df.replace(np.inf, 0, inplace=True)

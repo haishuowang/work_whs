@@ -31,12 +31,11 @@ def resample_bar(year):
             Volume.index = pd.to_datetime([day + ' ' + x for x in Volume.index])
             for i in range(len(Close_5min_bar.index)):
                 i_time = Close_5min_bar.index[i]
-
                 if i == 0:
                     Volume_5min_bar.loc[i_time] = Volume.loc[:i_time].sum()
                 else:
                     Volume_5min_bar.loc[i_time] = Volume.loc[Close_5min_bar.index[i-1]:i_time].sum()
-            day_save_path = os.path.join(save_path, day[:4], day[:6],day)
+            day_save_path = os.path.join(save_path, day[:4], day[:6], day)
             path_create(day_save_path)
             Close_5min_bar.to_csv(os.path.join(day_save_path, 'Close.csv'))
             Volume_5min_bar.to_csv(os.path.join(day_save_path, 'Volume.csv'))
@@ -44,11 +43,12 @@ def resample_bar(year):
         gc.collect()
 
 
-global root_path, save_path
 # root_path = '/home/haishuowang/Downloads/stock_minute_data'
 root_path = '/media/hdd0/data/adj_data/equity/intraday/eqt_1mbar'
 # save_path = '/home/haishuowang/Downloads/stock_5minute_data'
 save_path = '/media/hdd0/data/adj_data/equity/intraday/eqt_5mbar'
+
+global root_path, save_path
 
 year_list = os.listdir(root_path)
 pool = Pool(12)

@@ -130,14 +130,12 @@ def Mysql_select_columns_data(table_name, root_save_path):
 
 if __name__ == '__main__':
     down_list = down_dict.values()
-    root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab09/raw_data'
+    # root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab14/raw_data'
     # except_columns = [x[:-3] for x in os.listdir('/mnt/mfs/DAT_EQT/EM_Tab14/raw_data/TRAD_SK_REVALUATION/split_data')]
-    Mysql_select_column_data('INDEX_TD_DAILYSYS', root_save_path)
+    # Mysql_select_column_data('TRAD_SK_REVALUATION', root_save_path, except_columns)
 
     # Mysql_select_columns_data('INDEX_TD_DAILYSYS', root_save_path)
 
     # root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab09/raw_data'
     # except_list = [x[:-4] for x in os.listdir('/mnt/mfs/DAT_EQT/EM_Tab09/raw_data')]
     # Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_list=except_list)
-
-

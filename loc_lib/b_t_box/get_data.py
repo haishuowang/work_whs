@@ -85,8 +85,25 @@ def eqt_5mbar_daily_data(pre_date, eqt_5mbar_path):
         pass
 
 
+def eqt_5mbar_daily_data_df(pre_date, eqt_5mbar_path, price, volume):
+    price_data_path = os.path.join(eqt_5mbar_path, pre_date[:4], pre_date[:6], pre_date, 'Close.csv')
+    volume_data_path = os.path.join(eqt_5mbar_path, pre_date[:4], pre_date[:6], pre_date, 'Volume.csv')
+    try:
+        price_data = pd.read_csv(price_data_path, index_col=0)
+        volume_data = pd.read_csv(volume_data_path, index_col=0)
+        new_stock = stock_select(price_data.columns)
+
+        price = pd.concat([price, price_data[new_stock]])
+        volume = pd.concat([volume, volume_data[new_stock]])
+
+        return price, volume
+    except IOError:
+        return price, volume
+        pass
+
+
 def eqt_5mbar_data(begin_date, end_date):
-    eqt_5mbar_path = '/media/hdd0/data/adj_data/equity/intraday/eqt_5mbar'
+    eqt_5mbar_path = '/mnt/mfs/DAT_PUBLIC/intraday/eqt_5mbar'
     global price, volume, vwap
     price = {}
     volume = {}
@@ -99,8 +116,21 @@ def eqt_5mbar_data(begin_date, end_date):
     return price, volume, vwap
 
 
+def eqt_5mbar_data_df(begin_date, end_date):
+    eqt_5mbar_path = '/mnt/mfs/DAT_PUBLIC/intraday/eqt_5mbar'
+    global price, volume, vwap
+    price = pd.DataFrame()
+    volume = pd.DataFrame()
+    pre_date = begin_date
+    while pre_date <= end_date:
+        print(pre_date)
+        price, volume = eqt_5mbar_daily_data_df(pre_date, eqt_5mbar_path, price, volume)
+        pre_date = (pd.to_datetime(pre_date) + timedelta(1)).strftime('%Y%m%d')
+    return price, volume
+
+
 def universe_eqt_5m(universe, begin_date, end_date):
-    eqt_5mbar_path = '/media/hdd0/data/adj_data/equity/intraday/eqt_5mbar'
+    eqt_5mbar_path = '/mnt/mfs/DAT_PUBLIC/intraday/eqt_5mbar'
 
     price = {}
     volume = {}
@@ -124,8 +154,12 @@ def universe_eqt_5m(universe, begin_date, end_date):
 #         stock_
 
 
-# if __name__ == '__main__':
-#     begin_date = '20010726'
-#     end_date = '20010926'
+if __name__ == '__main__':
+    begin_date = '20120101'
+    end_date = '20180401'
 #     # price, volume, vwap = eqt_1mbar_data(begin_date, end_date)
 #     price, volume, vwap = eqt_5mbar_data(begin_date, end_date)
+
+    price, volume = eqt_5mbar_data_df(begin_date, end_date)
+    price.to_pickle('/mnt/mfs/DAT_PUBLIC/intraday/special/close_5m_{}_{}.pkl'.format(begin_date, end_date))
+    volume.to_pickle('/mnt/mfs/DAT_PUBLIC/intraday/special/volume_5m_{}_{}.pkl'.format(begin_date, end_date))
