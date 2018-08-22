@@ -96,13 +96,11 @@ if __name__ == '__main__':
     #                   'vol_p20d',
     #                   'evol_p20d'
     #                   ]
-    file_name_list = ['R_RevenuePS_s_First_row_extre_0.3']
+    file_name_list = ['volume_moment_p530d']
     for file_name in file_name_list:
         print(file_name)
         factor_to_fun = '/mnt/mfs/dat_whs/data/factor_to_fun'
         info_path = os.path.join(factor_to_fun, file_name)
         base_data = pd.read_pickle('/mnt/mfs/dat_whs/data/new_factor_data/{}/{}.pkl'.format(sector_name, file_name))
         create_data = create_data_fun('bkt', info_path, sector_df, xnms, xinx)
-        # print(base_data.loc[a:b].replace(np.nan, 0))
-        # print(create_data.loc[a:b].replace(np.nan, 0))
         print((base_data.loc[a:b].replace(np.nan, 0) != create_data.loc[a:b].replace(np.nan, 0)).sum().sum())

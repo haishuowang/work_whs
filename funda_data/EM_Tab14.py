@@ -206,6 +206,7 @@ def base_data_fun(sector_df, root_path, save_root_path):
     tech_base_deal.pnd_volitality_and_more_(window_list)
     tech_base_deal.pnnd_moment_(short_long_list)
     tech_base_deal.p1d_jump_hl_(split_float_list)
+    tech_base_deal.pnnd_volume_moment_([(5, 30)])
 
 
 def TRAD_SK_DAILY_JC_fun(sector_df, root_path, save_root_path):

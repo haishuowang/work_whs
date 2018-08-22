@@ -325,12 +325,19 @@ if __name__ == '__main__':
 # data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_0859_hold_20_aadj_r.txt',
 #                    sep='|', header=None)
 
-data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_0900_hold_20_aadj_r.txt',
+data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_1136_hold_20_aadj_r.txt',
+                   sep='|', header=None)
+
+# data.columns = ['time_para', 'key', 'fun_name', 'name1', 'name2', 'name3', 'filter_fun_name', 'sector_name',
+#                 'con_in', 'con_out', 'ic', 'sp_u', 'sp_m', 'sp_d', 'pot_in', 'fit_ratio', 'leve_ratio',
+#                 'sp_out']
+data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_1136_hold_20_aadj_r.txt',
                    sep='|', header=None)
 
 data.columns = ['time_para', 'key', 'fun_name', 'name1', 'name2', 'name3', 'filter_fun_name', 'sector_name',
-                'con_in', 'con_out', 'ic', 'sp_u', 'sp_m', 'sp_d', 'pot_in', 'fit_ratio', 'leve_ratio',
-                'sp_out']
+                'con_in', 'con_out_1',  'con_out_2', 'con_out_3', 'con_out_3', 'ic', 'sp_u', 'sp_m', 'sp_d', 'pot_in',
+                'fit_ratio', 'leve_ratio', 'sp_out_1', 'sp_out_2', 'sp_out_3', 'sp_out_4']
+
 data_1 = data[data['time_para'] == 'time_para_1']
 data_2 = data[data['time_para'] == 'time_para_2']
 data_3 = data[data['time_para'] == 'time_para_3']
@@ -349,7 +356,7 @@ print(a_3['con_out'].sum()/len(a_3), len(a_3))
 
 # IC
 a_1 = data_1[(data_1['ic'].abs() > 0.01) & (data_1['pot_in'].abs() > 40)]
-print(a_1['con_out'].sum()/len(a_1), len(a_1))
+print(a_1['con_out_1'].sum()/len(a_1), len(a_1))
 
 a_2 = data_2[(data_2['ic'].abs() > 0.01) & (data_2['pot_in'].abs() > 40)]
 print(a_2['con_out'].sum()/len(a_2), len(a_2))
@@ -358,44 +365,11 @@ a_3 = data_3[(data_3['ic'].abs() > 0.01) & (data_3['pot_in'].abs() > 40)]
 print(a_3['con_out'].sum()/len(a_3), len(a_3))
 
 
-# ['CCI_p120d_limit_12',
-#  'MACD_20_100',
-#  'R_COMPANYCODE_First_row_extre_0.3',
-#  'R_EPS_s_YOY_First_row_extre_0.3',
-#  'R_FinExp_sales_s_First_row_extre_0.3',
-#  'R_GSCF_sales_s_First_row_extre_0.3',
-#  'R_MgtExp_sales_s_First_row_extre_0.3',
-#  'R_NetCashflowPS_s_First_row_extre_0.3',
-#  'R_NetROA_s_First_row_extre_0.3',
-#  'R_OperProfit_s_POP_First_row_extre_0.3',
-#  'R_ParentProfit_s_POP_First_row_extre_0.3',
-#  'R_Tax_TotProfit_s_First_row_extre_0.3',
-#  'TVOL_p120d_col_extre_0.2',
-#  'TVOL_p20d_col_extre_0.2',
-#  'bias_turn_p120d',
-#  'evol_p20d',
-#  'turn_p120d_0.2',
-#  'turn_p20d_0.2',
-#  'vol_p20d',
-#  'vol_p60d']
+# a_1 = data_1[(data_1['ic'].abs() > 0.01) & (data_1['pot_in'].abs() > 40)]
+# print((a_1['con_out_1']=='True').sum()/len(a_1), len(a_1))
 #
-# ['CCI_p120d_limit_12',
-#  'R_CFO_TotRev_s_First_row_extre_0.3',
-#  'R_GSCF_sales_s_First_row_extre_0.3',
-#  'R_NOTICEDATE_First_row_extre_0.3',
-#  'R_NetAssets_s_POP_First_row_extre_0.3',
-#  'R_NetCashflowPS_s_First_row_extre_0.3',
-#  'R_OPCF_NetInc_s_First_row_extre_0.3',
-#  'R_OPCF_sales_s_First_row_extre_0.3',
-#  'R_Tax_TotProfit_s_First_row_extre_0.3',
-#  'R_TotRev_s_POP_First_row_extre_0.3',
-#  'R_TotRev_s_YOY_First_row_extre_0.3',
-#  'TVOL_p120d_col_extre_0.2',
-#  'TVOL_p20d_col_extre_0.2',
-#  'bias_turn_p20d',
-#  'log_price_0.2',
-#  'price_p120d_hl',
-#  'turn_p20d_0.2',
-#  'vol_count_down_p60d',
-#  'vol_p20d',
-#  'vol_p60d']
+# a_2 = data_2[(data_2['ic'].abs() > 0.01) & (data_2['pot_in'].abs() > 40)]
+# print((a_2['con_out_1']=='True').sum()/len(a_2), len(a_2))
+#
+# a_3 = data_3[(data_3['ic'].abs() > 0.01) & (data_3['pot_in'].abs() > 40)]
+# print((a_3['con_out_1']=='True').sum()/len(a_3), len(a_3))

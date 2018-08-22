@@ -7,9 +7,11 @@ from datetime import datetime
 
 
 def AZ_Load_csv(target_path, index_time_type=True):
-    target_df = pd.read_table(target_path, sep='|', index_col=0, low_memory=False).round(8)
+
     if index_time_type:
-        target_df.index = pd.to_datetime(target_df.index)
+        target_df = pd.read_table(target_path, sep='|', index_col=0, low_memory=False, parse_dates=True)
+    else:
+        target_df = pd.read_table(target_path, sep='|', index_col=0, low_memory=False)
     return target_df
 
 

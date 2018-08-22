@@ -85,7 +85,6 @@ def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos
                            'R_OperProfit_s_YOY_First_row_extre_0.3',
                            'R_FairValChg_TotProfit_s_First_row_extre_0.3',
                            'R_CFO_TotRev_s_First_row_extre_0.3',
-                           'R_COMPANYCODE_First_row_extre_0.3',
                            'R_ROENetIncRecur_s_First_row_extre_0.3',
                            'R_Cashflow_s_YOY_First_row_extre_0.3',
                            'R_ParentProfit_s_POP_First_row_extre_0.3',
@@ -94,7 +93,6 @@ def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos
                            'R_NetInc_s_First_row_extre_0.3',
                            'R_Revenue_s_YOY_First_row_extre_0.3',
                            'R_NetROA_s_First_row_extre_0.3',
-                           'R_NOTICEDATE_First_row_extre_0.3',
                            'R_CFO_s_YOY_First_row_extre_0.3',
                            'R_OPCF_NetInc_s_First_row_extre_0.3',
                            'R_NetMargin_s_YOY_First_row_extre_0.3',
@@ -117,6 +115,7 @@ def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos
 
     tech_name_list_all = ['CCI_p120d_limit_12',
                           'MACD_20_100',
+                          'MACD_40_200',
                           'log_price_0.2',
                           'bias_turn_p20d',
                           'bias_turn_p120d',
@@ -130,23 +129,38 @@ def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos
                           'TVOL_p20d_col_extre_0.2',
                           'TVOL_p120d_col_extre_0.2',
                           'price_p20d_hl',
-                          'price_p120d_hl'
+                          'price_p120d_hl',
+                          'aadj_r_p345d_continue_ud_pct',
+                          'volume_moment_p530d',
+                          'return_p60d_0.2',
                           ]
 
-    funda_name_list = random.sample(funda_name_list_all, 10)
-    tech_name_list = random.sample(tech_name_list_all, 10)
+    funda_name_list = random.sample(funda_name_list_all, 20)
+    tech_name_list = random.sample(tech_name_list_all, 20)
 
-    file_name_list = funda_name_list + tech_name_list
-    if len(new_factor_list) == 0:
-        print('{} factor num:{}'.format(sector_name, len(file_name_list)))
-        return combinations(sorted(file_name_list), choos_num)
-    else:
-        target_list = []
-        old_factor_list = sorted(set(file_name_list) - set(new_factor_list))
-        for factor_name in new_factor_list:
-            for value in combinations(old_factor_list, 2):
-                target_list += [[factor_name] + list(value)]
-        return target_list
+    # file_name_list = funda_name_list + tech_name_list_all
+    target_list_1 = []
+    for tech_name in tech_name_list:
+        for value in combinations(funda_name_list, 2):
+            target_list_1 += [[tech_name] + list(value)]
+
+    target_list_2 = []
+    for funda_name in funda_name_list:
+        for value in combinations(tech_name_list, 2):
+            target_list_2 += [[funda_name] + list(value)]
+
+    target_list = target_list_1 + target_list_2
+    return target_list
+    # if len(new_factor_list) == 0:
+    #     print('{} factor num:{}'.format(sector_name, len(file_name_list)))
+    #     return combinations(sorted(file_name_list), choos_num)
+    # else:
+    #     target_list = []
+    #     old_factor_list = sorted(set(file_name_list) - set(new_factor_list))
+    #     for factor_name in new_factor_list:
+    #         for value in combinations(old_factor_list, 2):
+    #             target_list += [[factor_name] + list(value)]
+    #     return target_list
 
 
 def part_test_index_3(time_para_dict, sector_name, key, name_1, name_2, name_3, sector_df, suspendday_df,
@@ -181,7 +195,7 @@ def part_test_index_3(time_para_dict, sector_name, key, name_1, name_2, name_3, 
                                     if_only_long)
         # 返回样本内筛选结果
         result_dict = filter_time_para_fun(time_para_dict, daily_pos, return_choose, index_df,
-                                           if_hedge=True, hedge_ratio=1, if_return_pnl=False,
+                                           if_hedge=if_hedge, hedge_ratio=1, if_return_pnl=False,
                                            if_only_long=False)
         for time_key in result_dict.keys():
             in_condition, *filter_result = result_dict[time_key]
@@ -212,7 +226,7 @@ def test_index_3(time_para_dict, sector_name, sector_df, suspendday_df, limit_bu
                  para_ready_df, cut_date, log_save_file, result_save_file, if_save, if_hedge, hold_time, if_only_long,
                  xnms, xinx, total_para_num):
     a_time = time.time()
-    pool = Pool(10)
+    pool = Pool(20)
     for key in list(para_ready_df.index):
         name_1, name_2, name_3 = para_ready_df.loc[key]
 
@@ -343,4 +357,3 @@ if __name__ == '__main__':
 
     # main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_name, hold_time, return_file,
     #          new_factor_list, add_factor_list, if_hedge=True, if_only_long=True)
-# a = pd.read_csv(err)

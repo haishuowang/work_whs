@@ -8,7 +8,7 @@ import os
 class BaseDeal:
     @staticmethod
     def signal_mean_fun(signal_df):
-        return signal_df.abs().sum(axis=1).replace(0, np.nan).dropna()/len(signal_df) > 0.1
+        return signal_df.abs().sum(axis=1).replace(0, np.nan).dropna() / len(signal_df) > 0.1
 
     @staticmethod
     def pnd_continue_ud(raw_df, sector_df, n_list):
@@ -24,6 +24,7 @@ class BaseDeal:
                 target_dn_df = target_dn_df * dn_df.shift(i + 1)
             target_df = target_up_df.fillna(0).astype(int) - target_dn_df.fillna(0).astype(int)
             return target_df
+
         all_target_df = pd.DataFrame()
         for n in n_list:
             target_df = fun(raw_df, n)
@@ -152,6 +153,16 @@ class BaseDeal:
             self.info_dict_fun(fun, raw_data_path, args, os.path.join(factor_to_fun, file_name), if_replace)
             print(f'{file_name} success!')
 
+    # @staticmethod
+    # def pnnd_volume_moment(volume, sector_df, n_short, n_long):
+    #     volume_n_short = bt.AZ_Rolling_mean(volume, n_short)
+    #     volume_n_long = bt.AZ_Rolling_mean(volume, n_long)
+    #     volume_dif = volume_n_short - volume_n_long
+    #     volume_dif[volume_dif == 0] = 0
+    #     volume_dif[volume_dif > 0] = 1
+    #     volume_dif[volume_dif < 0] = -1
+    #     return volume_dif * sector_df
+
 
 class TechBaseDeal(BaseDeal):
     def __init__(self, sector_df, root_path, save_root_path):
@@ -195,7 +206,7 @@ class TechBaseDeal(BaseDeal):
 
     def pnd_volitality_and_more_(self, n_list):
         for n in n_list:
-            vol_df = bt.AZ_Rolling(self.sector_adj_r, n).std()*(250 ** 0.5)
+            vol_df = bt.AZ_Rolling(self.sector_adj_r, n).std() * (250 ** 0.5)
             vol_df[vol_df < 0.08] = 0.08
             evol_df = bt.AZ_Rolling(vol_df, 30).apply(lambda x: 1 if x[-1] > 2 * x.mean() else 0) * self.sector_df
             vol_continue_ud_df = self.pnd_continue_ud(vol_df, self.sector_df, n_list=[3, 4, 5])
@@ -245,6 +256,15 @@ class TechBaseDeal(BaseDeal):
                          self.load_path / 'OPEN.csv',)
         args = (split_float_list,)
         self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+
+    def pnnd_volume_moment_(self, short_long_list):
+        for n_short, n_long in short_long_list:
+            target_df = self.pnnd_moment(self.sector_volume, self.sector_df, n_short, n_long)
+            file_name = f'volume_moment_p{n_short}{n_long}d'
+            fun = 'funda_data_deal.BaseDeal.pnnd_moment'
+            raw_data_path = (self.load_path / 'TVOL.csv',)
+            args = (n_short, n_long)
+            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
 
 class FundaBaseDeal(BaseDeal):
@@ -357,8 +377,8 @@ if __name__ == '__main__':
     sector_data_class = SectorData(root_path)
     sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
 
-    funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path)
-    funda_base_deal.row_extre_(0.2)
+    # funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path)
+    # funda_base_deal.row_extre_(0.2)
 
 # def pnd_continue_ud(raw_df, n_list):
 #     all_target_df = pd.DataFrame()
