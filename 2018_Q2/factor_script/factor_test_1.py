@@ -23,9 +23,9 @@ from open_lib.shared_tools import send_email
 #     :param sector_mean: sector每天的股票数量
 #     :return:
 #     """
-#     signal_mean = factor_df.abs().sum(axis=1).mean()
+#     signal_mean_fun = factor_df.abs().sum(axis=1).mean()
 #     hedge_mean = factor_df.sum(axis=1).abs().mean()
-#     signal_info = signal_mean / sector_mean
+#     signal_info = signal_mean_fun / sector_mean
 #     hedge_info = hedge_mean / sector_mean
 #     return signal_info, hedge_info
 

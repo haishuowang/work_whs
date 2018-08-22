@@ -170,8 +170,8 @@ def pnd_hl_set(para_list, index_root_path, sector_high, sector_low, sector_close
 def return_r_set(index_root_path, limit_list, sector_adj_r, sector_df):
     rrn_df = bt.AZ_Row_zscore(sector_adj_r * sector_df)
     for limit in limit_list:
-        print('rr{}_ext_{}'.format(n, limit))
-        index_save_path = os.path.join(index_root_path, 'rr{}_ext_{}.pkl'.format(n, limit))
+        print('rr_ext_{}'.format(limit))
+        index_save_path = os.path.join(index_root_path, 'rr_ext_{}.pkl'.format(limit))
         rrn_ext_df = extreme_data(rrn_df, limit)
         signal_info, hedge_info, signal_mean = AZ_Factor_info(rrn_ext_df, sector_mean)
         if signal_info > 0.01 and signal_mean > 2:
@@ -196,7 +196,7 @@ def return_c_set(para_list, index_root_path, limit_list, sector_adj_r, sector_df
 def volume_r_set(index_root_path, limit_list, sector_volume, sector_df):
     vrn_df = bt.AZ_Row_zscore(sector_volume*sector_df)
     for limit in limit_list:
-        print('vr{}_ext_{}'.format(n, limit))
+        print('vr_ext_{}'.format(limit))
         index_save_path = os.path.join(index_root_path, 'volume_r_ext_{}.pkl'.format(limit))
         vrn_ext_df = extreme_data(vrn_df, limit)
         signal_info, hedge_info, signal_mean = AZ_Factor_info(vrn_ext_df, sector_mean)
@@ -258,9 +258,9 @@ def pnd_volitality_set(index_root_path, para_list, sector_adj_r):
         return x
 
     for n in para_list:
-        target_df_save_path = os.path.join(index_root_path, 'volitality_p{}n'.format(n))
-        evol_df_save_path = os.path.join(index_root_path, 'evol_30_p{}n'.format(n))
-        vol_continue_ud_path = os.path.join(index_root_path, 'vol_p{}n_continue_3ud'.format(n))
+        target_df_save_path = os.path.join(index_root_path, 'volitality_p{}n.pkl'.format(n))
+        evol_df_save_path = os.path.join(index_root_path, 'evol_30_p{}n.pkl'.format(n))
+        vol_continue_ud_path = os.path.join(index_root_path, 'vol_p{}n_continue_3ud.pkl'.format(n))
         target_df = bt.AZ_Rolling(sector_adj_r, n).std()
 
         evol_df = bt.AZ_Rolling(target_df, 30).apply(lambda x: 1 if x[-1] > 2 * x.mean() else 0)
@@ -354,15 +354,13 @@ def pnd_col_extre_fun(tab_name, data, n_list, limit_list, index_root_path, secto
             tmp_df = extreme_data(data_pnd_col_extre, limit=limit)
             tmp_df = tmp_df * sector_df
             target_df = target_df.add(tmp_df, fill_value=0)
-            # if if_filter:
-            #     signal_info, hedge_info, signal_mean = AZ_Factor_info(target_df, sector_mean)
-            #     if signal_info > 0.01 and signal_mean > 2:
-            #         target_df = target_df.add(tmp_df, fill_value=0)
-            #         print('{}_p{}d_col_ext_{} {} success!'.format(tab_name, n, limit, round(signal_info, 4)))
-            #     else:
-            #         print('{}_p{}d_col_ext_{} {} error!'.format(tab_name, n, limit, round(signal_info, 4)))
-            # else:
 
+            signal_info, hedge_info, signal_mean = AZ_Factor_info(target_df, sector_mean)
+            if signal_info > 0.01 and signal_mean > 2:
+                target_df = target_df.add(tmp_df, fill_value=0)
+                print('{}_p{}d_col_ext_{} {} success!'.format(tab_name, n, limit, round(signal_info, 4)))
+            else:
+                print('{}_p{}d_col_ext_{} {} error!'.format(tab_name, n, limit, round(signal_info, 4)))
         target_df.to_pickle(os.path.join(index_root_path, '{}_p{}d_col_ext_{}.pkl'
                                          .format(tab_name, n, ''.join([str(x) for x in limit_list]))))
 
@@ -567,8 +565,8 @@ if __name__ == '__main__':
     EQA_low = bt.AZ_Load_csv(os.path.join(base_data_path, 'LOW.csv'))
     EQA_close = bt.AZ_Load_csv(os.path.join(base_data_path, 'NEW.csv'))
     EQA_volume = bt.AZ_Load_csv(os.path.join(base_data_path, 'TVOL.csv'))
-    EQA_amount = bt.AZ_Load_csv(os.path.join(base_data_path, 'TVALCHY.csv'))
-    EQA_adj_r = bt.AZ_Load_csv('/mnt/mfs/DAT_EQT/EM_Tab14/DERIVED/aadj_r.csv')
+    EQA_amount = bt.AZ_Load_csv(os.path.join(base_data_path, 'TVALCNY.csv'))
+    EQA_adj_r = bt.AZ_Load_csv('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_r.csv')
     begin_str = '20100101'
     end_str = '20180401'
 
@@ -600,31 +598,31 @@ if __name__ == '__main__':
 
         index_root_path = os.path.join(factor_save_path, sector)
         bt.AZ_Path_create(index_root_path)
-        # 技术指标
+        # # 技术指标
         para_list = [5, 20, 60, 120]
-        pnd_hl_set(para_list, index_root_path, sector_high, sector_low, sector_close, sector_df)
+        # pnd_hl_set(para_list, index_root_path, sector_high, sector_low, sector_close, sector_df)
         pnd_volitality_set(index_root_path, para_list, sector_adj_r)
-
-        limit_list = [1, 1.5, 2]
-        return_r_set(index_root_path, limit_list, sector_adj_r, sector_df)
-        return_c_set(para_list, index_root_path, limit_list, sector_adj_r, sector_df)
-
-        volume_r_set(index_root_path, limit_list, sector_volume, sector_df)
-        volume_c_set(para_list, index_root_path, limit_list, sector_volume, sector_df)
-
-        continue_list = [3, 4, 5]
-        pnd_continue_ud_set(continue_list, index_root_path, sector_close, sector_df)
-
-        split_float_list = [0.03, 0.02, 0.01]
-        p1d_jump_hl_set(index_root_path, split_float_list, sector_close, sector_open, sector_df)
-
-        short_long_list = [(5, 10), (10, 60), (10, 100), (20, 100), (20, 200), (40, 200)]
-
-        pnnd_moment_set(index_root_path, short_long_list, sector_adj_r, sector_df)
-        pnnd_liquid_set(index_root_path, short_long_list, sector_amount, sector_df)
+        #
+        # limit_list = [1, 1.5, 2]
+        # return_r_set(index_root_path, limit_list, sector_adj_r, sector_df)
+        # return_c_set(para_list, index_root_path, limit_list, sector_adj_r, sector_df)
+        #
+        # volume_r_set(index_root_path, limit_list, sector_volume, sector_df)
+        # volume_c_set(para_list, index_root_path, limit_list, sector_volume, sector_df)
+        #
+        # continue_list = [3, 4, 5]
+        # pnd_continue_ud_set(continue_list, index_root_path, sector_adj_r, sector_df)
+        #
+        # split_float_list = [0.03, 0.02, 0.01]
+        # p1d_jump_hl_set(index_root_path, split_float_list, sector_close, sector_open, sector_df)
+        #
+        # short_long_list = [(5, 10), (10, 60), (10, 100), (20, 100), (20, 200), (40, 200)]
+        #
+        # pnnd_moment_set(index_root_path, short_long_list, sector_adj_r, sector_df)
+        # pnnd_liquid_set(index_root_path, short_long_list, sector_amount, sector_df)
 
         # # 融资融券factor
-        rzrq_create_factor(index_root_path, sector_df)
+        # rzrq_create_factor(index_root_path, sector_df)
 
         # 日内factor
 

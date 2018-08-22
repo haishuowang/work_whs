@@ -5,16 +5,18 @@ from itertools import product, permutations, combinations
 from multiprocessing import Pool, Lock, cpu_count
 import time
 import sys
+
 sys.path.append('/mnt/mfs/work_whs')
 sys.path.append('/mnt/mfs/work_whs/2018_Q2')
 from datetime import datetime
 import loc_lib.shared_tools.back_test as bt
 import random
+from collections import OrderedDict
 # 读取数据的函数 以及
 from factor_script.script_load_data import load_index_data, load_sector_data, load_locked_data, load_pct, \
     load_part_factor, create_log_save_path, deal_mix_factor, deal_mix_factor_both, load_locked_data_both
 
-from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, filter_all
+from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, filter_all, filter_time_para_fun
 
 # product 笛卡尔积　　（有放回抽样排列）
 # permutations 排列　　（不放回抽样排列）
@@ -63,36 +65,78 @@ def create_fun_set_2(fun_set):
 
 
 def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos_num=3):
-    file_name_list = list(pd.read_pickle(use_factor_set_path)) + add_factor_list
-    # file_name_list = ['R_BusinessCycle_First_row_extre_0.3',
-    #                   'R_CurrentAssets_TotAssets_First_row_extre_0.3',
-    #                   'R_CurrentAssetsTurnover_First_row_extre_0.3',
-    #                   'R_DebtAssets_First_row_extre_0.3',
-    #                   'R_DebtEqt_First_row_extre_0.3',
-    #                   'R_OPCF_IntDebt_QTTM_row_extre_0.3',
-    #                   'R_IntDebt_Mcap_First_row_extre_0.3',
-    #                   'R_OPEX_sales_TTM_Y3YGR_row_extre_0.3',
-    #                   'R_EBITDA_sales_TTM_First_row_extre_0.3',
-    #                   'R_EBITDA_sales_TTM_QTTM_row_extre_0.3',
-    #                   'R_ROA_TTM_Y3YGR_row_extre_0.3',
-    #                   'R_OPCF_TotDebt_QYOY_row_extre_0.3',
-    #                   'R_OPCF_TotDebt_First_row_extre_0.3',
-    #                   'R_OPCF_NetInc_s_First_row_extre_0.3',
-    #                   'R_OPCF_sales_First_row_extre_0.3',
-    #                   'R_EBITDA_QTTM_and_R_SUMASSET_First_0.3',
-    #                   'R_EBIT2_Y3YGR_and_MCAP_0.3',
-    #                   'R_EBITDA_QYOY_and_MCAP_0.3',
-    #                   'R_IntDebt_Y3YGR_and_R_SUMASSET_First_0.3',
-    #                   'CCI_p120d_limit_12',
-    #                   'MACD_20_100',
-    #                   'log_price_0.2',
-    #                   'bias_turn_p20d',
-    #                   'vol_p20d',
-    #                   'vol_p20d',
-    #                   'evol_p20d',
-    #                   'TVOL_p60d_col_extre_0.2',
-    #                   'TVOL_p20d_col_extre_0.2']
+    funda_name_list_all = ['R_RevenuePS_s_First_row_extre_0.3',
+                           'R_OPCF_sales_s_First_row_extre_0.3',
+                           'R_NetProfit_sales_s_First_row_extre_0.3',
+                           'R_Revenue_s_POP_First_row_extre_0.3',
+                           'R_NetInc_TotProfit_s_First_row_extre_0.3',
+                           'R_SalesNetMGN_s_First_row_extre_0.3',
+                           'R_OperProfit_s_POP_First_row_extre_0.3',
+                           'R_TotRev_s_POP_First_row_extre_0.3',
+                           'R_AssetDepSales_s_First_row_extre_0.3',
+                           'R_EPS_s_YOY_First_row_extre_0.3',
+                           'R_EPS_s_First_row_extre_0.3',
+                           'R_MgtExp_sales_s_First_row_extre_0.3',
+                           'R_CostSales_s_First_row_extre_0.3',
+                           'R_RevenueTotPS_s_First_row_extre_0.3',
+                           'R_NonOperProft_TotProfit_s_First_row_extre_0.3',
+                           'R_NetIncRecur_s_First_row_extre_0.3',
+                           'R_FinExp_sales_s_First_row_extre_0.3',
+                           'R_OperProfit_s_YOY_First_row_extre_0.3',
+                           'R_FairValChg_TotProfit_s_First_row_extre_0.3',
+                           'R_CFO_TotRev_s_First_row_extre_0.3',
+                           'R_COMPANYCODE_First_row_extre_0.3',
+                           'R_ROENetIncRecur_s_First_row_extre_0.3',
+                           'R_Cashflow_s_YOY_First_row_extre_0.3',
+                           'R_ParentProfit_s_POP_First_row_extre_0.3',
+                           'R_TotAssets_s_YOY_First_row_extre_0.3',
+                           'R_NetAssets_s_YOY_First_row_extre_0.3',
+                           'R_NetInc_s_First_row_extre_0.3',
+                           'R_Revenue_s_YOY_First_row_extre_0.3',
+                           'R_NetROA_s_First_row_extre_0.3',
+                           'R_NOTICEDATE_First_row_extre_0.3',
+                           'R_CFO_s_YOY_First_row_extre_0.3',
+                           'R_OPCF_NetInc_s_First_row_extre_0.3',
+                           'R_NetMargin_s_YOY_First_row_extre_0.3',
+                           'R_SalesGrossMGN_s_First_row_extre_0.3',
+                           'R_NetCashflowPS_s_First_row_extre_0.3',
+                           'R_ROE_s_First_row_extre_0.3',
+                           'R_NetAssets_s_POP_First_row_extre_0.3',
+                           'R_ParentProfit_s_YOY_First_row_extre_0.3',
+                           'R_OPEX_sales_s_First_row_extre_0.3',
+                           'R_GSCF_sales_s_First_row_extre_0.3',
+                           'R_Tax_TotProfit_s_First_row_extre_0.3',
+                           'R_TotLiab_s_YOY_First_row_extre_0.3',
+                           'R_CFOPS_s_First_row_extre_0.3',
+                           'R_OperCost_sales_s_First_row_extre_0.3',
+                           'R_SalesCost_s_First_row_extre_0.3',
+                           'R_RecurNetProft_NetProfit_s_First_row_extre_0.3',
+                           'R_OperProfit_sales_s_First_row_extre_0.3',
+                           'R_TotRev_s_YOY_First_row_extre_0.3',
+                           'R_FairValChgPnL_s_First_row_extre_0.3']
 
+    tech_name_list_all = ['CCI_p120d_limit_12',
+                          'MACD_20_100',
+                          'log_price_0.2',
+                          'bias_turn_p20d',
+                          'bias_turn_p120d',
+                          'vol_p20d',
+                          'vol_p60d',
+                          'evol_p20d',
+                          'moment_p20100d',
+                          'turn_p20d_0.2',
+                          'turn_p120d_0.2',
+                          'vol_count_down_p60d',
+                          'TVOL_p20d_col_extre_0.2',
+                          'TVOL_p120d_col_extre_0.2',
+                          'price_p20d_hl',
+                          'price_p120d_hl'
+                          ]
+
+    funda_name_list = random.sample(funda_name_list_all, 10)
+    tech_name_list = random.sample(tech_name_list_all, 10)
+
+    file_name_list = funda_name_list + tech_name_list
     if len(new_factor_list) == 0:
         print('{} factor num:{}'.format(sector_name, len(file_name_list)))
         return combinations(sorted(file_name_list), choos_num)
@@ -105,9 +149,9 @@ def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos
         return target_list
 
 
-def part_test_index_3(sector_name, key, name_1, name_2, name_3, sector_df, suspendday_df, limit_buy_sell_df,
-                      return_choose, index_df, cut_date, log_save_file, result_save_file, if_save, if_hedge, hold_time,
-                      if_only_long, xnms, xinx, total_para_num):
+def part_test_index_3(time_para_dict, sector_name, key, name_1, name_2, name_3, sector_df, suspendday_df,
+                      limit_buy_sell_df, return_choose, index_df, cut_date, log_save_file, result_save_file, if_save,
+                      if_hedge, hold_time, if_only_long, xnms, xinx, total_para_num):
     lock = Lock()
     lag = 2
     start_time = time.time()
@@ -132,21 +176,24 @@ def part_test_index_3(sector_name, key, name_1, name_2, name_3, sector_df, suspe
             #       .format(round(key / total_para_num, 4) * 100, key, name_1, name_2, name_3,
             #               mix_factor.sum(axis=1).mean()))
             continue
+
         daily_pos = deal_mix_factor(mix_factor, sector_df, suspendday_df, limit_buy_sell_df, hold_time, lag,
                                     if_only_long)
         # 返回样本内筛选结果
-        in_condition, *filter_result = filter_fun(cut_date, daily_pos, return_choose, index_df, if_hedge, hedge_ratio=1,
-                                                  if_return_pnl=False, if_only_long=if_only_long)
-        # result 存储
-        if in_condition:
-            if if_save:
-                with lock:
-                    f = open(result_save_file, 'a')
-                    write_list = [key, fun.__name__, name_1, name_2, name_3, filter_name, sector_name, in_condition] \
-                                 + filter_result
-                    f.write('|'.join([str(x) for x in write_list]) + '\n')
-                    f.close()
-            print([in_condition] + filter_result)
+        result_dict = filter_time_para_fun(time_para_dict, daily_pos, return_choose, index_df,
+                                           if_hedge=True, hedge_ratio=1, if_return_pnl=False,
+                                           if_only_long=False)
+        for time_key in result_dict.keys():
+            in_condition, *filter_result = result_dict[time_key]
+            # result 存储
+            if in_condition:
+                if if_save:
+                    with lock:
+                        f = open(result_save_file, 'a')
+                        write_list = [time_key, key, fun.__name__, name_1, name_2, name_3, filter_name,
+                                      sector_name, in_condition] + filter_result
+                        f.write('|'.join([str(x) for x in write_list]) + '\n')
+                print([time_key, in_condition, fun.__name__, name_1, name_2, name_3] + filter_result)
     end_time = time.time()
     # 参数存储
     if if_save:
@@ -155,23 +202,23 @@ def part_test_index_3(sector_name, key, name_1, name_2, name_3, sector_df, suspe
             write_list = [key, name_1, name_2, name_3, filter_name, sector_name, round(end_time - start_time, 4),
                           load_delta]
             f.write('|'.join([str(x) for x in write_list]) + '\n')
-            f.close()
+
     print('{}%, {}, {}, {}, {}, cost {} seconds, load_cost {} seconds'
-          .format(round(key / total_para_num * 100, 4) , key, name_1, name_2, name_3,
+          .format(round(key / total_para_num * 100, 4), key, name_1, name_2, name_3,
                   round(end_time - start_time, 2), load_delta))
 
 
-def test_index_3(sector_name, sector_df, suspendday_df, limit_buy_sell_df, return_choose, index_df,
+def test_index_3(time_para_dict, sector_name, sector_df, suspendday_df, limit_buy_sell_df, return_choose, index_df,
                  para_ready_df, cut_date, log_save_file, result_save_file, if_save, if_hedge, hold_time, if_only_long,
                  xnms, xinx, total_para_num):
     a_time = time.time()
-    pool = Pool(20)
+    pool = Pool(10)
     for key in list(para_ready_df.index):
         name_1, name_2, name_3 = para_ready_df.loc[key]
 
-        args_list = (sector_name, key, name_1, name_2, name_3, sector_df, suspendday_df, limit_buy_sell_df,
-                     return_choose, index_df, cut_date, log_save_file, result_save_file, if_save, if_hedge, hold_time,
-                     if_only_long, xnms, xinx, total_para_num)
+        args_list = (time_para_dict, sector_name, key, name_1, name_2, name_3, sector_df, suspendday_df,
+                     limit_buy_sell_df, return_choose, index_df, cut_date, log_save_file, result_save_file, if_save,
+                     if_hedge, hold_time, if_only_long, xnms, xinx, total_para_num)
         # part_test_index_3(*args_list)
         pool.apply_async(part_test_index_3, args=args_list)
     pool.close()
@@ -229,16 +276,12 @@ def save_load_control(use_factor_set_path, sector_name, new_factor_list, add_fac
     return para_ready_df, log_save_file, result_save_file
 
 
-def main_fun(sector_name, index_name, hold_time, return_file, new_factor_list, add_factor_list,
-             if_hedge=False, if_only_long=False):
-    begin_date = pd.to_datetime('20100101')
-    cut_date = pd.to_datetime('20160401')
-    end_date = pd.to_datetime('20180401')
-
+def main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_name, hold_time, return_file,
+             new_factor_list, add_factor_list, if_hedge=False, if_only_long=False):
     if_save = True
     if_new_program = True
-    use_factor_set_path = '/mnt/mfs/dat_whs/data/use_factor_set/market_top_500_201808171920.pkl'
-    return_file = 'close'
+    use_factor_set_path = '/mnt/mfs/dat_whs/data/use_factor_set/market_top_2000_201808201941.pkl'
+    return_file = 'aadj_r'
 
     para_ready_df, log_save_file, result_save_file = \
         save_load_control(use_factor_set_path, sector_name, new_factor_list, add_factor_list,
@@ -254,8 +297,10 @@ def main_fun(sector_name, index_name, hold_time, return_file, new_factor_list, a
     # suspendday_df, limit_buy_df, limit_sell_df = load_locked_data(xnms, xinx)
     suspendday_df, limit_buy_sell_df = load_locked_data_both(xnms, xinx)
     # return
-    return_choose = pd.read_table('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_r.csv', sep='|', index_col=0)\
+    return_choose = pd.read_table('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_r.csv', sep='|', index_col=0) \
         .astype(float)
+    # return_choose = pd.read_table('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_r_vwap.csv', sep='|', index_col=0) \
+    #     .astype(float)
     return_choose.index = pd.to_datetime(return_choose.index)
     return_choose = return_choose.reindex(columns=xnms, index=xinx, fill_value=0)
 
@@ -263,7 +308,7 @@ def main_fun(sector_name, index_name, hold_time, return_file, new_factor_list, a
     index_df = load_index_data(xinx, index_name)
 
     # index_df = pd.Series(index_df)
-    test_index_3(sector_name, sector_df, suspendday_df, limit_buy_sell_df, return_choose, index_df,
+    test_index_3(time_para_dict, sector_name, sector_df, suspendday_df, limit_buy_sell_df, return_choose, index_df,
                  para_ready_df, cut_date, log_save_file, result_save_file, if_save, if_hedge, hold_time, if_only_long,
                  xnms, xinx, total_para_num)
 
@@ -273,14 +318,29 @@ if __name__ == '__main__':
     # index_name = '000016'
 
     sector_name = 'market_top_2000'
-    index_name = '000300'
+    index_name = '000905'
     return_file = 'pct_f1d'
-    # new_factor_list = ['pub_info_all']
+    hold_time = 20
+    begin_date = pd.to_datetime('20100101')
+    cut_date = pd.to_datetime('20160401')
+    end_date = pd.to_datetime('20180601')
+
     new_factor_list = []
     add_factor_list = []
-    for hold_time in [10]:
-        return_file = 'pct_f1d'
-        # main_fun(sector_name, index_name, hold_time, return_file, new_factor_list, add_factor_list, if_hedge=True,
-        #          if_only_long=False)
-        main_fun(sector_name, index_name, hold_time, return_file, new_factor_list, add_factor_list, if_hedge=True,
-                 if_only_long=True)
+    time_para_dict = OrderedDict()
+    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20140101'),
+                                     pd.to_datetime('20140301'), pd.to_datetime('20140601'),
+                                     pd.to_datetime('20140901'), pd.to_datetime('20141201')]
+    time_para_dict['time_para_2'] = [pd.to_datetime('20120101'), pd.to_datetime('20160101'),
+                                     pd.to_datetime('20160301'), pd.to_datetime('20160601'),
+                                     pd.to_datetime('20160901'), pd.to_datetime('20161201')]
+    time_para_dict['time_para_3'] = [pd.to_datetime('20130601'), pd.to_datetime('20170601'),
+                                     pd.to_datetime('20170601'), pd.to_datetime('20171201'),
+                                     pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+    main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_name, hold_time, return_file,
+             new_factor_list, add_factor_list, if_hedge=True, if_only_long=False)
+
+    # main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_name, hold_time, return_file,
+    #          new_factor_list, add_factor_list, if_hedge=True, if_only_long=True)
+# a = pd.read_csv(err)

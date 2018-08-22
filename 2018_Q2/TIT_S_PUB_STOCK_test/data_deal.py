@@ -154,6 +154,7 @@ if __name__ == '__main__':
 
     data2 = pd.read_pickle(r'/mnt/mfs/DAT_EQT/EM_Tab14/raw_data/TIT_S_PUB_SALES.pkl')
     data2.sort_values(by='TRADEDATE', inplace=True)
+
     data2 = data2[(data2['TRADEDATE'] > begin_date) & (data2['TRADEDATE'] < end_date)]
 
     return_df = pd.read_pickle('/mnt/mfs/DAT_EQT/EM_Tab14/DERIVED/aadj_r.pkl')
@@ -177,26 +178,27 @@ if __name__ == '__main__':
     locked_df = load_locked_data(begin_date, end_date, xnms, xinx)
 
     use_company_list = get_use_company(data2)
-    aa = random.sample(use_company_list, 200)
-    # 数据分类
-    company_set, address_set, jgzy_list, jydy_list, hgt_list = split_fun(use_company_list)
-    for key in address_set.keys():
-        print(key)
-        aa = address_set[key]
-        main_fun(key, aa, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
-                 hold_time_list, index_df)
 
-    for key in company_set.keys():
-        print(key)
-        aa = company_set[key]
-        main_fun(key, aa, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
-                 hold_time_list, index_df)
-    print('机构专用')
-    main_fun('机构专用', jgzy_list, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
-             hold_time_list, index_df)
-    print('交易单元')
-    main_fun('交易单元', jydy_list, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
-             hold_time_list, index_df)
-    print('沪股通')
-    main_fun('沪股通', hgt_list, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
-             hold_time_list, index_df)
+
+    # # 数据分类
+    # company_set, address_set, jgzy_list, jydy_list, hgt_list = split_fun(use_company_list)
+    # for key in address_set.keys():
+    #     print(key)
+    #     aa = address_set[key]
+    #     main_fun(key, aa, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
+    #              hold_time_list, index_df)
+    #
+    # for key in company_set.keys():
+    #     print(key)
+    #     aa = company_set[key]
+    #     main_fun(key, aa, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
+    #              hold_time_list, index_df)
+    # print('机构专用')
+    # main_fun('机构专用', jgzy_list, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
+    #          hold_time_list, index_df)
+    # print('交易单元')
+    # main_fun('交易单元', jydy_list, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
+    #          hold_time_list, index_df)
+    # print('沪股通')
+    # main_fun('沪股通', hgt_list, data1, data2, xnms, xinx, cond_d, cond_u, vol30, return_df, locked_df,
+    #          hold_time_list, index_df)

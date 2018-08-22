@@ -78,8 +78,8 @@ def deal_intra_data():
 
 
 def create_intra_data(split_time=20):
-    begin_str = '20100101'
-    end_str = '20180401'
+    begin_str = '20050101'
+    end_str = '20100101'
 
     begin_year, begin_month, begin_day = begin_str[:4], begin_str[:6], begin_str
     end_year, end_month, end_day = end_str[:4], end_str[:6], end_str
@@ -114,9 +114,9 @@ def create_intra_data(split_time=20):
             gc.collect()
     for i in range(int(240 / split_time)):
         intra_save_path = '/mnt/mfs/dat_whs/data/base_data'
-        exec('intra_vwap_tab_{0}_df.to_pickle(os.path.join(intra_save_path, \'intra_vwap_{1}_tab_{0}.pkl\'))'
+        exec('intra_vwap_tab_{0}_df.to_pickle(os.path.join(intra_save_path, \'intra_vwap_{1}_tab_{0}_2005_part.pkl\'))'
              .format(i + 1, split_time))
-        exec('intra_volume_tab_{0}_df.to_pickle(os.path.join(intra_save_path, \'intra_volume_{1}_tab_{0}.pkl\'))'
+        exec('intra_volume_tab_{0}_df.to_pickle(os.path.join(intra_save_path, \'intra_volume_{1}_tab_{0}_2005_part.pkl\'))'
              .format(i + 1, split_time))
 
 

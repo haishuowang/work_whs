@@ -2,6 +2,13 @@
 <project version="4">
   <component name="PublishConfigData" serverName="delta">
     <serverData>
+      <paths name="alpha">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="beta">
         <serverdata>
           <mappings>
@@ -17,6 +24,13 @@
         </serverdata>
       </paths>
       <paths name="delta">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="zeta">
         <serverdata>
           <mappings>
             <mapping deploy="/" local="$PROJECT_DIR$" web="/" />

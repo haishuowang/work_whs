@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
-def AZ_Load_csv(target_path):
-    target_df = pd.read_table(target_path, sep='|', index_col=0).astype(float)
-    target_df.index = pd.to_datetime(target_df.index)
+def AZ_Load_csv(target_path, index_time_type=True):
+    target_df = pd.read_table(target_path, sep='|', index_col=0, low_memory=False).round(8)
+    if index_time_type:
+        target_df.index = pd.to_datetime(target_df.index)
     return target_df
 
 
@@ -90,7 +91,7 @@ def AZ_Normal_IC(signal, pct_n, min_valids=None, lag=0):
         corr_signal = corr_df * signal_valid
     else:
         corr_signal = corr_df
-    return corr_signal
+    return round(corr_signal, 4)
 
 
 def AZ_Normal_IR(signal, pct_n, min_valids=None, lag=0):
@@ -200,7 +201,7 @@ def AZ_fit_ratio(pos_df, return_df):
     if turnover == 0:
         return .0
     else:
-        return sharp_ratio * np.sqrt(abs(ann_return) / turnover)
+        return round(sharp_ratio * np.sqrt(abs(ann_return) / turnover), 2)
 
 
 def AZ_fit_ratio_rolling(pos_df, pnl_df, roll_year=1, year_len=250, min_periods=1, cut_point_list=None, output=False):
