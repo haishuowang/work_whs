@@ -42,6 +42,14 @@
           <option name="port" value="32514" />
         </fileTransfer>
       </webServer>
+      <webServer id="a37790d3-43eb-4a4e-97f6-522536369d19" name="kappa" url="http://192.168.16.33">
+        <fileTransfer host="192.168.16.33" port="32514" rootFolder="/mnt/mfs/work_whs" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="32514" />
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>
