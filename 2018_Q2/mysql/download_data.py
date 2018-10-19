@@ -9,6 +9,8 @@ from collections import OrderedDict
 def path_create(target_path):
     if not os.path.exists(target_path):
         os.makedirs(target_path)
+
+
 # # table 01
 # down_dict = OrderedDict({'公司概况变动': 'LICO_BS_COPMCHG', '机构别名表': 'ORGA_BI_INSTOTHERNAME',
 #                          '机构当事人': 'ORGA_BI_ORGPARTY', '机构基本资料表': 'ORGA_BI_ORGBASEINFO',
@@ -25,6 +27,7 @@ down_dict = OrderedDict({'系列指数分类表': 'INDEX_BA_SMTYPE', '指数概�
                          '指数年行情指标表': 'TRAD_ID_YEARSYS', '指数日行情': 'INDEX_TD_DAILY',
                          '指数日行情指标表': 'INDEX_TD_DAILYSYS', '指数入选样本券表': 'INDEX_BA_SAMPLE',
                          '指数资金流向': 'INDEX_TD_FUNDFLOW'})
+
 
 # # table 14
 # down_dict = OrderedDict({'大宗交易': 'TRAD_BT_DAILY', '个股日行情筹码分布': 'TRAD_SK_DAILYCH',
@@ -57,7 +60,7 @@ down_dict = OrderedDict({'系列指数分类表': 'INDEX_BA_SMTYPE', '指数概�
 # def Mysql_select_column_data():
 
 
-def Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_list=None):
+def Mysql_select_all_data(down_list, root_save_path, file_type='csv', except_list=None):
     if except_list is None:
         except_list = []
     down_list = list(set(down_list) - set(except_list))
@@ -66,7 +69,7 @@ def Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_lis
     start = time.time()
     usr_name = 'whs'
     pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
-    engine = create_engine('mysql+pymysql://{}:{}@192.168.16.10:3306/choice_fndb?charset=utf8'
+    engine = create_engine('mysql+pymysql://{}:{}@192.168.16.33:3306/choice_fndb?charset=utf8'
                            .format(usr_name, pass_word))
 
     conn = engine.connect()
@@ -129,13 +132,29 @@ def Mysql_select_columns_data(table_name, root_save_path):
 
 
 if __name__ == '__main__':
+    # down_dict = OrderedDict({'持有其他证券情况': 'LICO_ES_HDOSEC',
+    #                          '董监届次': 'LICO_MO_MANS',
+    #                          '董事和监事': 'LICO_MO_DSHJS',
+    #                          '高管持股与薪酬表': 'LICO_MO_MANHOLDRPAY',
+    #                          '高管关联人持股': 'LICO_MO_MANRPHOLD',
+    #                          '公司雇员': 'LICO_MO_EMPLOYEE',
+    #                          '股东大会日期表': 'LICO_IM_GDDHDATE',
+    #                          '股东大会召开公告': 'LICO_IM_GDDHNOTICE',
+    #                          '股权激励基本资料': 'LICO_MO_GQJLJBZL',
+    #                          '股权激励明细': 'LICO_MO_GQJLMX',
+    #                          '激励获授对象明细': 'LICO_MO_JLDXHSMX',
+    #                          '激励实施结果明细': 'LICO_MO_JLSSJGMX',
+    #                          '监管部门调查处罚公告表': 'LICO_IM_SDPUNISHTNOTICE',
+    #                          '经营层': 'LICO_MO_BUSILEVEL',
+    #                          '期权各期行权时间安排': 'LICO_MO_QXQSJAP',
+    #                          '限制性股票解锁时间安排': 'LICO_MO_LMITUNLOCKTIME',
+    #                          '员工持股计划明细': 'LICO_ES_EMSHAREDE',
+    #                          '员工持股计划总表': 'LICO_ES_EMSHAREPLAN',
+    #                          })
+
+    down_dict = OrderedDict({'证券代码表': 'CDSY_SECUCODE'})
+
     down_list = down_dict.values()
-    # root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab14/raw_data'
-    # except_columns = [x[:-3] for x in os.listdir('/mnt/mfs/DAT_EQT/EM_Tab14/raw_data/TRAD_SK_REVALUATION/split_data')]
-    # Mysql_select_column_data('TRAD_SK_REVALUATION', root_save_path, except_columns)
+    root_save_path = '/mnt/mfs/dat_whs/EM_Funda'
 
-    # Mysql_select_columns_data('INDEX_TD_DAILYSYS', root_save_path)
-
-    # root_save_path = '/mnt/mfs/DAT_EQT/EM_Tab09/raw_data'
-    # except_list = [x[:-4] for x in os.listdir('/mnt/mfs/DAT_EQT/EM_Tab09/raw_data')]
-    # Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_list=except_list)
+    Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_list=None)

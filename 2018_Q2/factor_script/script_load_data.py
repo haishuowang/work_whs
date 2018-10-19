@@ -4,7 +4,6 @@ import os
 from collections import OrderedDict
 import loc_lib.shared_tools.back_test as bt
 
-
 root_path = '/mnt/mfs/dat_whs'
 stock_data_path = '/mnt/mfs/DAT_EQT'
 
@@ -51,7 +50,6 @@ def pos_daily_fun(df, n=5):
 
 # 读取 sector(行业 最大市值等)
 def load_sector_data(begin_date, end_date, sector_name):
-
     market_top_n = bt.AZ_Load_csv(os.path.join(stock_data_path, 'EM_Funda/DERIVED_10/' + sector_name + '.csv'))
     market_top_n = market_top_n.shift(1)[(market_top_n.index >= begin_date) & (market_top_n.index < end_date)]
     market_top_n = market_top_n[market_top_n.index >= begin_date]
@@ -66,27 +64,8 @@ def load_sector_data(begin_date, end_date, sector_name):
     return sector_df
 
 
-# 读取 因涨跌停以及停牌等 不能变动仓位的日期信息
-# 涨停不可买入　跌停不可卖出
-def load_locked_data(xnms, xinx):
-    raw_suspendday_df = bt.AZ_Load_csv(os.path.join(stock_data_path, 'EM_Funda/TRAD_TD_SUSPENDDAY/SUSPENDREASON.csv'))
-    suspendday_df = raw_suspendday_df.isnull()
-    suspendday_df = suspendday_df.reindex(columns=xnms, index=xinx, fill_value=True)
-    suspendday_df.replace(0, np.nan, inplace=True)
-
-    return_df = bt.AZ_Load_csv(os.path.join(stock_data_path, 'EM_Funda/DERIVED_14/aadj_r.csv')).astype(float)
-    limit_buy_df = (return_df < 0.095).astype(int)
-    limit_buy_df = limit_buy_df.reindex(columns=xnms, index=xinx, fill_value=1)
-    limit_buy_df.replace(0, np.nan, inplace=True)
-
-    limit_sell_df = (return_df > -0.095).astype(int)
-    limit_sell_df = limit_sell_df.reindex(columns=xnms, index=xinx, fill_value=1)
-    limit_sell_df.replace(0, np.nan, inplace=True)
-    return suspendday_df, limit_buy_df, limit_sell_df
-
-
 # 涨跌停都不可交易
-def load_locked_data_both(xnms, xinx):
+def load_locked_data(xnms, xinx):
     raw_suspendday_df = bt.AZ_Load_csv(os.path.join(stock_data_path, 'EM_Funda/TRAD_TD_SUSPENDDAY/SUSPENDREASON.csv'))
     suspendday_df = raw_suspendday_df.isnull()
     suspendday_df = suspendday_df.reindex(columns=xnms, index=xinx, fill_value=True)
@@ -146,49 +125,16 @@ def deal_mix_factor(mix_factor, sector_df, suspendday_df, limit_buy_sell_df, hol
         mix_factor = mix_factor[mix_factor > 0]
     mix_factor.replace(np.nan, 0, inplace=True)
     # 下单日期pos
-    order_df = mix_factor.replace(np.nan, 0).shift(lag-1)
+    order_df = mix_factor.replace(np.nan, 0).shift(lag - 1)
 
     # 排除入场场涨跌停的影响
     order_df = order_df * sector_df * limit_buy_sell_df * suspendday_df
-
-    daily_pos = pos_daily_fun(order_df.shift(1), n=hold_time)
+    order_df = order_df.div(order_df.abs().sum(axis=1), axis=0)
+    order_df[order_df > 0.1] = 0.1
+    order_df[order_df < -0.1] = -0.1
+    daily_pos = pos_daily_fun(order_df, n=hold_time)
     # 排除出场涨跌停的影响
     daily_pos = daily_pos * suspendday_df * limit_buy_sell_df
-    daily_pos.fillna(method='ffill', inplace=True)
+    daily_pos = daily_pos.shift(1).fillna(method='ffill')
     # 获得最终仓位信息
-    return daily_pos
-
-
-def deal_mix_factor_both(mix_factor, sector_df, suspendday_df, limit_buy_df, limit_sell_df, hold_time, lag, if_only_long):
-    if if_only_long:
-        mix_factor = mix_factor[mix_factor > 0]
-    mix_factor.replace(np.nan, 0, inplace=True)
-    # 下单日期pos
-    order_df = mix_factor.replace(np.nan, 0).shift(lag-1)
-    # 排除下单时停牌对策略的影响
-    order_df = order_df * suspendday_df
-    # 排除下单时涨停对策略的影响
-    buy_order_df = (order_df.where(order_df > 0, other=0) * limit_buy_df).replace(np.nan, 0)
-    # 排除下单时跌停对策略的影响
-    sell_order_df = (order_df.where(order_df < 0, other=0) * limit_sell_df).replace(np.nan, 0)
-    # 获取下单信息
-    order_df = (buy_order_df + sell_order_df)
-    # sector筛选
-    order_df = order_df * sector_df
-
-    daily_pos = pos_daily_fun(order_df.shift(1), n=hold_time)
-
-    # 排除出场时停牌对策略的影响
-    daily_pos = daily_pos * suspendday_df
-    daily_pos.fillna(method='ffill', inplace=True)
-    # 排除出场时涨跌停对策略的影响
-    buy_pos_df = daily_pos.where(daily_pos > 0, other=0) * limit_buy_df
-    buy_pos_df.fillna(method='ffill', inplace=True)
-
-    sell_pos_df = daily_pos.where(daily_pos < 0, other=0) * limit_sell_df
-    sell_pos_df.fillna(method='ffill', inplace=True)
-
-    # 获得最终仓位信息
-    daily_pos = buy_pos_df + sell_pos_df
-    daily_pos.fillna(method='ffill', inplace=True)
     return daily_pos

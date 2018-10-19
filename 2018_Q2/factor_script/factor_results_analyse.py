@@ -217,16 +217,65 @@ def analyse_pot(result_load_path):
     bt.AZ_Delete_file(figure_save_path)
 
 
-def result_filter(all_use_factor):
-    all_use_factor = pd.read_table(log_result, sep='|', header=None)
-    all_use_factor.columns = ['key', 'fun_name', 'name1', 'name2', 'name3', 'filter_fun_name', 'sector_name',
-                              'con_in', 'con_out', 'ic', 'sp_u', 'sp_m', 'sp_d', 'pot_in', 'fit_ratio', 'leve_ratio',
-                              'sp_out']
-    print(all_use_factor['con_out'].sum() / len(all_use_factor), all_use_factor.pot_in.mean())
-    a = all_use_factor[all_use_factor.pot_in.abs() > 10]
-    print(a['con_out'].sum() / len(a), len(a), a.pot_in.mean())
-    b = a[a.ic.abs() > 0.04]
-    print(b['con_out'].sum() / len(b), len(b), b.pot_in.mean())
+def pos_sum(all_use_factor, hold_time):
+    all_use_factor['sort_line'] = all_use_factor['sp_u'].abs()
+    all_use_factor.sort_values(by='sort_line', inplace=True, ascending=False)
+    all_use_factor.drop(columns='sort_line', inplace=True)
+    filter_cond = all_use_factor.apply(lambda x: not ('volume_count_down_p60d' in set(x)), axis=1)
+    all_use_factor = all_use_factor[filter_cond]
+
+    a = all_use_factor[all_use_factor.pot_in.abs() > 20]
+    a = a.iloc[:10]
+    b = a.copy()
+    b['buy_sell'] = (a['sp_m'] > 0).astype(int).replace(0, -1)
+    print(b['con_out'].sum() / len(a), len(a))
+    factor_info = b[['fun_name', 'name1', 'name2', 'name3', 'buy_sell']].replace(0, -1)
+    config = dict()
+    config['factor_info'] = factor_info
+    pd.to_pickle(config, '/mnt/mfs/alpha_whs/config01.pkl')
+
+    sum_factor_df = pd.DataFrame(columns=xnms, index=xinx)
+    for i in a.index:
+        key, fun_name, name1, name2, name3, filter_fun_name, sector_name, con_in, con_out, ic, sp_u, sp_m, sp_d, \
+        pot_in, fit_ratio, leve_ratio, sp_out = a.loc[i]
+
+        print('***************************************************')
+        print('now {}\'s is running, key={}, {}, {}, {}, {}'.format(i, key, fun_name, name1, name2, name3))
+        fun_set = [mul_fun, sub_fun, add_fun]
+        mix_fun_set = create_fun_set_2(fun_set)
+        fun = mix_fun_set[fun_name]
+
+        factor_set = load_part_factor(sector_name, xnms, xinx, [name1, name2, name3])
+        choose_1 = factor_set[name1]
+        choose_2 = factor_set[name2]
+        choose_3 = factor_set[name3]
+        mix_factor = fun(choose_1, choose_2, choose_3)
+        if len(mix_factor.abs().sum(axis=1).replace(0, np.nan).dropna()) / len(mix_factor) > 0.1:
+            pos_daily = deal_mix_factor(mix_factor, sector_df, suspendday_df, limit_buy_sell_df, hold_time,
+                                        lag, if_only_long)
+            in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+            fit_ratio, leve_ratio, sharpe_q_out, pnl_df = filter_all(cut_date, pos_daily, return_choose, index_df,
+                                                                     if_hedge=True, hedge_ratio=1, if_return_pnl=True,
+                                                                     if_only_long=if_only_long)
+            plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), '{}, key={}'.format(i, key))
+            print(con_in, con_out, ic, sp_u, sp_m, sp_d, pot_in, fit_ratio, leve_ratio, sp_out)
+            print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in,
+                  fit_ratio, leve_ratio, sharpe_q_out)
+            if sp_m > 0:
+                sum_factor_df = sum_factor_df.add(mix_factor, fill_value=0)
+            else:
+                sum_factor_df = sum_factor_df.add(-mix_factor, fill_value=0)
+        else:
+            print('pos not enough!')
+    sum_pos_df = deal_mix_factor(sum_factor_df, sector_df, suspendday_df, limit_buy_sell_df, hold_time, lag,
+                                 if_only_long).round(14)
+    in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+    fit_ratio, leve_ratio, sharpe_q_out, pnl_df = filter_all(cut_date, sum_pos_df, return_choose, index_df,
+                                                             if_hedge=True, hedge_ratio=1, if_return_pnl=True,
+                                                             if_only_long=if_only_long)
+    print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in,
+          fit_ratio, leve_ratio, sharpe_q_out)
+    return pnl_df, sum_pos_df
 
 
 if __name__ == '__main__':
@@ -325,44 +374,59 @@ if __name__ == '__main__':
 # data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_0859_hold_20_aadj_r.txt',
 #                    sep='|', header=None)
 
-data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_1136_hold_20_aadj_r.txt',
+data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_1514_hold_20_aadj_r.txt',
                    sep='|', header=None)
 
 # data.columns = ['time_para', 'key', 'fun_name', 'name1', 'name2', 'name3', 'filter_fun_name', 'sector_name',
 #                 'con_in', 'con_out', 'ic', 'sp_u', 'sp_m', 'sp_d', 'pot_in', 'fit_ratio', 'leve_ratio',
 #                 'sp_out']
-data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_1136_hold_20_aadj_r.txt',
-                   sep='|', header=None)
+# data = pd.read_csv('/mnt/mfs/dat_whs/result/result/market_top_2000_True_20180822_1136_hold_20_aadj_r.txt',
+#                    sep='|', header=None)
 
 data.columns = ['time_para', 'key', 'fun_name', 'name1', 'name2', 'name3', 'filter_fun_name', 'sector_name',
-                'con_in', 'con_out_1',  'con_out_2', 'con_out_3', 'con_out_3', 'ic', 'sp_u', 'sp_m', 'sp_d', 'pot_in',
+                'con_in', 'con_out_1',  'con_out_2', 'con_out_3', 'con_out_4', 'ic', 'sp_u', 'sp_m', 'sp_d', 'pot_in',
                 'fit_ratio', 'leve_ratio', 'sp_out_1', 'sp_out_2', 'sp_out_3', 'sp_out_4']
 
 data_1 = data[data['time_para'] == 'time_para_1']
 data_2 = data[data['time_para'] == 'time_para_2']
 data_3 = data[data['time_para'] == 'time_para_3']
 
-factor_list = sorted(list(set(data[['name1', 'name2', 'name3']].values.ravel())))
-print(len(factor_list))
-# POT
-a_1 = data_1[data_1['pot_in'].abs() > 40]
-print(a_1['con_out'].sum()/len(a_1), len(a_1))
 
-a_2 = data_2[data_2['pot_in'].abs() > 40]
-print(a_2['con_out'].sum()/len(a_2), len(a_2))
-
-a_3 = data_3[data_3['pot_in'].abs() > 40]
-print(a_3['con_out'].sum()/len(a_3), len(a_3))
-
-# IC
 a_1 = data_1[(data_1['ic'].abs() > 0.01) & (data_1['pot_in'].abs() > 40)]
 print(a_1['con_out_1'].sum()/len(a_1), len(a_1))
 
 a_2 = data_2[(data_2['ic'].abs() > 0.01) & (data_2['pot_in'].abs() > 40)]
-print(a_2['con_out'].sum()/len(a_2), len(a_2))
+print(a_2['con_out_1'].sum()/len(a_2), len(a_2))
 
 a_3 = data_3[(data_3['ic'].abs() > 0.01) & (data_3['pot_in'].abs() > 40)]
-print(a_3['con_out'].sum()/len(a_3), len(a_3))
+print(a_3['con_out_2'].sum()/len(a_3), len(a_3))
+
+
+print(a_1['con_out_1'].sum()/len(a_1))
+print(a_2['con_out_1'].sum()/len(a_2))
+print(a_3['con_out_2'].sum()/len(a_3))
+
+# factor_list = sorted(list(set(data[['name1', 'name2', 'name3']].values.ravel())))
+# print(len(factor_list))
+# # POT
+# a_1 = data_1[data_1['pot_in'].abs() > 40]
+# print(a_1['con_out'].sum()/len(a_1), len(a_1))
+#
+# a_2 = data_2[data_2['pot_in'].abs() > 40]
+# print(a_2['con_out'].sum()/len(a_2), len(a_2))
+#
+# a_3 = data_3[data_3['pot_in'].abs() > 40]
+# print(a_3['con_out'].sum()/len(a_3), len(a_3))
+#
+# # IC
+# a_1 = data_1[(data_1['ic'].abs() > 0.01) & (data_1['pot_in'].abs() > 40)]
+# print(a_1['con_out_1'].sum()/len(a_1), len(a_1))
+#
+# a_2 = data_2[(data_2['ic'].abs() > 0.01) & (data_2['pot_in'].abs() > 40)]
+# print(a_2['con_out'].sum()/len(a_2), len(a_2))
+#
+# a_3 = data_3[(data_3['ic'].abs() > 0.01) & (data_3['pot_in'].abs() > 40)]
+# print(a_3['con_out'].sum()/len(a_3), len(a_3))
 
 
 # a_1 = data_1[(data_1['ic'].abs() > 0.01) & (data_1['pot_in'].abs() > 40)]

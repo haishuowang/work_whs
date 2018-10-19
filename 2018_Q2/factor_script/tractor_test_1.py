@@ -13,8 +13,8 @@ import loc_lib.shared_tools.back_test as bt
 import random
 from collections import OrderedDict
 # 读取数据的函数 以及
-from factor_script.script_load_data import load_index_data, load_sector_data, load_locked_data, load_pct, \
-    load_part_factor, create_log_save_path, deal_mix_factor, deal_mix_factor_both, load_locked_data_both
+from factor_script.script_load_data import load_index_data, load_sector_data, load_pct, \
+    load_part_factor, create_log_save_path, deal_mix_factor, load_locked_data
 
 from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, filter_all, filter_time_para_fun
 
@@ -111,34 +111,171 @@ def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos
                            'R_RecurNetProft_NetProfit_s_First_row_extre_0.3',
                            'R_OperProfit_sales_s_First_row_extre_0.3',
                            'R_TotRev_s_YOY_First_row_extre_0.3',
-                           'R_FairValChgPnL_s_First_row_extre_0.3']
-
-    tech_name_list_all = ['CCI_p120d_limit_12',
-                          'MACD_20_100',
-                          'MACD_40_200',
-                          'log_price_0.2',
-                          'bias_turn_p20d',
-                          'bias_turn_p120d',
-                          'vol_p20d',
-                          'vol_p60d',
-                          'evol_p20d',
-                          'moment_p20100d',
-                          'turn_p20d_0.2',
-                          'turn_p120d_0.2',
-                          'vol_count_down_p60d',
-                          'TVOL_p20d_col_extre_0.2',
-                          'TVOL_p120d_col_extre_0.2',
-                          'price_p20d_hl',
-                          'price_p120d_hl',
-                          'aadj_r_p345d_continue_ud_pct',
-                          'volume_moment_p530d',
-                          'return_p60d_0.2',
-                          ]
-
-    funda_name_list = random.sample(funda_name_list_all, 20)
-    tech_name_list = random.sample(tech_name_list_all, 20)
-
+                           'R_FairValChgPnL_s_First_row_extre_0.3',
+                           'R_EBIT2_Y3YGR_and_MCAP_0.3.pkl',
+                           'R_EBITDA_QTTM_and_MCAP_0.3.pkl',
+                           'R_EBITDA_QTTM_and_R_SUMASSET_First_0.3.pkl',
+                           'R_EBITDA_QYOY_and_MCAP_0.3.pkl',
+                           'R_IntDebt_Y3YGR_and_R_SUMASSET_First_0.3.pkl'
+                           ]
+    #
+    # tech_name_list_all = ['CCI_p120d_limit_12',
+    #                       'MACD_20_100',
+    #                       'MACD_40_200',
+    #                       'log_price_0.2',
+    #                       'bias_turn_p20d',
+    #                       'bias_turn_p120d',
+    #                       'vol_p20d',
+    #                       'vol_p60d',
+    #                       'evol_p20d',
+    #                       'moment_p20100d',
+    #                       'turn_p20d_0.2',
+    #                       'turn_p120d_0.2',
+    #                       'vol_count_down_p60d',
+    #                       'TVOL_p20d_col_extre_0.2',
+    #                       'TVOL_p120d_col_extre_0.2',
+    #                       'price_p20d_hl',
+    #                       'price_p120d_hl',
+    #                       'aadj_r_p345d_continue_ud_pct',
+    #                       'volume_moment_p530d',
+    #                       'return_p60d_0.2',
+    #                       ]
+    #
+    # funda_name_list = random.sample(funda_name_list_all, 20)
+    # tech_name_list = random.sample(tech_name_list_all, 20)
     # file_name_list = funda_name_list + tech_name_list_all
+    # alpha1
+    # factor_list = ['CCI_p120d_limit_12',
+    #                'MACD_20_100',
+    #                'MACD_40_200',
+    #                'R_CFO_TotRev_s_First_row_extre_0.3',
+    #                'R_CFO_s_YOY_First_row_extre_0.3',
+    #                'R_COMPANYCODE_First_row_extre_0.3',
+    #                'R_Cashflow_s_YOY_First_row_extre_0.3',
+    #                'R_EPS_s_First_row_extre_0.3',
+    #                'R_EPS_s_YOY_First_row_extre_0.3',
+    #                'R_NetAssets_s_YOY_First_row_extre_0.3',
+    #                'R_NetInc_TotProfit_s_First_row_extre_0.3',
+    #                'R_NetInc_s_First_row_extre_0.3',
+    #                'R_OPCF_NetInc_s_First_row_extre_0.3',
+    #                'R_OperProfit_s_YOY_First_row_extre_0.3',
+    #                'R_ParentProfit_s_POP_First_row_extre_0.3',
+    #                'R_ParentProfit_s_YOY_First_row_extre_0.3',
+    #                'R_ROENetIncRecur_s_First_row_extre_0.3',
+    #                'R_RevenueTotPS_s_First_row_extre_0.3',
+    #                'R_Revenue_s_YOY_First_row_extre_0.3',
+    #                'R_Tax_TotProfit_s_First_row_extre_0.3',
+    #                'R_TotAssets_s_YOY_First_row_extre_0.3',
+    #                'R_TotRev_s_POP_First_row_extre_0.3',
+    #                'R_TotRev_s_YOY_First_row_extre_0.3',
+    #                'TVOL_p120d_col_extre_0.2',
+    #                'TVOL_p20d_col_extre_0.2',
+    #                'aadj_r_p345d_continue_ud_pct',
+    #                'bias_turn_p120d',
+    #                'bias_turn_p20d',
+    #                'evol_p20d',
+    #                'log_price_0.2',
+    #                'moment_p20100d',
+    #                'price_p120d_hl',
+    #                'price_p20d_hl',
+    #                'return_p60d_0.2',
+    #                'turn_p120d_0.2',
+    #                'turn_p20d_0.2',
+    #                'vol_count_down_p60d',
+    #                'vol_p20d',
+    #                'vol_p60d',
+    #                'volume_moment_p530d']
+    # target_list = list(combinations(sorted(factor_list), 3))
+
+    # # 20180829 # alpha2
+    # tech_name_list = ['CCI_p120d_limit_12',
+    #                   'MACD_20_100',
+    #                   'MACD_40_200',
+    #                   'log_price_0.2',
+    #                   'bias_turn_p20d',
+    #                   'bias_turn_p120d',
+    #                   'vol_p20d',
+    #                   'vol_p60d',
+    #                   'evol_p20d',
+    #                   'moment_p20100d',
+    #                   'turn_p20d_0.2',
+    #                   'turn_p120d_0.2',
+    #                   'vol_count_down_p60d',
+    #                   'TVOL_p20d_col_extre_0.2',
+    #                   'TVOL_p120d_col_extre_0.2',
+    #                   'price_p20d_hl',
+    #                   'price_p120d_hl',
+    #                   'aadj_r_p345d_continue_ud_pct',
+    #                   'volume_moment_p530d',
+    #                   'return_p60d_0.2',
+    #                   ]
+    #
+    # funda_name_list = ['R_RecurNetProft_NetProfit_s_First_row_extre_0.3',
+    #                    'R_OPEX_sales_s_First_row_extre_0.3',
+    #                    'R_EBITDA_QTTM_and_MCAP_0.3',
+    #                    'R_RevenuePS_s_First_row_extre_0.3',
+    #                    'R_EBITDA_QTTM_and_R_SUMASSET_First_0.3',
+    #                    'R_CostSales_s_First_row_extre_0.3',
+    #                    'R_NetProfit_sales_s_First_row_extre_0.3',
+    #                    'R_ROE_s_First_row_extre_0.3',
+    #                    'R_FairValChgPnL_s_First_row_extre_0.3',
+    #                    'R_NetROA_s_First_row_extre_0.3',
+    #                    'R_FinExp_sales_s_First_row_extre_0.3',
+    #                    'R_CFOPS_s_First_row_extre_0.3',
+    #                    'R_GSCF_sales_s_First_row_extre_0.3',
+    #                    'R_EBITDA_QYOY_and_MCAP_0.3',
+    #                    'R_NetIncRecur_s_First_row_extre_0.3',
+    #                    'R_SalesNetMGN_s_First_row_extre_0.3',
+    #                    'R_OperProfit_s_POP_First_row_extre_0.3',
+    #                    'R_SalesCost_s_First_row_extre_0.3',
+    #                    'R_AssetDepSales_s_First_row_extre_0.3',
+    #                    'R_OPCF_sales_s_First_row_extre_0.3']
+    # 20180830 # alpha3
+    # tech_name_list = ['CCI_p120d_limit_12',
+    #                   'MACD_20_100',
+    #                   'MACD_40_200',
+    #                   'log_price_0.2',
+    #                   'bias_turn_p20d',
+    #                   'bias_turn_p120d',
+    #                   'vol_p20d',
+    #                   'vol_p60d',
+    #                   'evol_p20d',
+    #                   'moment_p20100d',
+    #                   'turn_p20d_0.2',
+    #                   'turn_p120d_0.2',
+    #                   'vol_count_down_p60d',
+    #                   'TVOL_p20d_col_extre_0.2',
+    #                   'TVOL_p120d_col_extre_0.2',
+    #                   'price_p20d_hl',
+    #                   'price_p120d_hl',
+    #                   'aadj_r_p345d_continue_ud_pct',
+    #                   'volume_moment_p530d',
+    #                   'return_p60d_0.2',
+    #                   ]
+    #
+    # funda_name_list = ['R_SalesGrossMGN_s_First_row_extre_0.3',
+    #                    'R_MgtExp_sales_s_First_row_extre_0.3',
+    #                    'R_EBITDA_QTTM_and_MCAP_0.3.pkl',
+    #                    'R_NetAssets_s_POP_First_row_extre_0.3',
+    #                    'R_EBITDA_QYOY_and_MCAP_0.3.pkl',
+    #                    'R_NetCashflowPS_s_First_row_extre_0.3',
+    #                    'R_TotLiab_s_YOY_First_row_extre_0.3',
+    #                    'R_FairValChg_TotProfit_s_First_row_extre_0.3',
+    #                    'R_NonOperProft_TotProfit_s_First_row_extre_0.3',
+    #                    'R_EBITDA_QTTM_and_R_SUMASSET_First_0.3.pkl',
+    #                    'R_Revenue_s_POP_First_row_extre_0.3',
+    #                    'R_NetMargin_s_YOY_First_row_extre_0.3',
+    #                    'R_OperCost_sales_s_First_row_extre_0.3',
+    #                    'R_IntDebt_Y3YGR_and_R_SUMASSET_First_0.3.pkl',
+    #                    'R_EBIT2_Y3YGR_and_MCAP_0.3.pkl',
+    #                    'R_OperProfit_sales_s_First_row_extre_0.3']
+
+    # test
+    tech_name_list = ['CCI_p120d_limit_12',
+                      'MACD_20_100']
+    funda_name_list = ['R_SalesGrossMGN_s_First_row_extre_0.3',
+                       'R_MgtExp_sales_s_First_row_extre_0.3']
+
     target_list_1 = []
     for tech_name in tech_name_list:
         for value in combinations(funda_name_list, 2):
@@ -151,16 +288,6 @@ def create_all_para(use_factor_set_path, new_factor_list, add_factor_list, choos
 
     target_list = target_list_1 + target_list_2
     return target_list
-    # if len(new_factor_list) == 0:
-    #     print('{} factor num:{}'.format(sector_name, len(file_name_list)))
-    #     return combinations(sorted(file_name_list), choos_num)
-    # else:
-    #     target_list = []
-    #     old_factor_list = sorted(set(file_name_list) - set(new_factor_list))
-    #     for factor_name in new_factor_list:
-    #         for value in combinations(old_factor_list, 2):
-    #             target_list += [[factor_name] + list(value)]
-    #     return target_list
 
 
 def part_test_index_3(time_para_dict, sector_name, key, name_1, name_2, name_3, sector_df, suspendday_df,
@@ -183,6 +310,9 @@ def part_test_index_3(time_para_dict, sector_name, key, name_1, name_2, name_3, 
     #################
     filter_fun = filter_all
     filter_name = filter_fun.__name__
+    # save_file_name = os.path.split(log_save_file)[:-4]
+    # pnl_save_path = os.path.join('/mnt/mfs/dat_whs/data/mix_factor_pnl', save_file_name)
+    # bt.AZ_Path_create(pnl_save_path)
     for fun in fun_mix_2_set:
         mix_factor = fun(factor_set[name_1], factor_set[name_2], factor_set[name_3])
         if len(mix_factor.abs().sum(axis=1).replace(0, np.nan).dropna()) / len(mix_factor) < 0.1:
@@ -196,7 +326,7 @@ def part_test_index_3(time_para_dict, sector_name, key, name_1, name_2, name_3, 
         # 返回样本内筛选结果
         result_dict = filter_time_para_fun(time_para_dict, daily_pos, return_choose, index_df,
                                            if_hedge=if_hedge, hedge_ratio=1, if_return_pnl=False,
-                                           if_only_long=False)
+                                           if_only_long=if_only_long)
         for time_key in result_dict.keys():
             in_condition, *filter_result = result_dict[time_key]
             # result 存储
@@ -276,8 +406,7 @@ def save_load_control(use_factor_set_path, sector_name, new_factor_list, add_fac
             para_ready_df.to_pickle(para_save_file)
 
     else:
-        file_name = 'market_top_500_True_20180809_1856_hold_10_aadj_r.txt'
-
+        file_name = 'market_top_2000_True_20180823_0910_hold_20_aadj_r.txt'
         log_save_file = os.path.join(result_save_path, 'log', file_name)
         result_save_file = os.path.join(result_save_path, 'result', file_name)
         para_save_file = os.path.join(result_save_path, 'para', file_name)
@@ -309,7 +438,7 @@ def main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_
 
     # suspend or limit up_dn
     # suspendday_df, limit_buy_df, limit_sell_df = load_locked_data(xnms, xinx)
-    suspendday_df, limit_buy_sell_df = load_locked_data_both(xnms, xinx)
+    suspendday_df, limit_buy_sell_df = load_locked_data(xnms, xinx)
     # return
     return_choose = pd.read_table('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_r.csv', sep='|', index_col=0) \
         .astype(float)
@@ -337,23 +466,48 @@ if __name__ == '__main__':
     hold_time = 20
     begin_date = pd.to_datetime('20100101')
     cut_date = pd.to_datetime('20160401')
-    end_date = pd.to_datetime('20180601')
+    end_date = pd.to_datetime('20180901')
 
     new_factor_list = []
     add_factor_list = []
     time_para_dict = OrderedDict()
-    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20140101'),
-                                     pd.to_datetime('20140301'), pd.to_datetime('20140601'),
-                                     pd.to_datetime('20140901'), pd.to_datetime('20141201')]
+    # time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20140101'),
+    #                                  pd.to_datetime('20140401'), pd.to_datetime('20140701'),
+    #                                  pd.to_datetime('20141001'), pd.to_datetime('20150101')]
+    # time_para_dict['time_para_2'] = [pd.to_datetime('20120101'), pd.to_datetime('20160101'),
+    #                                  pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+    #                                  pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+    # time_para_dict['time_para_3'] = [pd.to_datetime('20130601'), pd.to_datetime('20170601'),
+    #                                  pd.to_datetime('20170901'), pd.to_datetime('20171201'),
+    #                                  pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+    time_para_dict['time_para_1'] = [pd.to_datetime('20110101'), pd.to_datetime('20150101'),
+                                     pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+                                     pd.to_datetime('20151001'), pd.to_datetime('20160101')]
     time_para_dict['time_para_2'] = [pd.to_datetime('20120101'), pd.to_datetime('20160101'),
-                                     pd.to_datetime('20160301'), pd.to_datetime('20160601'),
-                                     pd.to_datetime('20160901'), pd.to_datetime('20161201')]
+                                     pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+                                     pd.to_datetime('20161001'), pd.to_datetime('20170101')]
     time_para_dict['time_para_3'] = [pd.to_datetime('20130601'), pd.to_datetime('20170601'),
-                                     pd.to_datetime('20170601'), pd.to_datetime('20171201'),
+                                     pd.to_datetime('20170901'), pd.to_datetime('20171201'),
                                      pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+    # time_para_dict['time_para_1'] = [pd.to_datetime('20140501'), pd.to_datetime('20180501'),
+    #                                  pd.to_datetime('20180801'), pd.to_datetime('20180801'),
+    #                                  pd.to_datetime('20180801'), pd.to_datetime('20180801')]
+    #
+    # time_para_dict['time_para_2'] = [pd.to_datetime('20140701'), pd.to_datetime('20180701'),
+    #                                  pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+    #                                  pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+    #
+    # time_para_dict['time_para_3'] = [pd.to_datetime('20140901'), pd.to_datetime('20180901'),
+    #                                  pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+    #                                  pd.to_datetime('20180901'), pd.to_datetime('20180901')]
 
     main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_name, hold_time, return_file,
              new_factor_list, add_factor_list, if_hedge=True, if_only_long=False)
 
     # main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_name, hold_time, return_file,
     #          new_factor_list, add_factor_list, if_hedge=True, if_only_long=True)
+
+    # main_fun(begin_date, cut_date, end_date, time_para_dict, sector_name, index_name, hold_time, return_file,
+    #          new_factor_list, add_factor_list, if_hedge=False, if_only_long=True)

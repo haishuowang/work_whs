@@ -36,18 +36,18 @@ def create_data(root_path, info_path, sector_df, mode='bkt'):
     return target_df
 
 
-# if __name__ == '__main__':
-#     mode = 'bkt'
-#
-#     begin_date = pd.to_datetime('20100101')
-#     end_date = pd.to_datetime('20180801')
-#     sector_name = 'market_top_500'
-#     save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_500_tmp'
-#     bt.AZ_Path_create(save_root_path)
-#     root_path = pt._BinFiles(mode)
-#
-#     sector_data_class = SectorData(root_path)
-#     sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
-#
-#     info_path = '/mnt/mfs/dat_whs/data/factor_to_fun/RQCHL_row_extre_0.2'
-#     target_df = create_data(info_path, sector_df, mode='bkt')
+if __name__ == '__main__':
+    mode = 'bkt'
+
+    begin_date = pd.to_datetime('20100101')
+    end_date = pd.to_datetime('20180801')
+    sector_name = 'market_top_500'
+    save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_500_tmp'
+    bt.AZ_Path_create(save_root_path)
+    root_path = pt._BinFiles(mode)
+
+    sector_data_class = SectorData(root_path)
+    sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
+
+    info_path = '/mnt/mfs/dat_whs/data/factor_to_fun/RQCHL_row_extre_0.2'
+    target_df = create_data(info_path, sector_df, mode='bkt')

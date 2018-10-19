@@ -1,13 +1,14 @@
 import numpy as np
 import pandas as pd
 import os
+import sys
 from loc_lib.shared_tools import send_email
 import matplotlib.pyplot as plt
 from datetime import datetime
+import time
 
 
 def AZ_Load_csv(target_path, index_time_type=True):
-
     if index_time_type:
         target_df = pd.read_table(target_path, sep='|', index_col=0, low_memory=False, parse_dates=True)
     else:
@@ -15,8 +16,30 @@ def AZ_Load_csv(target_path, index_time_type=True):
     return target_df
 
 
+def AZ_Catch_error(func):
+    def _deco(*args, **kwargs):
+        try:
+            ret = func(*args, **kwargs)
+        except:
+            ret = sys.exc_info()
+            print(ret[0], ":", ret[1])
+        return ret
+    return _deco
+
+
+def AZ_Time_cost(func):
+    t1 = time.time()
+
+    def _deco(*args, **kwargs):
+        ret = func(*args, **kwargs)
+        return ret
+    t2 = time.time()
+    print(f'cost_time: {t2-t1}')
+    return _deco
+
+
 def AZ_Sharpe_y(pnl_df):
-    return (np.sqrt(250) * pnl_df.mean()) / pnl_df.std()
+    return round((np.sqrt(250) * pnl_df.mean()) / pnl_df.std(), 4)
 
 
 def AZ_MaxDrawdown(asset_df):
@@ -93,7 +116,7 @@ def AZ_Normal_IC(signal, pct_n, min_valids=None, lag=0):
         corr_signal = corr_df * signal_valid
     else:
         corr_signal = corr_df
-    return round(corr_signal, 4)
+    return round(corr_signal, 6)
 
 
 def AZ_Normal_IR(signal, pct_n, min_valids=None, lag=0):
@@ -191,12 +214,12 @@ def AZ_annual_return(pos_df, return_df):
 
 
 def AZ_fit_ratio(pos_df, return_df):
-    '''
+    """
     传入仓位 和 每日收益
     :param pos_df:
     :param return_df:
     :return: 时间截面上的夏普 * sqrt（abs（年化）/换手率）， 当换手率为0时，返回0
-    '''
+    """
     sharp_ratio = AZ_Sharpe_y((pos_df * return_df).sum(axis=1))
     ann_return = AZ_annual_return(pos_df, return_df)
     turnover = AZ_turnover(pos_df)

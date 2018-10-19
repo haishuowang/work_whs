@@ -79,7 +79,7 @@ def deal_intra_data():
 
 def create_intra_data(split_time=20):
     begin_str = '20050101'
-    end_str = '20100101'
+    end_str = '20180401'
 
     begin_year, begin_month, begin_day = begin_str[:4], begin_str[:6], begin_str
     end_year, end_month, end_day = end_str[:4], end_str[:6], end_str
@@ -99,24 +99,27 @@ def create_intra_data(split_time=20):
                 print(day)
                 day_path = os.path.join(month_path, day)
                 volume = pd.read_csv(os.path.join(day_path, 'Volume.csv'), index_col=0).astype(float)
-                turnover = pd.read_csv(os.path.join(day_path, 'Turnover.csv'), index_col=0).astype(float)
+                close = pd.read_csv(os.path.join(day_path, 'Close.csv'), index_col=0).astype(float)
                 for i in range(int(240 / split_time)):
-                    tmp_volume_sum = volume[i * split_time:(i + 1) * split_time].sum()
-                    tmp_turnover_sum = turnover[i * split_time:(i + 1) * split_time].sum()
+                    tmp_volume = volume[i * split_time:(i + 1) * split_time]
+                    tmp_volume_sum = tmp_volume.sum()
+                    tmp_close = close[i * split_time:(i + 1) * split_time]
                     exec('intra_volume_tab_{0}_df = intra_volume_tab_{0}_df.append(pd.DataFrame([tmp_volume_sum], '
                          'index=[pd.to_datetime(day)]))'.format(i + 1))
 
-                    tmp_vwap = tmp_turnover_sum / tmp_volume_sum / 100
+                    tmp_vwap = (tmp_close * tmp_volume).sum() / tmp_volume_sum
                     exec('intra_vwap_tab_{0}_df = intra_vwap_tab_{0}_df.append(pd.DataFrame([tmp_vwap], '
                          'index=[pd.to_datetime(day)]))'.format(i + 1))
-                    # print(tmp_volume_sum.iloc[0], tmp_vwap.iloc[0])
-                del turnover, volume
+                    print(tmp_volume_sum.iloc[0], tmp_vwap.iloc[0])
+                    del tmp_vwap, tmp_close, tmp_volume, tmp_volume_sum
+                del close, volume
             gc.collect()
     for i in range(int(240 / split_time)):
         intra_save_path = '/mnt/mfs/dat_whs/data/base_data'
-        exec('intra_vwap_tab_{0}_df.to_pickle(os.path.join(intra_save_path, \'intra_vwap_{1}_tab_{0}_2005_part.pkl\'))'
+        exec('intra_vwap_tab_{0}_df.to_pickle(os.path.join(intra_save_path, \'intra_vwap_{1}_tab_{0}_2005_2006.pkl\'))'
              .format(i + 1, split_time))
-        exec('intra_volume_tab_{0}_df.to_pickle(os.path.join(intra_save_path, \'intra_volume_{1}_tab_{0}_2005_part.pkl\'))'
+        exec('intra_volume_tab_{0}_df.to_pickle(os.path.join(intra_save_path, '
+             '\'intra_volume_{1}_tab_{0}_2005_2006.pkl\'))'
              .format(i + 1, split_time))
 
 

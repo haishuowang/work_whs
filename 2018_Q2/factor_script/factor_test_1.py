@@ -12,8 +12,7 @@ import random
 from factor_script.script_load_data import load_index_data, load_sector_data, load_locked_data, load_pct, \
     load_part_factor, create_log_save_path
 
-from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, \
-    filter_ic, filter_ic_sharpe, filter_ic_leve, filter_pot_sharpe, filter_all
+from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, filter_pot_sharpe, filter_all
 
 from open_lib.shared_tools import send_email
 # def AZ_Factor_info(factor_df, sector_mean):

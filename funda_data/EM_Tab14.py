@@ -67,6 +67,12 @@ class EM_Tab14_Deal(BaseDeal):
         return all_target_df * sector_df
 
 
+    def return_ratio_9_1(self, aadj_r, sector_df, q_values=0.1, n=60):
+        q_1 = aadj_r.rolling(60).quantile(0.1)
+        q_2 = aadj_r.rolling(60).quantile(0.2)
+        abs(q_2/q_1)
+
+
 class TRAD_SK_DAILY_JC_Deal(EM_Tab14_Deal):
     def __init__(self, sector_df, root_path, save_root_path):
         xnms = sector_df.columns
@@ -170,10 +176,13 @@ class TRAD_SK_DAILY_JC_Deal(EM_Tab14_Deal):
             self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
 
-def common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path, if_replace=False):
+def common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path, if_replace=False,
+               n_list=None, window_list=None):
     percent = 0.2
-    n_list = [3, 4, 5]
-    window_list = [10, 20, 60, 120]
+    if n_list is None:
+        n_list = [3, 4, 5]
+    if window_list is None:
+        window_list = [10, 20, 60, 120]
     for data_name in data_name_list:
         funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path,
                                         if_replace=if_replace)
@@ -203,10 +212,10 @@ def base_data_fun(sector_df, root_path, save_root_path):
     tech_base_deal = TechBaseDeal(sector_df, root_path, save_root_path)
     tech_base_deal.pnd_hl_(window_list)
     tech_base_deal.pnd_volume_(window_list)
-    tech_base_deal.pnd_volitality_and_more_(window_list)
-    tech_base_deal.pnnd_moment_(short_long_list)
-    tech_base_deal.p1d_jump_hl_(split_float_list)
-    tech_base_deal.pnnd_volume_moment_([(5, 30)])
+    tech_base_deal.pnd_volitality_and_more_(window_list + [30, 50, 90, 100, 200])
+    tech_base_deal.pnnd_moment_(short_long_list + [(30, 200), (50, 300)])
+    # tech_base_deal.p1d_jump_hl_(split_float_list)
+    tech_base_deal.pnnd_volume_moment_([(5, 30), (10, 40), (20, 120)])
 
 
 def TRAD_SK_DAILY_JC_fun(sector_df, root_path, save_root_path):
@@ -215,14 +224,15 @@ def TRAD_SK_DAILY_JC_fun(sector_df, root_path, save_root_path):
     short_long_list = [(10, 30), (20, 100), (20, 200), (40, 200)]
     limit_list = [1, 2]
     TRAD_SK_DAILY_JC_deal = TRAD_SK_DAILY_JC_Deal(sector_df, root_path, save_root_path)
-    TRAD_SK_DAILY_JC_deal.return_pnd_(n_list, percent)
+    TRAD_SK_DAILY_JC_deal.return_pnd_(n_list + [30, 90], percent)
     TRAD_SK_DAILY_JC_deal.wgt_return_pnd_(n_list, percent)
     TRAD_SK_DAILY_JC_deal.log_price_(percent)
     TRAD_SK_DAILY_JC_deal.turn_pnd_(n_list, percent)
-    TRAD_SK_DAILY_JC_deal.bias_turn_pnd_(n_list)
-    TRAD_SK_DAILY_JC_deal.MACD_(short_long_list)
-    TRAD_SK_DAILY_JC_deal.CCI_(n_list, limit_list)
-
+    TRAD_SK_DAILY_JC_deal.turn_pnd_([30], 0.24)
+    TRAD_SK_DAILY_JC_deal.turn_pnd_([150], 0.18)
+    TRAD_SK_DAILY_JC_deal.bias_turn_pnd_(n_list + [60])
+    TRAD_SK_DAILY_JC_deal.MACD_(short_long_list + [(40, 160)])
+    TRAD_SK_DAILY_JC_deal.CCI_(n_list + [150], limit_list)
 
 #
 # if __name__ == '__main__':
@@ -235,6 +245,3 @@ def TRAD_SK_DAILY_JC_fun(sector_df, root_path, save_root_path):
 #     sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
 #     xnms = sector_df.columns
 #     xinx = sector_df.index
-
-
-

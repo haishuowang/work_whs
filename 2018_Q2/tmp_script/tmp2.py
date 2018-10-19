@@ -1,16 +1,28 @@
 from datetime import datetime
 import time
 import pandas as pd
-datetime.now()
-stop_date = datetime(*datetime.now().timetuple()[:3], 17, 5)
+import numpy as np
+from multiprocessing import Pool, Manager
+import time
 
-# while datetime.now() < stop_date:
-#     print(1)
-#     time.sleep(5)
-# print('STOP!')
 
-# while True:
-#     if datetime.now() > stop_date:
-#         print('STOP')
-#         break
-#     print(1)
+def fun(x):
+    print(1)
+    x.value * x.value
+    # x * x
+    print(2)
+    time.sleep(3)
+
+
+manager = Manager()
+
+df = manager.Value(pd.DataFrame, pd.DataFrame([[1] * 10000, ] * 1000), lock=False)
+# df = pd.DataFrame([[1] * 10000, ] * 1000)
+t1 = time.time()
+pool = Pool(5)
+for i in range(10):
+    pool.apply_async(fun, args=(df,))
+pool.close()
+pool.join()
+t2 = time.time()
+print(t2-t1)

@@ -95,7 +95,7 @@ class BaseDeal:
     def pnd_volitality(adj_r, sector_df, n):
         vol_df = bt.AZ_Rolling(adj_r, n).std() * (250 ** 0.5)
         vol_df[vol_df < 0.08] = 0.08
-        return vol_df * sector_df
+        return vol_df
 
     @staticmethod
     def pnd_volitality_count_down(adj_r, sector_df, n):
@@ -127,10 +127,10 @@ class BaseDeal:
         return ma_dif * sector_df
 
     @staticmethod
-    def p1d_jump_hl(close, open, sector_df, split_float_list):
+    def p1d_jump_hl(close, open_, sector_df, split_float_list):
         target_df = pd.DataFrame()
         for split_float in split_float_list:
-            jump_df = open / close.shift(1) - 1
+            jump_df = open_ / close.shift(1) - 1
             tmp_df = pd.DataFrame(index=jump_df.index, columns=jump_df.columns)
             tmp_df[(jump_df > 0.101) | (jump_df < -0.101)] = 0
             tmp_df[(split_float >= jump_df) & (jump_df >= -split_float)] = 0
@@ -143,6 +143,9 @@ class BaseDeal:
                        if_replace=False):
         factor_to_fun = '/mnt/mfs/dat_whs/data/factor_to_fun'
         if if_filter:
+            print(f'{file_name}')
+            print(target_df.iloc[-100:].abs().replace(0, np.nan).sum(axis=1).mean(), len(target_df.iloc[-100:].columns))
+            print(target_df.iloc[-100:].abs().replace(0, np.nan).sum(axis=1).mean() / len(target_df.iloc[-100:].columns))
             target_df.to_pickle(os.path.join(save_root_path, file_name + '.pkl'))
             # 构建factor_to_fun的字典并存储
             self.info_dict_fun(fun, raw_data_path, args, os.path.join(factor_to_fun, file_name), if_replace)
@@ -169,16 +172,23 @@ class TechBaseDeal(BaseDeal):
         xnms = sector_df.columns
         xinx = sector_df.index
 
-        self.load_path = root_path.EM_Funda.TRAD_SK_DAILY_JC
-        self.part_load_path = 'EM_Funda/TRAD_SK_DAILY_JC'
-        self.sector_open = bt.AZ_Load_csv(self.load_path / 'OPEN.csv').reindex(columns=xnms, index=xinx)
-        self.sector_high = bt.AZ_Load_csv(self.load_path / 'HIGH.csv').reindex(columns=xnms, index=xinx)
-        self.sector_low = bt.AZ_Load_csv(self.load_path / 'LOW.csv').reindex(columns=xnms, index=xinx)
-        self.sector_close = bt.AZ_Load_csv(self.load_path / 'NEW.csv').reindex(columns=xnms, index=xinx)
-        self.sector_volume = bt.AZ_Load_csv(self.load_path / 'TVOL.csv').reindex(columns=xnms, index=xinx)
-        self.sector_amount = bt.AZ_Load_csv(self.load_path / 'TVALCNY.csv').reindex(columns=xnms, index=xinx)
-        self.sector_adj_r = bt.AZ_Load_csv(root_path.EM_Funda.DERIVED_14 / 'aadj_r.csv').reindex(columns=xnms,
-                                                                                                 index=xinx)
+        self.load_path = root_path.EM_Funda.DERIVED_14
+        self.part_load_path1 = 'EM_Funda/TRAD_SK_DAILY_JC'
+        self.part_load_path = 'EM_Funda/DERIVED_14'
+        self.sector_open = bt.AZ_Load_csv(root_path.EM_Funda.DERIVED_14 / 'aadj_p_OPEN.csv')\
+            .reindex(columns=xnms, index=xinx)
+        self.sector_high = bt.AZ_Load_csv(root_path.EM_Funda.DERIVED_14 / 'aadj_p_HIGH.csv')\
+            .reindex(columns=xnms, index=xinx)
+        self.sector_low = bt.AZ_Load_csv(root_path.EM_Funda.DERIVED_14 / 'aadj_p_LOW.csv')\
+            .reindex(columns=xnms, index=xinx)
+        self.sector_close = bt.AZ_Load_csv(root_path.EM_Funda.DERIVED_14 / 'aadj_p.csv')\
+            .reindex(columns=xnms, index=xinx)
+        self.sector_volume = bt.AZ_Load_csv(root_path.EM_Funda.TRAD_SK_DAILY_JC / 'TVOL.csv')\
+            .reindex(columns=xnms, index=xinx)
+        self.sector_amount = bt.AZ_Load_csv(root_path.EM_Funda.TRAD_SK_DAILY_JC / 'TVALCNY.csv')\
+            .reindex(columns=xnms, index=xinx)
+        self.sector_adj_r = bt.AZ_Load_csv(root_path.EM_Funda.DERIVED_14 / 'aadj_r.csv')\
+            .reindex(columns=xnms, index=xinx)
         self.sector_df = sector_df
         self.save_root_path = save_root_path
         self.factor_to_fun = '/mnt/mfs/dat_whs/data/factor_to_fun'
@@ -189,9 +199,9 @@ class TechBaseDeal(BaseDeal):
 
             file_name = f'price_p{n}d_hl'
             fun = 'funda_data_deal.BaseDeal.pnd_hl'
-            raw_data_path = (self.part_load_path + '/HIGH.csv',
-                             self.part_load_path + '/LOW.csv',
-                             self.part_load_path + '/NEW.csv',)
+            raw_data_path = (self.part_load_path + '/aadj_p_HIGH.csv',
+                             self.part_load_path + '/aadj_p_LOW.csv',
+                             self.part_load_path + '/aadj_p.csv',)
             args = (n,)
             self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
@@ -200,7 +210,7 @@ class TechBaseDeal(BaseDeal):
             target_df = self.pnd_volume(self.sector_volume, self.sector_df, n)
             file_name = f'volume_count_down_p{n}d'
             fun = 'funda_data_deal.BaseDeal.pnd_volume'
-            raw_data_path = (self.part_load_path + '/TVOL.csv',)
+            raw_data_path = (self.part_load_path1 + '/TVOL.csv',)
             args = (n,)
             self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args, if_filter=False)
 
@@ -247,22 +257,22 @@ class TechBaseDeal(BaseDeal):
             args = (n_short, n_long)
             self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
-    def p1d_jump_hl_(self, split_float_list):
-        target_df = self.p1d_jump_hl(self.sector_close, self.sector_open, self.sector_df, split_float_list)
-        str_name = ''.join([str(x) for x in split_float_list])
-        file_name = f'p1d_jump_hl{str_name}'
-        fun = 'funda_data_deal.BaseDeal.p1d_jump_hl'
-        raw_data_path = (self.load_path / 'NEW.csv',
-                         self.load_path / 'OPEN.csv',)
-        args = (split_float_list,)
-        self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+    # def p1d_jump_hl_(self, split_float_list):
+    #     target_df = self.p1d_jump_hl(self.sector_close, self.sector_open, self.sector_df, split_float_list)
+    #     str_name = ''.join([str(x) for x in split_float_list])
+    #     file_name = f'p1d_jump_hl{str_name}'
+    #     fun = 'funda_data_deal.BaseDeal.p1d_jump_hl'
+    #     raw_data_path = (self.load_path / 'NEW.csv',
+    #                      self.load_path / 'OPEN.csv',)
+    #     args = (split_float_list,)
+    #     self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
     def pnnd_volume_moment_(self, short_long_list):
         for n_short, n_long in short_long_list:
             target_df = self.pnnd_moment(self.sector_volume, self.sector_df, n_short, n_long)
             file_name = f'volume_moment_p{n_short}{n_long}d'
             fun = 'funda_data_deal.BaseDeal.pnnd_moment'
-            raw_data_path = (self.load_path / 'TVOL.csv',)
+            raw_data_path = (self.part_load_path1 + '/TVOL.csv',)
             args = (n_short, n_long)
             self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
@@ -350,35 +360,34 @@ class SectorData(object):
         return target_df
 
     # 读取 sector(行业 最大市值等)
-    def load_sector_data(self, begin_date, end_date, sector_name):
+    def load_sector_data(self, begin_date, end_date, sector_name, sector_path=None):
         market_top_n = bt.AZ_Load_csv(self.root_path.EM_Funda.DERIVED_10 / (sector_name + '.csv'))
-        market_top_n = market_top_n.shift(1)[(market_top_n.index >= begin_date) & (market_top_n.index < end_date)]
+        market_top_n = market_top_n[(market_top_n.index >= begin_date) & (market_top_n.index < end_date)]
         market_top_n.dropna(how='all', axis='columns', inplace=True)
         xnms = market_top_n.columns
         xinx = market_top_n.index
 
-        new_stock_df = self.get_new_stock_info(xnms, xinx).shift(1)
-        st_stock_df = self.get_st_stock_info(xnms, xinx).shift(1)
+        new_stock_df = self.get_new_stock_info(xnms, xinx)
+        st_stock_df = self.get_st_stock_info(xnms, xinx)
         sector_df = market_top_n * new_stock_df * st_stock_df
         sector_df.replace(0, np.nan, inplace=True)
         return sector_df
 
-
-if __name__ == '__main__':
-    mode = 'bkt'
-    begin_date = pd.to_datetime('20100101')
-    end_date = pd.to_datetime('20180801')
-    sector_name = 'market_top_500'
-    table_num, table_name, data_name = ('EM_Funda', 'TRAD_MT_MARGIN', 'RQCHL')
-    save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_500'
-    bt.AZ_Path_create(save_root_path)
-    root_path = pt._BinFiles(mode)
-
-    sector_data_class = SectorData(root_path)
-    sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
-
-    # funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path)
-    # funda_base_deal.row_extre_(0.2)
+# if __name__ == '__main__':
+#     mode = 'bkt'
+#     begin_date = pd.to_datetime('20100101')
+#     end_date = pd.to_datetime('20180801')
+#     sector_name = 'market_top_500'
+#     table_num, table_name, data_name = ('EM_Funda', 'TRAD_MT_MARGIN', 'RQCHL')
+#     save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_500'
+#     bt.AZ_Path_create(save_root_path)
+#     root_path = pt._BinFiles(mode)
+#
+#     sector_data_class = SectorData(root_path)
+#     sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
+#
+#     funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path)
+#     funda_base_deal.row_extre_(0.2)
 
 # def pnd_continue_ud(raw_df, n_list):
 #     all_target_df = pd.DataFrame()

@@ -215,7 +215,7 @@ def save_load_control(use_factor_set_path, sector_name, new_factor_list, add_fac
             para_ready_df.to_pickle(para_save_file)
 
     else:
-        file_name = 'market_top_500_True_20180809_1856_hold_10_aadj_r.txt'
+        file_name = 'market_top_2000_True_20180823_0910_hold_20_aadj_r.txt'
 
         log_save_file = os.path.join(result_save_path, 'log', file_name)
         result_save_file = os.path.join(result_save_path, 'result', file_name)
@@ -236,7 +236,7 @@ def main_fun(sector_name, index_name, hold_time, return_file, new_factor_list, a
     end_date = pd.to_datetime('20180401')
 
     if_save = True
-    if_new_program = True
+    if_new_program = False
     use_factor_set_path = '/mnt/mfs/dat_whs/data/use_factor_set/market_top_500_201808171920.pkl'
     return_file = 'close'
 
