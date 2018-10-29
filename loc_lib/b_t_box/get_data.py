@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import timedelta
 import os
-import open_lib.shared_paths.paths as olspp
+import open_lib_c.shared_paths.paths as olspp
 import gc
 
 global root_path

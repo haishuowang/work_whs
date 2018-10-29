@@ -251,8 +251,8 @@ class DailySpecielDeal(EM_Funda_Deal):
         return target_df
 
     def speciel_deal(self, percent):
-        # data_name_list = ['OPCF', 'EBIT', 'NetProfit', 'TotRev']
-        data_name_list = ['EBIT']
+        data_name_list = ['OPCF', 'EBIT', 'NetProfit', 'TotRev']
+        # data_name_list = ['EBIT']
         grow_para_list = [('Y3YGR', 'Y5YGR'), ('QYOY', 'Y3YGR')]
         for data_name in data_name_list:
             for grow_1_name, grow_2_name in grow_para_list:
