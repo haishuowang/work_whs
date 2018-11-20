@@ -1754,18 +1754,15 @@ def main(config_name_dict):
 
 if __name__ == '__main__':
     a = time.time()
-    config_name_dict = {'CRTMEDUSA01': ['name3'],
-                        'CRTMEDUSA04': ['name1', 'name3'],
-                        'CRTMEDUSA05': ['name1', 'name3'],
-                        'CRTMEDUSA07': ['name3'],
-                        'CRTMEDUSA08': ['name3'],
-                        'CRTKUNKKA01': ['name3'],
-                        'CRTKUNKKA02': ['name3'],
-                        'CRTRUBICK01': ['name3'],
-                        'CRTRUBICK02': ['name3'],
-                        'CRTKUNKKA03': ['name3'],
-                        'CRTKUNKKA04': ['name1', 'name3'],
-                        }
+    config_name_dict = {#'market_top_300plus_False_20181109_1634_hold_20__8':
+                        #     ['name1', 'name2', 'name3'],
+                        # 'market_top_300to800plus_industry_20_25_30_35_False_20181107_0943_hold_5__8':
+                        #     ['name1', 'name2', 'name3'],
+                        'market_top_300to800plus_industry_10_15_True_20181117_2314_hold_5__7':
+                            ['name1', 'name3'],
+                        'market_top_300plus_True_20181115_1919_hold_5__7':
+                            ['name1', 'name3'],
+                            }
 
     main(config_name_dict)
     b = time.time()

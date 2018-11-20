@@ -62,8 +62,8 @@ def market_top_500plus_fun():
     return market_top_300plus, market_top_500plus, market_top_800plus
 
 
-root_path = '/media/hdd1/DAT_EQT'
-root_path = '/mnt/mfs/DAT_EQT'
+# root_path = '/media/hdd1/DAT_EQT'
+# root_path = '/mnt/mfs/DAT_EQT'
 
 
 def AZ_Row_zscore(df, cap=None):

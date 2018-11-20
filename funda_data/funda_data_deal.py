@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-import loc_lib.shared_paths.path as pt
-import loc_lib.shared_tools.back_test as bt
+import work_whs.loc_lib.shared_paths.path as pt
+import work_whs.loc_lib.shared_tools.back_test as bt
 import os
 
 
@@ -373,21 +373,22 @@ class SectorData(object):
         sector_df.replace(0, np.nan, inplace=True)
         return sector_df
 
-# if __name__ == '__main__':
-#     mode = 'bkt'
-#     begin_date = pd.to_datetime('20100101')
-#     end_date = pd.to_datetime('20180801')
-#     sector_name = 'market_top_500'
-#     table_num, table_name, data_name = ('EM_Funda', 'TRAD_MT_MARGIN', 'RQCHL')
-#     save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_500'
-#     bt.AZ_Path_create(save_root_path)
-#     root_path = pt._BinFiles(mode)
-#
-#     sector_data_class = SectorData(root_path)
-#     sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
-#
-#     funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path)
-#     funda_base_deal.row_extre_(0.2)
+
+if __name__ == '__main__':
+    mode = 'bkt'
+    begin_date = pd.to_datetime('20100101')
+    end_date = pd.to_datetime('20180801')
+    sector_name = 'market_top_500'
+    table_num, table_name, data_name = ('EM_Funda', 'TRAD_MT_MARGIN', 'RQCHL')
+    save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_500'
+    bt.AZ_Path_create(save_root_path)
+    root_path = pt._BinFiles(mode)
+
+    sector_data_class = SectorData(root_path)
+    sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
+
+    funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path)
+    funda_base_deal.row_extre_(0.2)
 
 # def pnd_continue_ud(raw_df, n_list):
 #     all_target_df = pd.DataFrame()

@@ -7,8 +7,8 @@ import time
 sys.path.append("/mnt/mfs/LIB_ROOT")
 # import funda_data as fd
 # from funda_data.funda_data_deal import SectorData
-import open_lib_c.shared_paths.path as pt
-from open_lib_c.shared_tools import send_email
+import open_lib.shared_paths.path as pt
+from open_lib.shared_tools.send_email import send_email
 # import warnings
 # warnings.filterwarnings('ignore')
 # import loc_lib.shared_tools.back_test as bt
@@ -461,9 +461,10 @@ def find_fun(fun_list):
 def load_raw_data(root_path, raw_data_path, xnms, xinx, if_replace, target_date):
     raw_data_list = []
     for target_path in raw_data_path:
-        tmp_data = bt.AZ_Load_csv(os.path.join('/media/hdd1/DAT_EQT', target_path)).reindex(columns=xnms, index=xinx)
+        load_root_data_path = os.path.join('/media/hdd1/DAT_EQT', target_path)
+        print(load_root_data_path)
+        tmp_data = bt.AZ_Load_csv(load_root_data_path).reindex(columns=xnms, index=xinx)
         if tmp_data.index[-1] != target_date:
-            print(send_email)
             send_email(target_path + ' Data Error!',
                        ['whs@yingpei.com'],
                        [],
@@ -486,6 +487,8 @@ def create_data_fun(mode, info_path, sector_df, xnms, xinx, target_date):
 
     target_fun = find_fun(fun_list)
     target_df = target_fun(*raw_data_list, sector_df, *args)
+    if (target_df.iloc[-1] != 0).sum() == 0:
+        send_email(info_path, ['whs@yingpei.com'], [], 'Data Update Warning')
     return target_df
 
 
@@ -546,7 +549,7 @@ def main():
             create_data = create_data[(create_data.index <= cut_date)]
             part_create_data = create_data_fun(mode, info_path, sector_df, xnms, xinx[-300:], target_date)
             part_create_data = part_create_data[(part_create_data.index > cut_date)]
-            create_data = create_data.append(part_create_data)
+            create_data = create_data.append(part_create_data, sort=False)
 
         else:
             create_data = create_data_fun(mode, info_path, sector_df, xnms, xinx, target_date)

@@ -110,21 +110,32 @@ def clear_raw_data():
                 close = pd.read_csv(os.path.join(day_path, 'Close.csv'), index_col=0).astype(float)
                 EQT_list = sorted([x for x in close.columns if (x[2] == '0' or x[2] == '3') and x.startswith('SZ')
                                    or (x[2] == '6' and x.startswith('SH'))])
-                close = close[EQT_list]
-                high = pd.read_csv(os.path.join(day_path, 'High.csv'), index_col=0).astype(float)[EQT_list]
-                low = pd.read_csv(os.path.join(day_path, 'Low.csv'), index_col=0).astype(float)[EQT_list]
-                open = pd.read_csv(os.path.join(day_path, 'Open.csv'), index_col=0).astype(float)[EQT_list]
-                turnover = pd.read_csv(os.path.join(day_path, 'Turnover.csv'), index_col=0).astype(float)[EQT_list]
-                volume = pd.read_csv(os.path.join(day_path, 'Volume.csv'), index_col=0).astype(float)[EQT_list]
+                if len(EQT_list) > 100:
+                    close = close[EQT_list]
+                    high = pd.read_csv(os.path.join(day_path, 'High.csv'), index_col=0).astype(float)[EQT_list]
+                    low = pd.read_csv(os.path.join(day_path, 'Low.csv'), index_col=0).astype(float)[EQT_list]
+                    open = pd.read_csv(os.path.join(day_path, 'Open.csv'), index_col=0).astype(float)[EQT_list]
+                    turnover = pd.read_csv(os.path.join(day_path, 'Turnover.csv'), index_col=0).astype(float)[EQT_list]
+                    volume = pd.read_csv(os.path.join(day_path, 'Volume.csv'), index_col=0).astype(float)[EQT_list]
 
-                high.to_csv(os.path.join(day_path, 'High.csv'))
-                open.to_csv(os.path.join(day_path, 'Open.csv'))
-                low.to_csv(os.path.join(day_path, 'Low.csv'))
-                close.to_csv(os.path.join(day_path, 'Close.csv'))
-                turnover.to_csv(os.path.join(day_path, 'Turnover.csv'))
-                volume.to_csv(os.path.join(day_path, 'Volume.csv'))
+                    xnms = [x[2:] + '.' + x[:2] for x in EQT_list]
+                    print(xnms[0])
+                    high.columns = xnms
+                    open.columns = xnms
+                    low.columns = xnms
+                    close.columns = xnms
+                    turnover.columns = xnms
+                    volume.columns = xnms
+                    print(close)
+                    high.to_csv(os.path.join(day_path, 'High.csv'))
+                    open.to_csv(os.path.join(day_path, 'Open.csv'))
+                    low.to_csv(os.path.join(day_path, 'Low.csv'))
+                    close.to_csv(os.path.join(day_path, 'Close.csv'))
+                    turnover.to_csv(os.path.join(day_path, 'Turnover.csv'))
+                    volume.to_csv(os.path.join(day_path, 'Volume.csv'))
 
 
-# if __name__ == '__main__':
-#     create_raw_data()
-#     clear_raw_data()
+if __name__ == '__main__':
+    # create_raw_data()
+    # clear_raw_data()
+    pass

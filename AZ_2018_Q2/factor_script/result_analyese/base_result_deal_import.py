@@ -16,11 +16,10 @@ import time
 # matplotlib.use('Agg')
 
 sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
-sys.path.append('/mnt/mfs/work_whs')
-from loc_lib.shared_tools import send_email
-import loc_lib.shared_tools.back_test as bt
+sys.path.append('/mnt/mfs')
+from work_whs.loc_lib.shared_tools import send_email
+import work_whs.loc_lib.shared_tools.back_test as bt
 from collections import Counter
-
 
 
 def AZ_Leverage_ratio(asset_df):
@@ -168,13 +167,14 @@ def plot_send_result(pnl_df, sharpe_ratio, subject):
     plt.grid()
     plt.legend()
     plt.savefig(os.path.join(figure_save_path, '{}.png'.format(subject)))
+    plt.close()
     text = ''
     to = ['whs@yingpei.com']
     filepath = [os.path.join(figure_save_path, '{}.png'.format(subject))]
     send_email.send_email(text, to, filepath, subject)
 
 
-def config_create(sector_name, result_file_name, config_name, data, time_para, pot_in_num, leve_ratio_num,
+def config_create(main_model, sector_name, result_file_name, config_name, data, time_para, pot_in_num, leve_ratio_num,
                   sp_in, ic_num, fit_ratio, n, use_factor_num):
     time_para_dict = dict()
     time_para_dict['time_para_4'] = [pd.to_datetime('20140601'), pd.to_datetime('20180601'),
@@ -234,17 +234,22 @@ def config_create(sector_name, result_file_name, config_name, data, time_para, p
         part_target_df = part_a_n[['fun_name', 'name1', 'name2', 'name3', 'buy_sell']].iloc[:part_num]
         print(part_num)
         target_df = target_df.append(part_target_df)
+
     print(len(target_df))
     print(Counter(target_df['name3'].values))
     config_info = dict()
     config_info['factor_info'] = target_df
     config_info['sector_name'] = sector_name
     config_info['result_file_name'] = result_file_name
-    config_info['hold_time'] =
+    config_info['if_weight'] = main_model.if_weight
+    config_info['ic_weight'] = main_model.ic_weight
+    config_info['hold_time'] = main_model.hold_time
+    config_info['if_hedge'] = main_model.if_hedge
+    config_info['if_only_long'] = main_model.if_only_long
     pd.to_pickle(config_info, '/mnt/mfs/alpha_whs/{}.pkl'.format(config_name))
 
 
-def bkt_fun(pnl_save_path, a_n, i):
+def bkt_fun(main_model, pnl_save_path, a_n, i):
     x, key, fun_name, name1, name2, name3, filter_fun_name, sector_name, \
     con_in, con_out_1, con_out_2, con_out_3, con_out_4, ic, \
     sp_u, sp_m, sp_d, pot_in, fit_ratio, leve_ratio, \
@@ -262,6 +267,7 @@ def bkt_fun(pnl_save_path, a_n, i):
     if sp_m > 0:
         if not os.path.exists(os.path.join(pnl_save_path, '{}|{}|{}.csv'.format(x, key, fun_name))):
             pnl_df_c.to_pickle(os.path.join(pnl_save_path, '{}|{}|{}.csv'.format(x, key, fun_name)))
+
         else:
             pnl_df_c.to_pickle(os.path.join(pnl_save_path, '{}|{}|{}.csv'.format(x, key, fun_name)))
             print('file exist!')
@@ -309,10 +315,10 @@ def pos_sum_c(main_model, data, time_para, result_file_name, pot_in_num, leve_ra
     bt.AZ_Path_create(pnl_save_path)
 
     result_list = []
-    pool = Pool(20)
+    pool = Pool(10)
     for i in a_n.index:
-        # bkt_fun(pnl_save_path, a_n, i)
-        result_list.append(pool.apply_async(bkt_fun, args=(pnl_save_path, a_n, i,)))
+        # bkt_fun(main_model, pnl_save_path, a_n, i,)
+        result_list.append(pool.apply_async(bkt_fun, args=(main_model, pnl_save_path, a_n, i,)))
     pool.close()
     pool.join()
 
@@ -417,7 +423,7 @@ def survive_ratio_test(data, para_adj_set_list):
             sr_list_in = np.array([sr_1, sr_2, sr_3])
             sr_list_out = np.array([sr_4, sr_5, sr_6])
             cond_1 = sum(sr_list_in > 0.5) >= 2  # and sum(sr_list_in > 0.2) == 3
-            # cond_2 = (len(a_1) > 20) and (len(a_2) > 20) and (len(a_3) > 20)
+            # cond_2 = sr_5 > 0.55
 
             cond_3_1 = sum(sr_list_out > 0.55) >= 1
             cond_3_2 = sum(sr_list_out > 0.3) >= 2
@@ -426,12 +432,13 @@ def survive_ratio_test(data, para_adj_set_list):
             cond_3 = cond_3_1 and cond_3_2 and cond_3_3
             cond_4 = (len(a_4) > 20) and (len(a_5) > 20) and (len(a_6) > 20)
             print(cond_1, cond_3, cond_4)
-            if cond_1 and cond_3 and cond_4:
+            # if cond_1 and cond_3 and cond_4:
+            if cond_3 and cond_4:
                 return para_adj_set
     return None
 
 
-def config_test(main_model, config_name, result_file_name):
+def config_test(main_model, config_name, result_file_name, cut_date):
     config_set = pd.read_pickle(f'/mnt/mfs/alpha_whs/{config_name}.pkl')
     config_data = config_set['factor_info']
     sum_factor_df = pd.DataFrame()
@@ -457,9 +464,13 @@ def config_test(main_model, config_name, result_file_name):
                                                                     if_return_pnl=True, if_only_long=False)
     print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in,
           fit_ratio, leve_ratio, sp_in, sharpe_q_out)
+    sp = bt.AZ_Sharpe_y(pnl_df)
     pnl_df.to_csv(f'/mnt/mfs/dat_whs/tmp_pnl_file/{result_file_name}.csv')
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), 'mix_factor')
-    return sum_pos_df, pnl_df
+    send_list = [in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in,
+                 fit_ratio, leve_ratio, sp_in, sharpe_q_out]
+    send_email.send_email(','.join([str(x) for x in send_list]), ['whs@yingpei.com'], [], result_file_name)
+    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), result_file_name)
+    return sum_pos_df, pnl_df, sp
 
 
 def load_index_data(index_name, xinx):
@@ -475,12 +486,25 @@ def get_corr_matrix(cut_date=None):
     index_df_1 = load_index_data('000300', return_df.index).fillna(0)
     index_df_2 = load_index_data('000905', return_df.index).fillna(0)
 
-    hedge_df = 0.5 * index_df_1 + 0.5 * index_df_2
-    return_df = return_df.sub(hedge_df, axis=0)
     sum_pnl_df = pd.DataFrame()
     for pos_file_name in pos_file_list:
         pos_df = bt.AZ_Load_csv('/mnt/mfs/AAPOS/{}'.format(pos_file_name))
-        pnl_df = (pos_df.shift(2) * return_df).sum(axis=1)
+
+        cond_1 = 'IF01' in pos_df.columns
+        cond_2 = 'IC01' in pos_df.columns
+        if cond_1 and cond_2:
+            hedge_df = 0.5 * index_df_1 + 0.5 * index_df_2
+            return_df_c = return_df.sub(hedge_df, axis=0)
+        elif cond_1:
+            hedge_df = index_df_1
+            return_df_c = return_df.sub(hedge_df, axis=0)
+        elif cond_2:
+            hedge_df = index_df_2
+            return_df_c = return_df.sub(hedge_df, axis=0)
+        else:
+            print('alpha hedge error')
+            continue
+        pnl_df = (pos_df.shift(2) * return_df_c).sum(axis=1)
         pnl_df.name = pos_file_name
         sum_pnl_df = pd.concat([sum_pnl_df, pnl_df], axis=1)
         # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), 'mix_factor')
@@ -500,15 +524,18 @@ def get_all_pnl_corr(pnl_df, col_name):
 def find_sector_name(result_file_name):
     if 'True' in result_file_name:
         sector_name = result_file_name.split('True')[0][:-1]
+        if_hedge = True
     elif 'False' in result_file_name:
         sector_name = result_file_name.split('False')[0][:-1]
+        if_hedge = False
     else:
         print('sector_name ERROR!')
         sector_name = None
-    return sector_name
+        if_hedge = None
+    return sector_name, if_hedge
 
 
-def find_target_file(begin_time, end_time, time_type):
+def find_target_file(begin_time, end_time, time_type, endswith=None):
     def time_judge(begin_time, end_time, target_time):
         # print(datetime.fromtimestamp(target_time))
         if end_time >= datetime.fromtimestamp(target_time) >= begin_time:
@@ -517,7 +544,12 @@ def find_target_file(begin_time, end_time, time_type):
             return False
 
     result_root_path = '/mnt/mfs/dat_whs/result/result'
-    raw_file_name_list = os.listdir(result_root_path)
+    raw_file_name_list = [x for x in os.listdir(result_root_path)
+                          if os.path.getsize(os.path.join(result_root_path, x)) != 0]
+
+    if endswith is not None:
+        raw_file_name_list = [x for x in os.listdir(result_root_path)
+                              if x[:-4].endswith(endswith)]
 
     if time_type == 'm':
         result_file_name_list = [x[:-4] for x in raw_file_name_list if
@@ -539,137 +571,197 @@ def find_target_file(begin_time, end_time, time_type):
         return []
 
 
-def main():
-    pass
+def main(result_file_name, time_para_dict):
+    print('*******************************************************************************************************')
+    root_path = '/mnt/mfs/DAT_EQT'
+    # result_file_name = 'market_top_800plus_True_20181104_0237_hold_5__7'
+    # root_path = '/media/hdd1/DAT_EQT'
+    config_name = result_file_name
+    if_save = False
+    if_new_program = True
+
+    hold_time = int(result_file_name.split('hold')[-1].split('_')[1])
+    script_num = result_file_name.split('_')[-1]
+    print(hold_time)
+    loc = locals()
+    exec(f'from work_whs.AZ_2018_Q2.factor_script.main_file import main_file_sector_{script_num} as mf')
+    mf = loc['mf']
+    # from work_whs.AZ_2018_Q2.factor_script.main_file import main_file_sector_6 as mf
+
+    lag = 2
+    return_file = ''
+
+    if_only_long = False
+
+    sector_name, if_hedge = find_sector_name(result_file_name)
+    if_hedge = True
+    # sector_name = 'market_top_800plus_industry_10_15'
+    print(result_file_name)
+    print(sector_name)
+    result_path = '/mnt/mfs/dat_whs/result/result/{}.txt'.format(result_file_name)
+    # #############################################################################
+    # 判断文件大小
+    if os.path.getsize(result_path):
+        data = pd.read_csv(result_path, sep='|', header=None, error_bad_lines=False)
+
+        data.columns = ['time_para', 'key', 'fun_name', 'name1', 'name2', 'name3', 'filter_fun_name', 'sector_name',
+                        'con_in', 'con_out_1', 'con_out_2', 'con_out_3', 'con_out_4', 'ic', 'sp_u', 'sp_m', 'sp_d',
+                        'pot_in', 'fit_ratio', 'leve_ratio', 'sp_in', 'sp_out_1', 'sp_out_2', 'sp_out_3',
+                        'sp_out_4']
+    else:
+        return 0
+
+    filter_cond = data[['name1', 'name2', 'name3']] \
+        .apply(lambda x: not (('R_COMPANYCODE_First_row_extre_0.3' in set(x)) or
+                              ('return_p20d_0.2' in set(x)) or
+                              ('price_p120d_hl' in set(x)) or
+                              ('return_p60d_0.2' in set(x)) or
+                              ('wgt_return_p120d_0.2' in set(x)) or
+                              ('wgt_return_p20d_0.2' in set(x)) or
+                              ('log_price_0.2' in set(x)) or
+                              ('TVOL_row_extre_0.2' in set(x)) or
+                              ('TVOL_row_extre_0.2' in set(x)) or
+                              ('tab2_11_row_extre_0.3' in set(x)) or
+                              ('tab1_8_row_extre_0.3' in set(x)) or
+                              ('intra_dn_vol_col_score_row_extre_0.3' in set(x)) or
+                              ('intra_dn_vol_row_extre_0.3' in set(x))
+                              # ('RSI_140_30' in set(x)) or
+                              # ('CMO_200_0' in set(x)) or
+                              # ('CMO_40_0' in set(x))
+                              # ('ATR_40_0.2' in set(x))
+                              # ('ADX_200_40_20' in set(x))
+                              # ('ATR_140_0.2' in set(x))
+                              ), axis=1)
+    data = data[filter_cond]
+
+    para_adj_set_list = [{'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+                         {'pot_in_num': 40, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+                         {'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+                         {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 2},
+                         {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+                         {'pot_in_num': 40, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1}]
+
+    # para_adj_set_list_9 = [{'pot_in_num': 30, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+    #                        {'pot_in_num': 20, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+    #                        {'pot_in_num': 30, 'leve_ratio_num': 2, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+    #                        {'pot_in_num': 30, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 2},
+    #                        {'pot_in_num': 30, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+    #                        {'pot_in_num': 20, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1}]
+
+    time_para = 'time_para_5'
+    print(time_para)
+
+    # #############################################################################
+    # 结果分析
+    print('结果分析')
+    survive_result = survive_ratio_test(data, para_adj_set_list)
+    if survive_result is None:
+        print(f'{result_file_name} not satisfaction!!!!!!!!')
+        return 0
+    else:
+        pass
+    print(hold_time)
+    #############################################################################
+    # 回测函数
+    if sector_name.startswith('market_top_300plus'):
+        if_weight = 1
+        ic_weight = 0
+
+    elif sector_name.startswith('market_top_300to800plus'):
+        if_weight = 0
+        ic_weight = 1
+
+    else:
+        if_weight = 0.5
+        ic_weight = 0.5
+    print('回测函数')
+    begin_date, cut_date, end_date = time_para_dict[time_para]
+    main_model = mf.FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date,
+                                     time_para_dict, sector_name, hold_time, lag, return_file, if_hedge,
+                                     if_only_long, if_weight, ic_weight)
+    sum_pos_df, pnl_df = pos_sum_c(main_model, data, time_para, result_file_name, **survive_result)
+
+    #############################################################################
+    # 生成config文件
+
+    config_create(main_model, sector_name, result_file_name, config_name, data, time_para, **survive_result,
+                  n=5, use_factor_num=40)
+    ############################################################################
+    # 测试config结果
+    begin_date, cut_date, end_date = time_para_dict[time_para]
+    sum_pos_df, pnl_df, sp = config_test(main_model, config_name, result_file_name, cut_date)
+    if sp < 2:
+        return 0
+    pnl_df.name = result_file_name
+    # #############################################################################
+    # 计算相关性
+    # pnl_df_CRTSECJUN
+    #
+    sum_pnl_df = get_corr_matrix(cut_date=None)
+    sum_pnl_df_c = pd.concat([sum_pnl_df, pnl_df], axis=1)
+
+    corr_self = sum_pnl_df_c.corr()[[result_file_name]]
+    print(corr_self)
+    print('______________________________________')
+    if len(corr_self[corr_self > 0.7]) >= 2:
+        print('FAIL!')
+        send_email.send_email('FAIL!\n' + pd.DataFrame(corr_self).to_html(),
+                              ['whs@yingpei.com'],
+                              [],
+                              result_file_name)
+    else:
+        print('SUCCESS!')
+        send_email.send_email('SUCCESS!\n' + pd.DataFrame(corr_self).to_html(),
+                              ['whs@yingpei.com'],
+                              [],
+                              result_file_name)
+    print('______________________________________')
+    return 0
 
 
 if __name__ == '__main__':
     time_para_dict = dict()
-    time_para_dict['time_para_1'] = [pd.to_datetime('20110101'), pd.to_datetime('20150101'),
-                                     pd.to_datetime('20150701')]
+    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+                                     pd.to_datetime('20151001')]
 
-    time_para_dict['time_para_2'] = [pd.to_datetime('20120101'), pd.to_datetime('20160101'),
-                                     pd.to_datetime('20160701')]
+    time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+                                     pd.to_datetime('20161001')]
 
-    time_para_dict['time_para_3'] = [pd.to_datetime('20130601'), pd.to_datetime('20170601'),
-                                     pd.to_datetime('20171201')]
+    time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
+                                     pd.to_datetime('20180301')]
 
-    time_para_dict['time_para_4'] = [pd.to_datetime('20140601'), pd.to_datetime('20180601'),
+    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
+                                     pd.to_datetime('20180901')]
+
+    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+                                     pd.to_datetime('20180901')]
+
+    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
                                      pd.to_datetime('20181001')]
+    # # begin_time = datetime(2018, 11, 1, 6, 11, 13)
+    # # end_time = datetime(2018, 11, 6, 6, 30, 13)
 
-    time_para_dict['time_para_5'] = [pd.to_datetime('20140701'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20181001')]
+    # begin_time = datetime(2018, 11, 8, 6, 11, 13)
+    # end_time = datetime(2018, 11, 11, 6, 30, 13)
 
-    time_para_dict['time_para_6'] = [pd.to_datetime('20140801'), pd.to_datetime('20180801'),
-                                     pd.to_datetime('20181001')]
+    # begin_time = datetime(2018, 10, 11, 6, 11, 13)
+    # end_time = datetime(2018, 11, 13, 6, 30, 13)
 
-    begin_time = datetime(2018, 10, 24, 19, 11, 13)
-    end_time = datetime(2018, 10, 30, 18, 11, 13)
+    # begin_time = datetime(2018, 11, 11, 6, 11, 13)
+    # end_time = datetime(2018, 11, 18, 6, 30, 13)
+
+    begin_time = datetime(2018, 11, 18, 6, 11, 13)
+    end_time = datetime(2018, 11, 20, 6, 30, 13)
+
     time_type = 'm'
-    result_file_name_list = find_target_file(begin_time, end_time, time_type)
-    for result_file_name in result_file_name_list[1:]:
-        print('*******************************************************************************************************')
-        root_path = '/mnt/mfs/DAT_EQT'
-        # root_path = '/media/hdd1/DAT_EQT'
-        if_save = False
-        if_new_program = True
-
-        hold_time = int(result_file_name.split('hold')[-1].split('_')[1])
-        script_num = result_file_name.split('_')[-1]
-        print(hold_time)
-        exec(f'from factor_script.main_file import main_file_sector_{script_num} as mf')
-
-        lag = 2
-        return_file = ''
-
-        if_hedge = True
-        if_only_long = False
-
-        sector_name = find_sector_name(result_file_name)
-        # sector_name = 'market_top_800plus_industry_10_15'
-        print(result_file_name)
-        print(sector_name)
-        data = pd.read_csv('/mnt/mfs/dat_whs/result/result/{}.txt'.format(result_file_name),
-                           sep='|', header=None, error_bad_lines=False)
-
-        data.columns = ['time_para', 'key', 'fun_name', 'name1', 'name2', 'name3', 'filter_fun_name', 'sector_name',
-                        'con_in', 'con_out_1', 'con_out_2', 'con_out_3', 'con_out_4', 'ic', 'sp_u', 'sp_m', 'sp_d',
-                        'pot_in', 'fit_ratio', 'leve_ratio', 'sp_in', 'sp_out_1', 'sp_out_2', 'sp_out_3', 'sp_out_4']
-
-        filter_cond = data[['name1', 'name2', 'name3']] \
-            .apply(lambda x: not (('R_COMPANYCODE_First_row_extre_0.3' in set(x)) or
-                                  ('return_p20d_0.2' in set(x)) or
-                                  ('price_p120d_hl' in set(x)) or
-                                  ('return_p60d_0.2' in set(x)) or
-                                  ('wgt_return_p120d_0.2' in set(x)) or
-                                  ('wgt_return_p20d_0.2' in set(x)) or
-                                  ('log_price_0.2' in set(x)) or
-                                  ('TVOL_row_extre_0.2' in set(x)) or
-                                  ('TVOL_row_extre_0.2' in set(x)) or
-                                  ('turn_p30d_0.24' in set(x))
-                                  # ('RSI_140_30' in set(x)) or
-                                  # ('CMO_200_0' in set(x)) or
-                                  # ('CMO_40_0' in set(x))
-                                  # ('ATR_40_0.2' in set(x))
-                                  # ('ADX_200_40_20' in set(x))
-                                  # ('ATR_140_0.2' in set(x))
-                                  ), axis=1)
-        data = data[filter_cond]
-
-        para_adj_set_list = [{'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
-                             {'pot_in_num': 40, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
-                             {'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
-                             {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 2},
-                             {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
-                             {'pot_in_num': 40, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1}]
-
-        # #############################################################################
-        # 结果分析
-        survive_result = survive_ratio_test(data, para_adj_set_list)
-        if survive_result is None:
-            print(f'{result_file_name} not satisfaction!!!!!!!!')
-            continue
-        else:
+    endswith = '10'
+    result_file_name_list = find_target_file(begin_time, end_time, time_type, endswith)
+    # result_file_name_list = ['market_top_800plus_industry_55_True_20181116_1514_hold_5__10']
+    for result_file_name in result_file_name_list:
+        pass_result_list = []
+        if result_file_name in pass_result_list:
             pass
-
-        #############################################################################
-        # 回测函数
-        time_para = 'time_para_5'
-        print(time_para)
-        begin_date, cut_date, end_date = time_para_dict[time_para]
-        main_model = mf.FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date,
-                                         time_para_dict,
-                                         sector_name, hold_time, lag, return_file, if_hedge, if_only_long)
-
-        sum_pos_df, pnl_df = pos_sum_c(main_model, data, time_para, result_file_name, **survive_result)
-
-        #############################################################################
-        # 生成config文件
-
-        config_name = result_file_name
-        config_create(sector_name, result_file_name, config_name, data, time_para, **survive_result,
-                      n=5, use_factor_num=40)
-        #############################################################################
-        # 测试config结果
-        begin_date, cut_date, end_date = time_para_dict[time_para]
-        main_model = mf.FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date,
-                                         time_para_dict,
-                                         sector_name, hold_time, lag, return_file, if_hedge, if_only_long)
-
-        sum_pos_df, pnl_df = config_test(main_model, config_name, result_file_name)
-        pnl_df.name = result_file_name
-        # #############################################################################
-        # 计算相关性
-        # pnl_df_CRTSECJUN
-        #
-        sum_pnl_df = get_corr_matrix(cut_date=None)
-        sum_pnl_df_c = pd.concat([sum_pnl_df, pnl_df], axis=1)
-
-        corr_self = sum_pnl_df_c.corr()[result_file_name]
-        print(corr_self)
-        print('______________________________________')
-        if len(corr_self[corr_self > 0.7]) >= 2:
-            print('FAIL!')
         else:
-            print('SUCCESS!')
-        print('______________________________________')
+            fun_result = main(result_file_name, time_para_dict)
+
+    # sum_pnl_df = get_corr_matrix()

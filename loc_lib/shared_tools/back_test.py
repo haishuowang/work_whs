@@ -1,18 +1,26 @@
 import numpy as np
 import pandas as pd
+import dask.dataframe as dd
 import os
 import sys
-from loc_lib.shared_tools import send_email
+from work_whs.loc_lib.shared_tools import send_email
 import matplotlib.pyplot as plt
 from datetime import datetime
 import time
 
 
-def AZ_Load_csv(target_path, index_time_type=True):
+def AZ_Rolling_mean_multi(data, window, func, ncore=4):
+    result_t = dd.from_pandas(data, npartitions=ncore).map_partitions(
+        lambda df: (df.T.rolling(window, min_periods=0).apply(func)).T).compute()
+    result = result_t.T
+    return result
+
+
+def AZ_Load_csv(target_path, index_time_type=True, sep='|'):
     if index_time_type:
-        target_df = pd.read_table(target_path, sep='|', index_col=0, low_memory=False, parse_dates=True)
+        target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False, parse_dates=True)
     else:
-        target_df = pd.read_table(target_path, sep='|', index_col=0, low_memory=False)
+        target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False)
     return target_df
 
 
@@ -24,6 +32,7 @@ def AZ_Catch_error(func):
             ret = sys.exc_info()
             print(ret[0], ":", ret[1])
         return ret
+
     return _deco
 
 
@@ -33,6 +42,7 @@ def AZ_Time_cost(func):
     def _deco(*args, **kwargs):
         ret = func(*args, **kwargs)
         return ret
+
     t2 = time.time()
     print(f'cost_time: {t2-t1}')
     return _deco
@@ -63,7 +73,7 @@ def AZ_Row_zscore(df, cap=None):
     if cap is not None:
         target[target > cap] = cap
         target[target < -cap] = -cap
-    return target
+    return target.replace(np.nan, 0)
 
 
 def AZ_Rolling(df, n, min_periods=1):
@@ -80,7 +90,7 @@ def AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250, min_periods=1, cut_poin
     if cut_point_list is None:
         cut_point_list = [0.05, 0.33, 0.5, 0.66, 0.95]
     rolling_sharpe = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods) \
-        .apply(lambda x: np.sqrt(year_len) * x.mean() / x.std())
+        .apply(lambda x: np.sqrt(year_len) * x.mean() / x.std(), raw=True)
     rolling_sharpe.iloc[:int(roll_year * year_len) - 1] = np.nan
     cut_sharpe = rolling_sharpe.quantile(cut_point_list)
     if output:
@@ -170,8 +180,8 @@ def AZ_split_stock(stock_list):
     :param stock_list:
     :return:
     """
-    eqa = [x for x in stock_list if (x.startswith('0') or x.startswith('3')) and x.endwith('SZ')
-           or x.startswith('6') and x.endwith('SH')]
+    eqa = [x for x in stock_list if (x.startswith('0') or x.startswith('3')) and x.endswith('SZ')
+           or x.startswith('6') and x.endswith('SH')]
     return eqa
 
 
@@ -235,7 +245,7 @@ def AZ_fit_ratio_rolling(pos_df, pnl_df, roll_year=1, year_len=250, min_periods=
     rolling_sharpe, cut_sharpe = AZ_Rolling_sharpe(pnl_df, roll_year=roll_year, year_len=year_len,
                                                    min_periods=min_periods, cut_point_list=cut_point_list, output=True)
     rolling_return = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods).apply(
-        lambda x: 250.0 * x.sum().sum())
+        lambda x: 250.0 * x.sum().sum(), )
 
     rolling_diff_pos = pos_df.diff().abs().sum(axis=1).rolling(int(roll_year * year_len),
                                                                min_periods=min_periods).apply(

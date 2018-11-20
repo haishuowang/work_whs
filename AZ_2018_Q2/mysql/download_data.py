@@ -132,25 +132,29 @@ def Mysql_select_columns_data(table_name, root_save_path):
 
 
 if __name__ == '__main__':
-    # down_dict = OrderedDict({'持有其他证券情况': 'LICO_ES_HDOSEC',
-    #                          '董监届次': 'LICO_MO_MANS',
-    #                          '董事和监事': 'LICO_MO_DSHJS',
-    #                          '高管持股与薪酬表': 'LICO_MO_MANHOLDRPAY',
-    #                          '高管关联人持股': 'LICO_MO_MANRPHOLD',
-    #                          '公司雇员': 'LICO_MO_EMPLOYEE',
-    #                          '股东大会日期表': 'LICO_IM_GDDHDATE',
-    #                          '股东大会召开公告': 'LICO_IM_GDDHNOTICE',
-    #                          '股权激励基本资料': 'LICO_MO_GQJLJBZL',
-    #                          '股权激励明细': 'LICO_MO_GQJLMX',
-    #                          '激励获授对象明细': 'LICO_MO_JLDXHSMX',
-    #                          '激励实施结果明细': 'LICO_MO_JLSSJGMX',
-    #                          '监管部门调查处罚公告表': 'LICO_IM_SDPUNISHTNOTICE',
-    #                          '经营层': 'LICO_MO_BUSILEVEL',
-    #                          '期权各期行权时间安排': 'LICO_MO_QXQSJAP',
-    #                          '限制性股票解锁时间安排': 'LICO_MO_LMITUNLOCKTIME',
-    #                          '员工持股计划明细': 'LICO_ES_EMSHAREDE',
-    #                          '员工持股计划总表': 'LICO_ES_EMSHAREPLAN',
-    #                          })
+    down_dict = OrderedDict({'持有其他证券情况': 'LICO_ES_HDOSEC',
+                             '董监届次': 'LICO_MO_MANS',
+                             '董事和监事': 'LICO_MO_DSHJS',
+                             '高管持股与薪酬表': 'LICO_MO_MANHOLDRPAY',
+                             '高管关联人持股': 'LICO_MO_MANRPHOLD',
+                             '公司雇员': 'LICO_MO_EMPLOYEE',
+                             '股东大会日期表': 'LICO_IM_GDDHDATE',
+                             '股东大会召开公告': 'LICO_IM_GDDHNOTICE',
+                             '股权激励基本资料': 'LICO_MO_GQJLJBZL',
+                             '股权激励明细': 'LICO_MO_GQJLMX',
+                             '激励获授对象明细': 'LICO_MO_JLDXHSMX',
+                             '激励实施结果明细': 'LICO_MO_JLSSJGMX',
+                             '监管部门调查处罚公告表': 'LICO_IM_SDPUNISHTNOTICE',
+                             '经营层': 'LICO_MO_BUSILEVEL',
+                             '期权各期行权时间安排': 'LICO_MO_QXQSJAP',
+                             '限制性股票解锁时间安排': 'LICO_MO_LMITUNLOCKTIME',
+                             '员工持股计划明细': 'LICO_ES_EMSHAREDE',
+                             '员工持股计划总表': 'LICO_ES_EMSHAREPLAN',
+                             '证券代码表': 'CDSY_SECUCODE',
+                             '股东名单': 'LICO_ES_LISHOLD',
+                             '股本结构表': 'LICO_ES_CPHSSTRUCT',
+                             '违规': 'LICO_CM_ILLEGAL',
+                             })
 
     # down_dict = OrderedDict({'证券代码表': 'CDSY_SECUCODE'})
     # down_dict = OrderedDict({'股东名单': 'LICO_ES_LISHOLD'})
@@ -158,7 +162,7 @@ if __name__ == '__main__':
     # down_dict = OrderedDict({'违规': 'LICO_CM_ILLEGAL'})
     # down_dict = OrderedDict({'诉讼仲裁': 'LICO_CM_LAWARBI'})
     # down_dict = OrderedDict({'股东持股冻结情况': 'LICO_ES_SHHDFROZEN'})
-    down_dict = OrderedDict({'股东大会日期表': 'LICO_IM_GDDHDATE'})
+    # down_dict = OrderedDict({'股东大会日期表': 'LICO_IM_GDDHDATE'})
 
     down_list = down_dict.values()
     root_save_path = '/mnt/mfs/dat_whs/EM_Funda'

@@ -605,11 +605,11 @@ if __name__ == '__main__':
     # config_dict = {'time_para_4': 'CRTTINKER02'}
     # CRT2 market_top_1000_industry_10_15_True_20180916_1319_hold_20__2
 
-    # config_dict = {'time_para_5': 'CRTKUNKKA03'}
-    # for time_para in time_para_list[1:2]:
-    #     config_name = config_dict[time_para]
-    #     config_create(sector_name, result_file_name, config_name, data, time_para, pot_in_num, leve_ratio_num,
-    #                   sp_in, ic_num, fit_ratio, 5, use_factor_ratio=0.08)
+    config_dict = {'time_para_5': 'CRTKUNKKA03'}
+    for time_para in time_para_list[1:2]:
+        config_name = config_dict[time_para]
+        config_create(sector_name, result_file_name, config_name, data, time_para, pot_in_num, leve_ratio_num,
+                      sp_in, ic_num, fit_ratio, 5, use_factor_ratio=0.08)
 
     #############################################################################
     # 测试config结果

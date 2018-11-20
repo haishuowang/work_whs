@@ -6,7 +6,9 @@ from itertools import product, permutations, combinations
 from datetime import datetime
 import time
 import matplotlib.pyplot as plt
+from collections import OrderedDict
 import sys
+
 sys.path.append("/mnt/mfs/LIB_ROOT")
 import open_lib.shared_paths.path as pt
 from open_lib.shared_tools import send_email
@@ -477,7 +479,8 @@ def create_fun_set_2_crt_():
 
 class FactorTest:
     def __init__(self, root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict, sector_name,
-                 hold_time, lag, return_file, if_hedge, if_only_long):
+                 hold_time, lag, return_file, if_hedge, if_only_long, if_weight=0.5, ic_weight=0.5,
+                 para_adj_set_list=None):
         self.root_path = root_path
         self.if_save = if_save
         self.if_new_program = if_new_program
@@ -491,20 +494,42 @@ class FactorTest:
         self.return_file = return_file
         self.if_hedge = if_hedge
         self.if_only_long = if_only_long
+        self.if_weight = if_weight
+        self.ic_weight = ic_weight
+        if para_adj_set_list is None:
+            self.para_adj_set_list = [
+                {'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+                {'pot_in_num': 40, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+                {'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+                {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 2},
+                {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+                {'pot_in_num': 40, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1}]
 
-        self.sector_df = self.load_sector_data()
-        print('Loaded sector DataFrame!')
-        self.xnms = self.sector_df.columns
-        self.xinx = self.sector_df.index
+        return_choose = self.load_return_data()
+        self.xinx = return_choose.index
+        sector_df = self.load_sector_data()
+        self.xnms = sector_df.columns
+
+        return_choose = return_choose.reindex(columns=self.xnms)
+        self.sector_df = sector_df.reindex(index=self.xinx)
+        # print('Loaded sector DataFrame!')
+        if if_hedge:
+            if ic_weight + if_weight != 1:
+                exit(-1)
+        else:
+            if_weight = 0
+            ic_weight = 0
 
         index_df_1 = self.load_index_data('000300').fillna(0)
+        # index_weight_1 = self.load_index_weight_data('000300')
         index_df_2 = self.load_index_data('000905').fillna(0)
-        hedge_df = 0.5 * index_df_1 + 0.5 * index_df_2
+        # index_weight_2 = self.load_index_weight_data('000905')
+        #
+        # weight_df = if_weight * index_weight_1 + ic_weight * index_weight_2
+        hedge_df = if_weight * index_df_1 + ic_weight * index_df_2
 
-        return_choose = bt.AZ_Load_csv(os.path.join(root_path, 'EM_Funda/DERIVED_14/aadj_r.csv'))
-        return_choose = return_choose.reindex(index=self.xinx, columns=self.xnms)
         self.return_choose = return_choose.sub(hedge_df, axis=0)
-        print('Loaded return DataFrame!')
+        # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
         limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
@@ -514,7 +539,18 @@ class FactorTest:
         suspendday_df_c.iloc[-1] = 1
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
-        print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+        # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+
+    def reindex_fun(self, df):
+        return df.reindex(index=self.xinx, columns=self.xnms)
+
+    @staticmethod
+    def create_log_save_path(target_path):
+        top_path = os.path.split(target_path)[0]
+        if not os.path.exists(top_path):
+            os.mkdir(top_path)
+        if not os.path.exists(target_path):
+            os.mknod(target_path)
 
     @staticmethod
     def row_extre(raw_df, sector_df, percent):
@@ -528,6 +564,18 @@ class FactorTest:
     @staticmethod
     def pos_daily_fun(df, n=5):
         return df.rolling(window=n, min_periods=1).sum()
+
+    def check_factor(self, name_list, file_name):
+        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+        exist_factor = set([x[:-4] for x in os.listdir(load_path)])
+        print()
+        use_factor = set(name_list)
+        a = use_factor - exist_factor
+        if len(a) != 0:
+            print('factor not enough!')
+            print(a)
+            print(len(a))
+            send_email.send_email(f'{file_name} factor not enough!', ['whs@yingpei.com'], [], 'Factor Test Warning!')
 
     @staticmethod
     def create_all_para(tech_name_list, funda_name_list):
@@ -544,14 +592,6 @@ class FactorTest:
 
         target_list = target_list_1 + target_list_2
         return target_list
-
-    @staticmethod
-    def create_log_save_path(target_path):
-        top_path = os.path.split(target_path)[0]
-        if not os.path.exists(top_path):
-            os.mkdir(top_path)
-        if not os.path.exists(target_path):
-            os.mknod(target_path)
 
     # 获取剔除新股的矩阵
     def get_new_stock_info(self, xnms, xinx):
@@ -575,11 +615,15 @@ class FactorTest:
         target_df = data.applymap(lambda x: 0 if 'ST' in x or 'PT' in x else 1)
         return target_df
 
+    def load_return_data(self):
+        return_choose = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_14/aadj_r.csv'))
+        return_choose = return_choose[(return_choose.index >= self.begin_date) & (return_choose.index < self.end_date)]
+        return return_choose
+
     # 获取sector data
     def load_sector_data(self):
-
         market_top_n = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_10/' + self.sector_name + '.csv'))
-        market_top_n = market_top_n[(market_top_n.index >= self.begin_date) & (market_top_n.index < self.end_date)]
+        market_top_n = market_top_n.reindex(index=self.xinx)
         market_top_n.dropna(how='all', axis='columns', inplace=True)
         xnms = market_top_n.columns
         xinx = market_top_n.index
@@ -590,11 +634,25 @@ class FactorTest:
         sector_df.replace(0, np.nan, inplace=True)
         return sector_df
 
+    def load_index_weight_data(self, index_name):
+        index_info = bt.AZ_Load_csv(self.root_path + f'/EM_Funda/IDEX_YS_WEIGHT_A/SECURITYNAME_{index_name}.csv')
+        index_info = self.reindex_fun(index_info)
+        index_mask = (index_info.notnull() * 1).replace(0, np.nan)
+
+        mkt_cap = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/LICO_YS_STOCKVALUE/AmarketCapExStri.csv'))
+        mkt_roll = mkt_cap.rolling(250, min_periods=0).mean()
+        mkt_roll = self.reindex_fun(mkt_roll)
+
+        mkt_roll_qrt = np.sqrt(mkt_roll)
+        mkt_roll_qrt_index = mkt_roll_qrt * index_mask
+        index_weight = mkt_roll_qrt_index.div(mkt_roll_qrt_index.sum(axis=1), axis=0)
+        return index_weight
+
     # 涨跌停都不可交易
     def load_locked_data(self):
         raw_suspendday_df = bt.AZ_Load_csv(
             os.path.join(self.root_path, 'EM_Funda/TRAD_TD_SUSPENDDAY/SUSPENDREASON.csv'))
-        suspendday_df = raw_suspendday_df.isnull()
+        suspendday_df = raw_suspendday_df.isnull().astype(int)
         suspendday_df = suspendday_df.reindex(columns=self.xnms, index=self.xinx, fill_value=True)
         suspendday_df.replace(0, np.nan, inplace=True)
 
@@ -606,9 +664,26 @@ class FactorTest:
 
     # 获取index data
     def load_index_data(self, index_name):
-        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab09/INDEX_TD_DAILYSYS/CHG.csv'))
+        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/INDEX_TD_DAILYSYS/CHG.csv'))
         target_df = data[index_name].reindex(index=self.xinx)
         return target_df * 0.01
+
+    # 读取部分factor
+    def load_part_factor(self, sector_name, xnms, xinx, file_list):
+        factor_set = OrderedDict()
+        for file_name in file_list:
+            load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + sector_name)
+            target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl'))
+            factor_set[file_name] = target_df.reindex(columns=xnms, index=xinx).fillna(0)
+        return factor_set
+
+    # 读取factor
+    def load_factor(self, file_name):
+        factor_set = OrderedDict()
+        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+        target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl'))
+        factor_set[file_name] = target_df.reindex(columns=self.xnms, index=self.xinx).fillna(0)
+        return factor_set
 
     def deal_mix_factor(self, mix_factor):
         if self.if_only_long:
@@ -618,42 +693,116 @@ class FactorTest:
         # 排除入场场涨跌停的影响
         order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
         order_df = order_df.div(order_df.abs().sum(axis=1).replace(0, np.nan), axis=0)
-        order_df[order_df > 0.1] = 0.1
-        order_df[order_df < -0.1] = -0.1
+        order_df[order_df > 0.05] = 0.05
+        order_df[order_df < -0.05] = -0.05
         daily_pos = pos_daily_fun(order_df, n=self.hold_time)
+        daily_pos.fillna(0, inplace=True)
         # 排除出场涨跌停的影响
         daily_pos = daily_pos * self.limit_buy_sell_df_c * self.suspendday_df_c
         daily_pos.fillna(method='ffill', inplace=True)
         return daily_pos
 
+    def save_load_control(self, tech_name_list, funda_name_list, suffix_name, file_name):
+        # 参数存储与加载的路径控制
+        result_save_path = '/mnt/mfs/dat_whs/result'
+        if self.if_new_program:
+            now_time = datetime.now().strftime('%Y%m%d_%H%M')
+            if self.if_only_long:
+                file_name = '{}_{}_{}_hold_{}_{}_{}_long.txt' \
+                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
+            else:
+                file_name = '{}_{}_{}_hold_{}_{}_{}.txt' \
+                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
 
-class FactorTestCRT(FactorTest):
+            log_save_file = os.path.join(result_save_path, 'log', file_name)
+            result_save_file = os.path.join(result_save_path, 'result', file_name)
+            para_save_file = os.path.join(result_save_path, 'para', file_name)
+            para_dict = dict()
+            para_ready_df = pd.DataFrame(list(self.create_all_para(tech_name_list, funda_name_list)))
+            total_para_num = len(para_ready_df)
+            if self.if_save:
+                self.create_log_save_path(log_save_file)
+                self.create_log_save_path(result_save_file)
+                self.create_log_save_path(para_save_file)
+                para_dict['para_ready_df'] = para_ready_df
+                para_dict['tech_name_list'] = tech_name_list
+                para_dict['funda_name_list'] = funda_name_list
+                pd.to_pickle(para_dict, para_save_file)
+
+        else:
+            log_save_file = os.path.join(result_save_path, 'log', file_name)
+            result_save_file = os.path.join(result_save_path, 'result', file_name)
+            para_save_file = os.path.join(result_save_path, 'para', file_name)
+
+            para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
+            para_all_df = pd.read_pickle(para_save_file)
+            total_para_num = len(para_all_df)
+            para_ready_df = para_all_df.loc[sorted(list(set(para_all_df.index) - set(para_tested_df.index)))]
+        print(file_name)
+        print(f'para_num:{len(para_ready_df)}')
+        return para_ready_df, log_save_file, result_save_file, total_para_num
+
+    @staticmethod
+    def create_all_para_(change_list, ratio_list, tech_list):
+        target_list = list(product(change_list, ratio_list, tech_list))
+        return target_list
+
+    def save_load_control_(self, change_list, ratio_list, tech_list, suffix_name, file_name):
+        # 参数存储与加载的路径控制
+        result_save_path = '/mnt/mfs/dat_whs/result'
+        if self.if_new_program:
+            now_time = datetime.now().strftime('%Y%m%d_%H%M')
+            if self.if_only_long:
+                file_name = '{}_{}_{}_hold_{}_{}_{}_long.txt' \
+                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
+            else:
+                file_name = '{}_{}_{}_hold_{}_{}_{}.txt' \
+                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
+
+            log_save_file = os.path.join(result_save_path, 'log', file_name)
+            result_save_file = os.path.join(result_save_path, 'result', file_name)
+            para_save_file = os.path.join(result_save_path, 'para', file_name)
+            para_dict = dict()
+            para_ready_df = pd.DataFrame(list(self.create_all_para_(change_list, ratio_list, tech_list)))
+            total_para_num = len(para_ready_df)
+            if self.if_save:
+                self.create_log_save_path(log_save_file)
+                self.create_log_save_path(result_save_file)
+                self.create_log_save_path(para_save_file)
+                para_dict['para_ready_df'] = para_ready_df
+                para_dict['change_list'] = change_list
+                para_dict['ratio_list'] = ratio_list
+                para_dict['tech_list'] = tech_list
+                pd.to_pickle(para_dict, para_save_file)
+
+        else:
+            log_save_file = os.path.join(result_save_path, 'log', file_name)
+            result_save_file = os.path.join(result_save_path, 'result', file_name)
+            para_save_file = os.path.join(result_save_path, 'para', file_name)
+            para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
+            para_all_df = pd.read_pickle(para_save_file)
+            total_para_num = len(para_all_df)
+            para_ready_df = para_all_df.loc[sorted(list(set(para_all_df.index) - set(para_tested_df.index)))]
+        print(file_name)
+        print(f'para_num:{len(para_ready_df)}')
+        return para_ready_df, log_save_file, result_save_file, total_para_num
+
+
+class FactorTestSector(FactorTest):
     def __init__(self, *args):
-        super(FactorTestCRT, self).__init__(*args)
-
-    def load_change_factor(self, file_name):
-        load_path = self.root_path + '/EM_Funda/daily/'
-        raw_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
-            .reindex(index=self.xinx, columns=self.xnms)
-        QTTM_df = bt.AZ_Load_csv(os.path.join(load_path, '_'.join(file_name.split('_')[:-1]) + '_QTTM.csv')) \
-            .reindex(index=self.xinx, columns=self.xnms)
-        QTTM_df_ma = bt.AZ_Rolling_mean(QTTM_df.abs().replace(0, np.nan), 60)
-        tmp_df = raw_df / QTTM_df_ma
-        # target_df = bt.AZ_Row_zscore(tmp_df)
-        target_df = self.row_extre(tmp_df, self.sector_df, 0.2)
-        return target_df
+        super(FactorTestSector, self).__init__(*args)
 
     def load_ratio_factor(self, file_name):
         load_path = self.root_path + '/EM_Funda/daily/'
         tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
             .reindex(index=self.xinx, columns=self.xnms)
         # target_df = bt.AZ_Row_zscore(tmp_df)
-        target_df = self.row_extre(tmp_df, self.sector_df, 0.2)
+        target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
         return target_df
 
     def load_tech_factor(self, file_name):
-        load_path = os.path.join('/media/hdd1/DAT_PreCalc/PreCalc_whs/' + self.sector_name)
         # load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+        load_path = os.path.join('/media/hdd1/DAT_PreCalc/PreCalc_whs/' + self.sector_name)
         target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
             .reindex(index=self.xinx, columns=self.xnms)
         return target_df
@@ -663,43 +812,52 @@ class FactorTestCRT(FactorTest):
         fun_mix_2_set = create_fun_set_2_(fun_set)
         fun = fun_mix_2_set[fun_name]
         change_factor = self.load_tech_factor(name1)
-        ratio_factor = self.load_ratio_factor(name2)
+        ratio_factor = self.load_tech_factor(name2)
         tech_factor = self.load_tech_factor(name3)
         mix_factor = fun(change_factor, ratio_factor, tech_factor)
+        # daily_pos = self.deal_mix_factor(mix_factor).shift(2)
+        # in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+        # fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = \
+        #     filter_all(self.cut_date, daily_pos, self.return_choose, if_return_pnl=True, if_only_long=False)
+        # print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+        #       fit_ratio, leve_ratio, sp_in, sharpe_q_out)
         return mix_factor
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/CRTMEDUSA05.pkl')
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/'
+                                f'market_top_300plus_industry_40_False_20181103_1403_hold_5__8.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
-    alpha_name = 'WHSMEDUSA05'
-    cut_date = None
+    alpha_name = 'WHSZIWHEN03'
+    cut_date = '20180601'
     begin_date = pd.to_datetime('20140601')
     end_date = datetime.now()
     # begin_date = datetime.now() - timedelta(300)
 
     sum_factor_df = pd.DataFrame()
 
-    # root_path = '/media/hdd1/DAT_EQT'
+    root_path = '/media/hdd1/DAT_EQT'
     # root_path = '/mnt/mfs/DAT_EQT'
-    root_path = '/media/hdd1/DAT_EQT_20181112'
     if_save = False
     if_new_program = True
 
-    hold_time = 20
+    hold_time = 5
     lag = 2
     return_file = ''
 
-    if_hedge = True
-    if_only_long = False
+    if_hedge = config_set['if_hedge']
+    if_only_long = config_set['if_only_long']
+    if_weight = config_set['if_weight']
+    ic_weight = config_set['ic_weight']
+
     time_para_dict = dict()
 
-    main = FactorTestCRT(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
-                         sector_name, hold_time, lag, return_file, if_hedge, if_only_long)
-
-    print(len(config_data.index))
+    main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
+                            sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
+    # print(len(config_data.index))
     for i in config_data.index:
+        # print(i)
         fun_name, name1, name2, name3, buy_sell = config_data.loc[i]
         mix_factor = main.single_test(fun_name, name1, name2, name3)
 
@@ -709,11 +867,14 @@ def config_test():
             sum_factor_df = sum_factor_df.add(-mix_factor, fill_value=0)
 
     sum_pos_df_new = main.deal_mix_factor(sum_factor_df)
-    sum_pos_df_new['IC01'] = -sum_pos_df_new.sum(axis=1)
+    if if_weight != 0:
+        sum_pos_df_new['IF01'] = -if_weight * sum_pos_df_new.sum(axis=1)
+    if ic_weight != 0:
+        sum_pos_df_new['IC01'] = -ic_weight * sum_pos_df_new.sum(axis=1)
 
     pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
     plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
-    # sum_pos_df_new.round(10).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 
 

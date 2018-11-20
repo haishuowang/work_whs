@@ -496,7 +496,9 @@ class SectorSplit:
         end_date = datetime.now()
         # sector_name = 'market_top_2000'
         self.sector_name = sector_name
-        market_top_n = bt.AZ_Load_csv(os.path.join('/media/hdd1/DAT_EQT/EM_Funda/DERIVED_10/' + sector_name + '.csv'))
+        self.root_path = '/media/hdd1/D_1/DAT_EQT/DAT_EQT'
+        market_top_n = bt.AZ_Load_csv(os.path.join(f'{self.root_path}/EM_Funda/DERIVED_10/'
+                                                   + sector_name + '.csv'))
         market_top_n = market_top_n[(market_top_n.index >= begin_date) & (market_top_n.index < end_date)]
         self.sector_df = market_top_n
         self.xinx = self.sector_df.index
@@ -505,15 +507,15 @@ class SectorSplit:
     def industry(self, file_list):
         industry_df_sum = pd.DataFrame()
         for file_name in file_list:
-            industry_df = bt.AZ_Load_csv(f'/media/hdd1/DAT_EQT/EM_Funda/LICO_IM_INCHG/Global_Level1_{file_name}.csv')\
+            industry_df = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/LICO_IM_INCHG/Global_Level1_{file_name}.csv')\
                 .reindex(index=self.xinx, columns=self.xnms)
             industry_df_sum = industry_df_sum.add(industry_df, fill_value=0)
         industry_df_sum = industry_df_sum.reindex(index=self.xinx, columns=self.xnms)
 
         industry_df_sum = self.sector_df.mul(industry_df_sum, fill_value=0).replace(0, np.nan) \
             .dropna(how='all', axis='columns')
-        industry_df_sum.to_csv('/media/hdd1/DAT_EQT/EM_Funda/DERIVED_10/{}_industry_{}.csv'
-                               .format(self.sector_name, '_'.join([str(x) for x in file_list])), sep='|')
+        industry_df_sum.to_csv('{}/EM_Funda/DERIVED_10/{}_industry_{}.csv'
+                               .format(self.root_path, self.sector_name, '_'.join([str(x) for x in file_list])), sep='|')
         return industry_df_sum
 
 
@@ -617,10 +619,6 @@ def create_sector():
         sector_split.industry(file_list)
 
     sector_split = SectorSplit('market_top_300')
-    for file_list in [[10, 15], [20, 25, 30, 35], [40], [45, 50], [55]]:
-        sector_split.industry(file_list)
-
-    sector_split = SectorSplit('market_top_300plus')
     for file_list in [[10, 15], [20, 25, 30, 35], [40], [45, 50], [55]]:
         sector_split.industry(file_list)
 

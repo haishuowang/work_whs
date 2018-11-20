@@ -1182,8 +1182,6 @@ class FactorVolume:
         return target_df * sector_df
 
 
-#
-#
 class FactorVolatility(BaseDeal):
 
     def ATR(self, High, Low, Close, sector_df, timeperiod, percent):

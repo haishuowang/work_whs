@@ -94,9 +94,9 @@ if __name__ == '__main__':
     if pd.to_datetime(update_time).weekday() <= 4:
         print(update_time, pd.to_datetime(update_time).weekday(), 4)
         loginResult = c.start("ForceLogin=1")
-        download_minute_data(update_time, save_root_path)
-        day_path = os.path.join(save_root_path, update_time[:4], update_time[:6], update_time)
-        vwap_close_15_minute(day_path)
+        # download_minute_data(update_time, save_root_path)
+        # day_path = os.path.join(save_root_path, update_time[:4], update_time[:6], update_time)
+        # vwap_close_15_minute(day_path)
         print('{} download success'.format(update_time))
         logoutResult = c.stop()
     else:

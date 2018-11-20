@@ -5,7 +5,7 @@ import gc
 
 
 def AZ_clear_columns(stock_list):
-    return [x[2:] + '.' + x[:2]for x in stock_list]
+    return [x[2:] + '.' + x[:2] for x in stock_list]
 
 
 def create_base_row_data():
@@ -134,22 +134,23 @@ def create_intra_data(split_time=20):
 
 def concat_data():
     for i in range(24):
-        data_2005_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2005_2018.pkl'.format(i+1))
-        data_2018_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2018_2018.pkl'.format(i+1))
+        data_2005_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2005_2018.pkl'.format(i + 1))
+        data_2018_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2018_2018.pkl'.format(i + 1))
         data_20181001 = data_2005_2018.combine_first(data_2018_2018)
         EQT_list = [x for x in data_20181001.columns if
                     ((x[0] == '0' or x[0] == '3') and x[-2:] == 'SZ') or (x[0] == '6' and x[-2:] == 'SH')]
         data_20181001_c = data_20181001[EQT_list]
-        data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181001.pkl'.format(i+1))
+        data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181001.pkl'.format(i + 1))
 
     for i in range(24):
-        data_2005_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/c_vwap_10_tab_{}_2005_2018.pkl'.format(i+1))
-        data_2018_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2018_2018.pkl'.format(i+1))
+        data_2005_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/c_vwap_10_tab_{}_2005_2018.pkl'.format(i + 1))
+        data_2018_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2018_2018.pkl'.format(i + 1))
         data_20181001 = data_2005_2018.combine_first(data_2018_2018)
         EQT_list = [x for x in data_20181001.columns if
                     ((x[0] == '0' or x[0] == '3') and x[-2:] == 'SZ') or (x[0] == '6' and x[-2:] == 'SH')]
         data_20181001_c = data_20181001[EQT_list]
-        data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181001.pkl'.format(i+1))
+        data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181001.pkl'.format(i + 1))
+
 
 def create_base_data():
     create_base_row_data()

@@ -1577,6 +1577,9 @@ class FD:
                     args = (n, percent)
                     self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
+    class EM_Funda_test:
+        class EM_Funda_test_Deal(BaseDeal):
+            pass
 
 class SectorData(object):
     def __init__(self, root_path):
@@ -1624,7 +1627,7 @@ def find_fun(fun_list):
     # print(fun_list)
     for a in fun_list[:-1]:
         target_class = getattr(target_class, a)
-    # print(target_class)
+    print(target_class, fun_list[-1])
     target_fun = getattr(target_class(), fun_list[-1])
     return target_fun
 
@@ -1668,8 +1671,8 @@ class SectorSplit:
         end_date = datetime.now()
         # sector_name = 'market_top_2000'
         self.sector_name = sector_name
-        # market_top_n = bt.AZ_Load_csv(os.path.join('/media/hdd1/DAT_EQT/EM_Funda/DERIVED_10/' + sector_name + '.csv'))
-        market_top_n = bt.AZ_Load_csv(os.path.join('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_10/' + sector_name + '.csv'))
+        market_top_n = bt.AZ_Load_csv(os.path.join('/media/hdd1/DAT_EQT/EM_Funda/DERIVED_10/' + sector_name + '.csv'))
+        # market_top_n = bt.AZ_Load_csv(os.path.join('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_10/' + sector_name + '.csv'))
         market_top_n = market_top_n[(market_top_n.index >= begin_date) & (market_top_n.index < end_date)]
         self.sector_df = market_top_n
         self.xinx = self.sector_df.index
@@ -1754,17 +1757,10 @@ def main(config_name_dict):
 
 if __name__ == '__main__':
     a = time.time()
-    config_name_dict = {'CRTMEDUSA01': ['name3'],
-                        'CRTMEDUSA04': ['name1', 'name3'],
-                        'CRTMEDUSA05': ['name1', 'name3'],
-                        'CRTMEDUSA07': ['name3'],
-                        'CRTMEDUSA08': ['name3'],
-                        'CRTKUNKKA01': ['name3'],
-                        'CRTKUNKKA02': ['name3'],
-                        'CRTRUBICK01': ['name3'],
-                        'CRTRUBICK02': ['name3'],
-                        'CRTKUNKKA03': ['name3'],
-                        'CRTKUNKKA04': ['name1', 'name3'],
+    config_name_dict = {'market_top_300to800plus_industry_10_15_True_20181117_2314_hold_5__7':
+                            ['name1', 'name3'],
+                        'market_top_300plus_True_20181115_1919_hold_5__7':
+                            ['name1', 'name3'],
                         }
 
     main(config_name_dict)

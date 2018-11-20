@@ -1,38 +1,31 @@
-import pandas as pd
-import numpy as np
-import os
-from itertools import product, permutations, combinations
-from multiprocessing import Pool, Lock, cpu_count
-import time
-from collections import OrderedDict
-import random
-from datetime import datetime
-import sys
-
-sys.path.append('/mnt/mfs/work_whs')
-sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
-import loc_lib.shared_tools.back_test as bt
-from loc_lib.shared_tools import send_email
-# 读取数据的函数 以及
-from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, filter_all, filter_time_para_fun
+from work_whs.loc_lib.pre_load import *
 
 
-# product 笛卡尔积　　（有放回抽样排列）
-# permutations 排列　　（不放回抽样排列）
-# combinations 组合,没有重复　　（不放回抽样组合）
-# combinations_with_replacement 组合,有重复　　（有放回抽样组合）
+def create_sector(root_path, name_list, sector_name, begin_date):
+    market_top_n = bt.AZ_Load_csv(os.path.join(root_path, 'EM_Funda/DERIVED_10/' + sector_name + '.csv'))
+    market_top_n = market_top_n[(market_top_n.index >= begin_date)]
+
+    sum_df = pd.DataFrame()
+    for n in name_list:
+        tmp_df = bt.AZ_Load_csv('/mnt/mfs/DAT_EQT/EM_Funda/LICO_IM_INCHG/Global_Level1_{}.csv'.format(n))
+        tmp_df = tmp_df[(tmp_df.index >= begin_date)]
+        sum_df = sum_df.add(tmp_df, fill_value=0)
+
+    if sum_df[sum_df > 1].sum().sum() != 0:
+        print('error', name_list)
+    else:
+        market_top_n_sector = market_top_n.mul(sum_df)
+        market_top_n_sector.dropna(how='all', axis='columns', inplace=True)
+        market_top_n_sector.to_csv('/mnt/mfs/dat_whs/data/sector_data/{}_industry_{}.csv'
+                                   .format(sector_name, '_'.join([str(x) for x in name_list])), sep='|')
 
 
 def mul_fun(a, b):
-    return a.mul(b)
+    a_l = a.where(a > 0, 0)
+    a_s = a.where(a < 0, 0)
 
-
-def mul_fun_c(a, b):
-    a_l = a[a > 0]
-    a_s = a[a < 0]
-
-    b_l = b[b > 0]
-    b_s = b[b < 0]
+    b_l = b.where(b > 0, 0)
+    b_s = b.where(b < 0, 0)
 
     pos_l = a_l.mul(b_l)
     pos_s = a_s.mul(b_s)
@@ -62,17 +55,31 @@ def AZ_Cut_window(df, begin_date, end_date=None, column=None):
             return df[(df[column] > begin_date) & (df[column] < end_date)]
 
 
-def create_fun_set_2(fun_set):
-    mix_fun_set = []
-    for fun_1, fun_2 in product(fun_set, repeat=2):
-        exe_str_1 = """def {0}_{1}_fun(a, b, c):
-            mix_1 = {0}_fun(a, b)
-            mix_2 = {1}_fun(mix_1, c)
-            return mix_2
-        """.format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0])
-        exec(compile(exe_str_1, '', 'exec'))
-        exec('mix_fun_set += [{0}_{1}_fun]'.format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0]))
-    return mix_fun_set
+def AZ_Leverage_ratio(asset_df):
+    """
+    返回250天的return/(负的 一个月的return)
+    :param asset_df:
+    :return:
+    """
+    asset_20 = asset_df - asset_df.shift(20)
+    asset_250 = asset_df - asset_df.shift(250)
+    if asset_250.mean() > 0:
+        return round(asset_250.mean() / (-asset_20.min()), 2)
+    else:
+        return round(asset_250.mean() / (-asset_20.max()), 2)
+
+
+def pos_daily_fun(df, n=5):
+    return df.rolling(window=n, min_periods=1).sum()
+
+
+def AZ_Pot(pos_df_daily, last_asset):
+    trade_times = pos_df_daily.diff().abs().sum().sum()
+    if trade_times == 0:
+        return 0
+    else:
+        pot = last_asset / trade_times * 10000
+        return round(pot, 2)
 
 
 def create_fun_set_2_(fun_set):
@@ -87,6 +94,24 @@ def create_fun_set_2_(fun_set):
         exec('mix_fun_set[\'{0}_{1}_fun\'] = {0}_{1}_fun'
              .format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0]))
     return mix_fun_set
+
+
+def out_sample_perf_c(pnl_df_out, way=1):
+    # 根据sharpe大小,统计样本外的表现
+    # if cut_point_list is None:
+    #     cut_point_list = [0.30]
+    # if way == 1:
+    #     rolling_sharpe, cut_sharpe = \
+    #         bt.AZ_Rolling_sharpe(pnl_df_out, roll_year=0.5, year_len=250, cut_point_list=cut_point_list, output=True)
+    # else:
+    #     rolling_sharpe, cut_sharpe = \
+    #         bt.AZ_Rolling_sharpe(-pnl_df_out, roll_year=0.5, year_len=250, cut_point_list=cut_point_list, output=True)
+    if way == 1:
+        sharpe_out = bt.AZ_Sharpe_y(pnl_df_out)
+    else:
+        sharpe_out = bt.AZ_Sharpe_y(-pnl_df_out)
+    out_condition = sharpe_out > 0.8
+    return out_condition, round(sharpe_out * way, 2)
 
 
 class FactorTest:
@@ -165,12 +190,17 @@ class FactorTest:
             os.mknod(target_path)
 
     @staticmethod
-    def row_extre(raw_df, sector_df, percent):
+    def row_extre(raw_df, sector_df, percent, if_only_long=False):
         raw_df = raw_df * sector_df
-        target_df = raw_df.rank(axis=1, pct=True)
-        target_df[target_df >= 1 - percent] = 1
-        target_df[target_df <= percent] = -1
-        target_df[(target_df > percent) & (target_df < 1 - percent)] = 0
+        target_df = raw_df.rank(axis=1, pct=True, ascending=False)
+        if if_only_long:
+            target_df[target_df <= percent] = 1
+            target_df[(1 > target_df) & (target_df > percent)] = 0
+
+        else:
+            target_df[target_df >= 1 - percent] = -1
+            target_df[target_df <= percent] = 1
+            target_df[(target_df > percent) & (target_df < 1 - percent)] = 0
         return target_df
 
     @staticmethod
@@ -400,6 +430,72 @@ class FactorTest:
         return para_ready_df, log_save_file, result_save_file, total_para_num
 
 
+def filter_all(cut_date, pos_df_daily, pct_n,
+               if_return_pnl=False, if_only_long=False):
+    pnl_df = (pos_df_daily * pct_n).sum(axis=1)
+    pnl_df = pnl_df.replace(np.nan, 0)
+    # pnl_df = pd.Series(pnl_df)
+    # 样本内表现
+    return_in = pct_n[pct_n.index < cut_date]
+
+    pnl_df_in = pnl_df[pnl_df.index < cut_date]
+    asset_df_in = pnl_df_in.cumsum()
+    last_asset_in = asset_df_in.iloc[-1]
+    pos_df_daily_in = pos_df_daily[pos_df_daily.index < cut_date]
+    pot_in = AZ_Pot(pos_df_daily_in, last_asset_in)
+
+    leve_ratio = AZ_Leverage_ratio(asset_df_in)
+    if leve_ratio < 0:
+        leve_ratio = 100
+    sharpe_q_in_df = bt.AZ_Rolling_sharpe(pnl_df_in, roll_year=1, year_len=250, min_periods=1,
+                                          cut_point_list=[0.3, 0.5, 0.7], output=False)
+    sp_in = bt.AZ_Sharpe_y(pnl_df_in)
+    fit_ratio = bt.AZ_fit_ratio(pos_df_daily_in, return_in)
+    ic = round(bt.AZ_Normal_IC(pos_df_daily_in, pct_n, min_valids=None, lag=0).mean(), 6)
+    sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d = sharpe_q_in_df.values
+    in_condition_u = sharpe_q_in_df_u > 0.9 and leve_ratio > 1
+    in_condition_d = sharpe_q_in_df_d < -0.9 and leve_ratio > 1
+    # 分双边和只做多
+    if if_only_long:
+        in_condition = in_condition_u
+    else:
+        in_condition = in_condition_u | in_condition_d
+
+    if sharpe_q_in_df_m > 0:
+        way = 1
+    else:
+        way = -1
+
+    # 样本外表现
+    pnl_df_out = pnl_df[pnl_df.index >= cut_date]
+    out_condition, sharpe_q_out = out_sample_perf_c(pnl_df_out, way=way)
+    if if_return_pnl:
+        return in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+               fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
+    else:
+        return in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+               fit_ratio, leve_ratio, sp_in, sharpe_q_out
+
+
+def load_daily_data(main_model, table_name, file_name):
+    ROE_df = bt.AZ_Load_csv(f'/mnt/mfs/DAT_EQT/EM_Funda/{table_name}/{file_name}.csv')
+    ROE_df = ROE_df.reindex(index=main_model.xinx, columns=main_model.xnms)
+    return ROE_df
+
+
+def plot_send_result(pnl_df, sharpe_ratio, subject):
+    figure_save_path = os.path.join('/mnt/mfs/dat_whs', 'tmp_figure')
+    plt.figure(figsize=[16, 8])
+    plt.plot(pnl_df.index, pnl_df.cumsum(), label='sharpe_ratio={}'.format(sharpe_ratio))
+    plt.grid()
+    plt.legend()
+    plt.savefig(os.path.join(figure_save_path, '{}.png'.format(subject)))
+    text = ''
+    to = ['whs@yingpei.com']
+    filepath = [os.path.join(figure_save_path, '{}.png'.format(subject))]
+    send_email.send_email(text, to, filepath, subject)
+
+
 if __name__ == '__main__':
     root_path = '/mnt/mfs/DAT_EQT'
     if_save = False
@@ -409,16 +505,18 @@ if __name__ == '__main__':
     cut_date = pd.to_datetime('20160401')
     end_date = pd.to_datetime('20180901')
 
-    sector_name = 'market_top_2000'
+    sector_name = 'market_top_300plus'
     index_name = '000905'
     return_file = 'pct_p1d'
     hold_time = 20
     lag = 2
     return_file = ''
+    if_weight = 1
+    ic_weight = 0
 
     if_hedge = True
-    if_only_long = False
-    time_para_dict = OrderedDict()
+    if_only_long = True
+    time_para_dict = dict()
 
     time_para_dict['time_para_1'] = [pd.to_datetime('20110101'), pd.to_datetime('20150101'),
                                      pd.to_datetime('20150401'), pd.to_datetime('20150701'),
@@ -447,9 +545,51 @@ if __name__ == '__main__':
     main = FactorTest(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict, sector_name,
                       hold_time, lag, return_file, if_hedge, if_only_long)
 
-    # tech_name_list = ['CCI_p120d_limit_12',
-    #                   'MACD_20_100']
-    # funda_name_list = ['R_SalesGrossMGN_s_First_row_extre_0.3',
-    #                    'R_MgtExp_sales_s_First_row_extre_0.3']
-    # pool_num = 20
-    # main.test_index_3(tech_name_list, funda_name_list, pool_num)
+    ROE_df = load_daily_data(main, 'daily', 'R_ROE_TTM_First')
+    ROA_df = load_daily_data(main, 'daily', 'R_ROA_TTM_First')
+    EBIT = load_daily_data(main, 'daily', 'R_EBIT_TTM_First')
+
+    percent = 1 / 3
+
+    ROE_score = bt.AZ_Row_zscore(ROE_df * main.sector_df).replace(np.nan, 0)
+    ROA_score = bt.AZ_Row_zscore(ROA_df * main.sector_df).replace(np.nan, 0)
+
+    ROE_and_ROA_score = 0.5 * ROE_score + 0.5 * ROA_score
+#    ROE_and_ROA_score = ROE_and_ROA_score-ROE_and_ROA_score.shift(275)
+    ROE_and_ROA_index = main.row_extre(ROE_and_ROA_score, main.sector_df, percent, if_only_long)
+    #
+    PE_df = load_daily_data(main, 'TRAD_SK_REVALUATION', 'PE_TTM')
+    PB_df = load_daily_data(main, 'TRAD_SK_REVALUATION', 'PBLast')
+
+    PE_score = bt.AZ_Row_zscore(PE_df * main.sector_df).replace(np.nan, 0)
+    PB_score = bt.AZ_Row_zscore(PB_df * main.sector_df).replace(np.nan, 0)
+
+    market = load_daily_data(main, 'LICO_YS_STOCKVALUE', 'AmarketCapExStri')
+    market_roll = market.rolling(60, min_periods=0).mean().replace(0, np.nan)
+
+    EBIT_dev_mkt = EBIT / market
+    EBIT_dev_mkt_chg = EBIT_dev_mkt - EBIT_dev_mkt.shift(20)
+    EBIT_chg = EBIT-EBIT.shift(10)
+    ROA_chg = ROE_df - ROE_df.shift(5)
+#    EBIT_dev_mkt_chg_score = bt.AZ_Row_zscore(EBIT_dev_mkt_chg * main.sector_df).replace(np.nan, 0)
+    # EBIT_dev_mkt_score = bt.AZ_Row_zscore(EBIT_dev_mkt * main.sector_df).replace(np.nan, 0)
+
+    # PE_PB_EBIT_score = -0.25 * PB_score - 0.25 * PE_score + 0.5 * EBIT_dev_mkt_score
+    # PE_PB_EBIT_index = main.row_extre(PE_PB_EBIT_score, main.sector_df, percent, if_only_long)
+
+    mix_factor = ROE_and_ROA_index * (ROA_chg.abs()>0).shift(30)
+
+    # mix_factor = ROE_and_ROA_index
+
+    mix_factor = mix_factor * (market_roll)**1.2
+
+    daily_pos = main.deal_mix_factor(mix_factor)
+    daily_pos = daily_pos
+
+    if_return_pnl = True
+    in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+    fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = filter_all(pd.to_datetime('20170101'), daily_pos,
+                                                                    main.return_choose, if_return_pnl, if_only_long)
+    print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+          fit_ratio, leve_ratio, sp_in, sharpe_q_out, )
+    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), 'test')
