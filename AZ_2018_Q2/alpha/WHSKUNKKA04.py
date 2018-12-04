@@ -494,7 +494,7 @@ class FactorTest:
         self.if_only_long = if_only_long
 
         self.sector_df = self.load_sector_data()
-        print('Loaded sector DataFrame!')
+        # print('Loaded sector DataFrame!')
         self.xnms = self.sector_df.columns
         self.xinx = self.sector_df.index
 
@@ -505,7 +505,7 @@ class FactorTest:
         return_choose = bt.AZ_Load_csv(os.path.join(root_path, 'EM_Funda/DERIVED_14/aadj_r.csv'))
         return_choose = return_choose.reindex(index=self.xinx, columns=self.xnms)
         self.return_choose = return_choose.sub(hedge_df, axis=0)
-        print('Loaded return DataFrame!')
+        # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
         limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
@@ -515,7 +515,7 @@ class FactorTest:
         suspendday_df_c.iloc[-1] = 1
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
-        print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+        # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
 
     @staticmethod
     def row_extre(raw_df, sector_df, percent):
@@ -617,8 +617,9 @@ class FactorTest:
         # 下单日期pos
         order_df = mix_factor.replace(np.nan, 0)
         # 排除入场场涨跌停的影响
-        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
         order_df = order_df.div(order_df.abs().sum(axis=1).replace(0, np.nan), axis=0)
+        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
+        order_df = order_df.astype(float)
         order_df[order_df > 0.05] = 0.05
         order_df[order_df < -0.05] = -0.05
         daily_pos = pos_daily_fun(order_df, n=self.hold_time)
@@ -627,48 +628,6 @@ class FactorTest:
         daily_pos = daily_pos * self.limit_buy_sell_df_c * self.suspendday_df_c
         daily_pos.fillna(method='ffill', inplace=True)
         return daily_pos
-
-
-# class FactorTestCRT(FactorTest):
-#     def __init__(self, *args):
-#         super(FactorTestCRT, self).__init__(*args)
-#
-#     def load_change_factor(self, file_name):
-#         load_path = self.root_path + '/EM_Funda/daily/'
-#         raw_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
-#             .reindex(index=self.xinx, columns=self.xnms)
-#         QTTM_df = bt.AZ_Load_csv(os.path.join(load_path, '_'.join(file_name.split('_')[:-1]) + '_QTTM.csv')) \
-#             .reindex(index=self.xinx, columns=self.xnms)
-#         QTTM_df_ma = bt.AZ_Rolling_mean(QTTM_df.abs().replace(0, np.nan), 60)
-#         tmp_df = raw_df / QTTM_df_ma
-#         # target_df = bt.AZ_Row_zscore(tmp_df)
-#         target_df = self.row_extre(tmp_df, self.sector_df, 0.2)
-#         return target_df
-#
-#     def load_ratio_factor(self, file_name):
-#         load_path = self.root_path + '/EM_Funda/daily/'
-#         tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
-#             .reindex(index=self.xinx, columns=self.xnms)
-#         # target_df = bt.AZ_Row_zscore(tmp_df)
-#         target_df = self.row_extre(tmp_df, self.sector_df, 0.2)
-#         return target_df
-#
-#     def load_tech_factor(self, file_name):
-#         # load_path = os.path.join('/media/hdd1/DAT_PreCalc/PreCalc_whs/' + self.sector_name)
-#         load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
-#         target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
-#             .reindex(index=self.xinx, columns=self.xnms)
-#         return target_df
-#
-#     def single_test(self, fun_name, name1, name2, name3):
-#         fun_set = [add_fun, sub_fun, mul_fun]
-#         fun_mix_2_set = create_fun_set_2_(fun_set)
-#         fun = fun_mix_2_set[fun_name]
-#         change_factor = self.load_change_factor(name1)
-#         ratio_factor = self.load_ratio_factor(name2)
-#         tech_factor = self.load_tech_factor(name3)
-#         mix_factor = fun(change_factor, ratio_factor, tech_factor)
-#         return mix_factor
 
 
 class FactorTestSector(FactorTest):
@@ -713,7 +672,7 @@ class FactorTestSector(FactorTest):
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/CRTKUNKKA04.pkl')
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/CRTKUNKKA04.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
     alpha_name = 'WHSKUNKKA04'
@@ -738,7 +697,7 @@ def config_test():
 
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long)
-    print(len(config_data.index))
+    # print(len(config_data.index))
     for i in config_data.index:
         # print(i)
         fun_name, name1, name2, name3, buy_sell = config_data.loc[i]
@@ -750,11 +709,12 @@ def config_test():
             sum_factor_df = sum_factor_df.add(-mix_factor, fill_value=0)
 
     sum_pos_df_new = main.deal_mix_factor(sum_factor_df)
-    sum_pos_df_new['IC01'] = -sum_pos_df_new.sum(axis=1)
+    sum_pos_df_new['IF01'] = -sum_pos_df_new.sum(axis=1) * 0.05
+    sum_pos_df_new['IC01'] = -sum_pos_df_new.sum(axis=1) * 0.05
 
-    pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
-    sum_pos_df_new.round(10).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
+    sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 
 

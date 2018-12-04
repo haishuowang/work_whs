@@ -9,8 +9,8 @@ from collections import OrderedDict
 import warnings
 import sys
 sys.path.append("/mnt/mfs/LIB_ROOT")
-import open_lib_c.shared_paths.path as pt
-from open_lib_c.shared_tools import send_email
+import open_lib.shared_paths.path as pt
+from open_lib.shared_tools import send_email
 warnings.filterwarnings('ignore')
 
 
@@ -166,12 +166,12 @@ if __name__ == '__main__':
     root_path = pt._BinFiles(mode)
     sector_name = 'market_top_2000'
     alpha_name_list = ['018JUN', '018JUL', '018AUG']
-    config_info_path = [f'/mnt/mfs/alpha_whs/{alpha_name_list[0]}.pkl',
-                        f'/mnt/mfs/alpha_whs/{alpha_name_list[1]}.pkl',
-                        f'/mnt/mfs/alpha_whs/{alpha_name_list[2]}.pkl']
+    config_info_path = [f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/{alpha_name_list[0]}.pkl',
+                        f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/{alpha_name_list[1]}.pkl',
+                        f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/{alpha_name_list[2]}.pkl']
 
     if mode == 'pro':
-        root_factor_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/tmp/{}'.format(sector_name)
+        root_factor_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/{}'.format(sector_name)
     elif mode == 'bkt':
         root_factor_path = '/mnt/mfs/dat_whs/data/new_factor_data/{}'.format(sector_name)
     else:
@@ -231,6 +231,6 @@ if __name__ == '__main__':
                                 if_only_long).round(14)
 
     daily_pos['IC01'] = -daily_pos.sum(axis=1)
-    daily_pos.round(10).to_csv(f'/mnt/mfs/work_whs/WHS018SUM01.pos', sep='|', index_label='Date')
+    daily_pos.round(10).to_csv(f'/mnt/mfs/AAPOS/WHS018SUM01.pos', sep='|', index_label='Date')
     b = time.time()
     print('alpha WHS018SUM01 cost time: {}'.format(b - a))

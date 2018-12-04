@@ -463,10 +463,10 @@ def load_raw_data(root_path, raw_data_path, xnms, xinx, if_replace, target_date)
     for target_path in raw_data_path:
         tmp_data = bt.AZ_Load_csv(os.path.join('/media/hdd1/DAT_EQT', target_path)).reindex(columns=xnms, index=xinx)
         if tmp_data.index[-1] != target_date:
-            send_email(target_path + ' Data Error!',
-                       ['whs@yingpei.com'],
-                       [],
-                       '[{}]'.format(target_date.strftime('%Y%m%d')))
+            send_email.send_email(target_path + ' Data Error!',
+                                  ['whs@yingpei.com'],
+                                  [],
+                                  '[{}]'.format(target_date.strftime('%Y%m%d')))
         if if_replace:
             tmp_data = tmp_data.replace(0, np.nan)
         raw_data_list += [tmp_data]
@@ -496,9 +496,7 @@ class SectorSplit:
         end_date = datetime.now()
         # sector_name = 'market_top_2000'
         self.sector_name = sector_name
-        self.root_path = '/media/hdd1/D_1/DAT_EQT/DAT_EQT'
-        market_top_n = bt.AZ_Load_csv(os.path.join(f'{self.root_path}/EM_Funda/DERIVED_10/'
-                                                   + sector_name + '.csv'))
+        market_top_n = bt.AZ_Load_csv(os.path.join('/media/hdd1/DAT_EQT/EM_Funda/DERIVED_10/' + sector_name + '.csv'))
         market_top_n = market_top_n[(market_top_n.index >= begin_date) & (market_top_n.index < end_date)]
         self.sector_df = market_top_n
         self.xinx = self.sector_df.index
@@ -507,20 +505,20 @@ class SectorSplit:
     def industry(self, file_list):
         industry_df_sum = pd.DataFrame()
         for file_name in file_list:
-            industry_df = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/LICO_IM_INCHG/Global_Level1_{file_name}.csv')\
+            industry_df = bt.AZ_Load_csv(f'/media/hdd1/DAT_EQT/EM_Funda/LICO_IM_INCHG/Global_Level1_{file_name}.csv') \
                 .reindex(index=self.xinx, columns=self.xnms)
             industry_df_sum = industry_df_sum.add(industry_df, fill_value=0)
         industry_df_sum = industry_df_sum.reindex(index=self.xinx, columns=self.xnms)
 
         industry_df_sum = self.sector_df.mul(industry_df_sum, fill_value=0).replace(0, np.nan) \
             .dropna(how='all', axis='columns')
-        industry_df_sum.to_csv('{}/EM_Funda/DERIVED_10/{}_industry_{}.csv'
-                               .format(self.root_path, self.sector_name, '_'.join([str(x) for x in file_list])), sep='|')
+        industry_df_sum.to_csv('/media/hdd1/DAT_EQT/EM_Funda/DERIVED_10/{}_industry_{}.csv'
+                               .format(self.sector_name, '_'.join([str(x) for x in file_list])), sep='|')
         return industry_df_sum
 
 
 def main1():
-    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs'
+    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file'
     mode = 'pro'
 
     begin_date = pd.to_datetime('20120101')
@@ -563,7 +561,7 @@ def main1():
 
 
 def main2():
-    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs'
+    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file'
     mode = 'pro'
 
     begin_date = pd.to_datetime('20120101')
@@ -594,10 +592,13 @@ def main2():
         file_save_path = os.path.join(save_root_path, f'{file_name}.pkl')
         # print(file_save_path)
         if os.path.exists(file_save_path):
-            cut_date = xinx[-5]
+            cut_date = xinx[-60]
+            month_begin = datetime(xinx[-1].year, xinx[-1].month, 1) - timedelta(400)
             create_data = pd.read_pickle(file_save_path)
             create_data = create_data[(create_data.index <= cut_date)]
-            part_create_data = create_data_fun(mode, info_path, sector_df, xnms, xinx[-300:], target_date)
+            part_create_data = create_data_fun(mode, info_path, sector_df, xnms,
+                                               xinx[xinx >= month_begin],
+                                               target_date)
             part_create_data = part_create_data[(part_create_data.index > cut_date)]
             create_data = create_data.append(part_create_data, sort=False)
         else:
@@ -622,11 +623,19 @@ def create_sector():
     for file_list in [[10, 15], [20, 25, 30, 35], [40], [45, 50], [55]]:
         sector_split.industry(file_list)
 
+    sector_split = SectorSplit('market_top_300plus')
+    for file_list in [[10, 15], [20, 25, 30, 35], [40], [45, 50], [55]]:
+        sector_split.industry(file_list)
+
+    sector_split = SectorSplit('market_top_300to800plus')
+    for file_list in [[10, 15], [20, 25, 30, 35], [40], [45, 50], [55]]:
+        sector_split.industry(file_list)
+
 
 if __name__ == '__main__':
     a = time.time()
     create_sector()
-    # main1()
-    # main2()
+    main1()
+    main2()
     b = time.time()
     print('pre cal cost time:{} s'.format(b - a))

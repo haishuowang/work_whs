@@ -617,8 +617,9 @@ class FactorTest:
         # 下单日期pos
         order_df = mix_factor.replace(np.nan, 0)
         # 排除入场场涨跌停的影响
-        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
         order_df = order_df.div(order_df.abs().sum(axis=1).replace(0, np.nan), axis=0)
+        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
+        order_df = order_df.astype(float)
         order_df[order_df > 0.05] = 0.05
         order_df[order_df < -0.05] = -0.05
         daily_pos = pos_daily_fun(order_df, n=self.hold_time)
@@ -720,7 +721,7 @@ class FactorTestSector(FactorTest):
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/CRTMEDUSA08.pkl')
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/CRTMEDUSA08.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
     alpha_name = 'WHSMEDUSA08'
@@ -731,7 +732,7 @@ def config_test():
 
     sum_factor_df = pd.DataFrame()
 
-    root_path = '/media/hdd1/D_2/DAT_EQT/DAT_EQT'
+    root_path = '/media/hdd1/DAT_EQT'
     # root_path = '/mnt/mfs/DAT_EQT'
     if_save = False
     if_new_program = True
@@ -762,7 +763,7 @@ def config_test():
 
     # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
     # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
-    sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/dat_whs/{alpha_name}.pos', sep='|', index_label='Date')
+    sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 
 

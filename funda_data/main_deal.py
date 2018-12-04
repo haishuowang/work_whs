@@ -133,9 +133,9 @@ def main_fun(sector_name):
     # EM_Funda.daily_fun(sector_df, root_path, save_root_path)
     # EM_Funda.speciel_fun(sector_df, root_path, save_root_path)
     print('***************************tech factor********************************')
-    # Tech_Factor.main(sector_df, root_path, save_root_path)
+    Tech_Factor.main(sector_df, root_path, save_root_path)
     print('***************************self factor********************************')
-    EM_Funda_test.common_deal(sector_df, save_root_path)
+    # EM_Funda_test.common_deal(sector_df, save_root_path)
     print('***************************intra factor********************************')
     # IntradayData.intra_fun(sector_df, save_root_path)
 
@@ -182,6 +182,7 @@ if __name__ == '__main__':
                         'market_top_800plus_industry_55'
                         ]
 
+    # sector_name_list = ['market_top_300to800plus']
     # sector_name_list = ['market_top_800plus',
     #                     'market_top_800plus_industry_10_15',
     #                     'market_top_800plus_industry_20_25_30_35',

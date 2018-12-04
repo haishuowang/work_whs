@@ -691,8 +691,9 @@ class FactorTest:
         # 下单日期pos
         order_df = mix_factor.replace(np.nan, 0)
         # 排除入场场涨跌停的影响
-        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
         order_df = order_df.div(order_df.abs().sum(axis=1).replace(0, np.nan), axis=0)
+        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
+        order_df = order_df.astype(float)
         order_df[order_df > 0.05] = 0.05
         order_df[order_df < -0.05] = -0.05
         daily_pos = pos_daily_fun(order_df, n=self.hold_time)
@@ -825,7 +826,7 @@ class FactorTestSector(FactorTest):
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/'
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/'
                                 f'market_top_300plus_False_20181101_1135_hold_5__8.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
@@ -872,8 +873,8 @@ def config_test():
     if ic_weight != 0:
         sum_pos_df_new['IC01'] = -ic_weight * sum_pos_df_new.sum(axis=1)
 
-    pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
+    # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
     sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 

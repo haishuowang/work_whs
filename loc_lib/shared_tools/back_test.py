@@ -76,21 +76,24 @@ def AZ_Row_zscore(df, cap=None):
     return target.replace(np.nan, 0)
 
 
-def AZ_Rolling(df, n, min_periods=1):
+def AZ_Rolling(df, n, min_periods=0):
     return df.rolling(window=n, min_periods=min_periods)
 
 
-def AZ_Rolling_mean(df, n, min_periods=1):
+def AZ_Rolling_mean(df, n, min_periods=0):
     target = df.rolling(window=n, min_periods=min_periods).mean()
     target.iloc[:n - 1] = np.nan
     return target
 
 
-def AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250, min_periods=1, cut_point_list=None, output=False):
+def AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250, min_periods=0, cut_point_list=None, output=False):
     if cut_point_list is None:
         cut_point_list = [0.05, 0.33, 0.5, 0.66, 0.95]
-    rolling_sharpe = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods) \
-        .apply(lambda x: np.sqrt(year_len) * x.mean() / x.std(), raw=True)
+
+    pnl_df_mean = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods).mean()
+    pnl_df_std = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods).std()
+    rolling_sharpe = np.sqrt(year_len) * pnl_df_mean / pnl_df_std
+
     rolling_sharpe.iloc[:int(roll_year * year_len) - 1] = np.nan
     cut_sharpe = rolling_sharpe.quantile(cut_point_list)
     if output:
@@ -146,9 +149,9 @@ def AZ_Leverage_ratio(asset_df):
     asset_20 = asset_df - asset_df.shift(20)
     asset_250 = asset_df - asset_df.shift(250)
     if asset_250.mean() > 0:
-        return asset_250.mean() / (-asset_20.min())
+        return round(asset_250.mean() / (-asset_20.min()), 2)
     else:
-        return asset_250.mean() / (-asset_20.max())
+        return round(asset_250.mean() / (-asset_20.max()), 2)
 
 
 def AZ_Locked_date_deal(position_df, locked_df):

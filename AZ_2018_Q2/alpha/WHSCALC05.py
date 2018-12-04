@@ -1473,11 +1473,48 @@ class FD:
                 target_df = (real > limit_up_dn).astype(int) - (real < limit_up_dn).astype(int)
                 return target_df * sector_df
 
+            @staticmethod
+            def MACD(Close, sector_df, fastperiod=12, slowperiod=26, signalperiod=9):
+                macd, macdsignal, macdhist = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+                for i in Close.columns:
+                    macd[i], macdsignal[i], macdhist[i] = ta.MACD(Close[i], fastperiod, slowperiod, signalperiod)
+                macdhist_copy = macdhist.copy()
+                macdhist_copy.replace(np.nan, 0)
+                macdhist_copy[macdhist > 0] = 1
+                macdhist_copy[macdhist < 0] = 0
+                target_df = macdhist_copy - macdhist_copy.shift(1)
+                return target_df * sector_df
+
+            @staticmethod
+            def MA_LINE(Close, sector_df, slowperiod, fastperiod):
+                slow_line = Close.rolling(slowperiod, min_periods=0).mean()
+                fast_line = Close.rolling(fastperiod, min_periods=0).mean()
+                MA_diff = fast_line - slow_line
+                MA_diff_copy = MA_diff.copy()
+                MA_diff_copy[MA_diff > 0] = 1
+                MA_diff_copy[MA_diff < 0] = 0
+                target_df = MA_diff_copy - MA_diff_copy.shift(1)
+                return target_df * sector_df
+
         class FactorVolume:
             @staticmethod
             def ADOSC(High, Low, Close, Volume, sector_df, fastperiod, slowperiod, limit_up_dn=0):
                 real = AZ_Factor_Volume.ADOSC(High, Low, Close, Volume, fastperiod, slowperiod)
                 target_df = (real > limit_up_dn).astype(int) - (real < -limit_up_dn).astype(int)
+                return target_df * sector_df
+
+        class FactorOverlap:
+            @staticmethod
+            def BBANDS(Close, sector_df, timeperiod, limit_up_down):
+                up_line, mid_line, down_line = AZ_Factor_Overlap.BBANDS(Close, timeperiod, nbdevup=limit_up_down,
+                                                                        nbdevdn=limit_up_down, matype=0)
+
+                target_df = Close.copy()
+                target_df.loc[:, :] = 0
+                target_df[(Close <= up_line) & (Close >= down_line)] = 0
+                target_df[Close > up_line] = 1
+                target_df[Close < down_line] = -1
+                # print(target_df)
                 return target_df * sector_df
 
         class FactorVolatility(BaseDeal):
@@ -1581,6 +1618,7 @@ class FD:
         class EM_Funda_test_Deal(BaseDeal):
             pass
 
+
 class SectorData(object):
     def __init__(self, root_path):
         self.root_path = root_path
@@ -1627,7 +1665,6 @@ def find_fun(fun_list):
     # print(fun_list)
     for a in fun_list[:-1]:
         target_class = getattr(target_class, a)
-    print(target_class, fun_list[-1])
     target_fun = getattr(target_class(), fun_list[-1])
     return target_fun
 
@@ -1721,18 +1758,18 @@ class PrecalcDataCreate:
             factor_to_fun = '/mnt/mfs/dat_whs/data/factor_to_fun'
             info_path = os.path.join(factor_to_fun, file_name)
             file_save_path = os.path.join(self.save_root_path, f'{file_name}.pkl')
-            if os.path.exists(file_save_path):
-                cut_date = self.xinx[-5]
-                create_data = pd.read_pickle(file_save_path)
-                create_data = create_data[(create_data.index <= cut_date)]
-                part_create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms,
-                                                   self.xinx[-300:], self.target_date)
-                part_create_data = part_create_data[(part_create_data.index > cut_date)]
-                create_data = create_data.append(part_create_data, sort=False)
-
-            else:
-                create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms, self.xinx,
-                                              self.target_date)
+            # if os.path.exists(file_save_path):
+            #     cut_date = self.xinx[-5]
+            #     create_data = pd.read_pickle(file_save_path)
+            #     create_data = create_data[(create_data.index <= cut_date)]
+            #     part_create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms,
+            #                                        self.xinx[-300:], self.target_date)
+            #     part_create_data = part_create_data[(part_create_data.index > cut_date)]
+            #     create_data = create_data.append(part_create_data, sort=False)
+            #
+            # else:
+            create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms, self.xinx,
+                                          self.target_date)
             create_data.to_pickle(file_save_path)
 
 
@@ -1757,9 +1794,8 @@ def main(config_name_dict):
 
 if __name__ == '__main__':
     a = time.time()
-    config_name_dict = {'market_top_300to800plus_industry_10_15_True_20181117_2314_hold_5__7':
-                            ['name1', 'name3'],
-                        'market_top_300plus_True_20181115_1919_hold_5__7':
+
+    config_name_dict = {'market_top_300to800plus_True_20181124_1156_hold_20__11':
                             ['name1', 'name3'],
                         }
 

@@ -1,26 +1,8 @@
-import pandas as pd
-import numpy as np
-import os
-from itertools import product, permutations, combinations
-from multiprocessing import Pool, Lock, cpu_count
-import time
-from collections import OrderedDict
-import random
-from datetime import datetime
 import sys
 
-sys.path.append('/mnt/mfs/work_whs')
-sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
-import loc_lib.shared_tools.back_test as bt
-from loc_lib.shared_tools import send_email
-# 读取数据的函数 以及
-from factor_script.script_filter_fun import pos_daily_fun, out_sample_perf, filter_all, filter_time_para_fun
+sys.path.append('/mnt/mfs')
+from work_whs.loc_lib.pre_load import *
 
-
-# product 笛卡尔积　　（有放回抽样排列）
-# permutations 排列　　（不放回抽样排列）
-# combinations 组合,没有重复　　（不放回抽样组合）
-# combinations_with_replacement 组合,有重复　　（有放回抽样组合）
 
 def mul_fun(a, b):
     a_l = a[a > 0]
@@ -44,44 +26,95 @@ def add_fun(a, b):
     return a.add(b)
 
 
-def AZ_Cut_window(df, begin_date, end_date=None, column=None):
-    if column is None:
-        if end_date is None:
-            return df[df.index > begin_date]
-        else:
-            return df[(df.index > begin_date) & (df.index < end_date)]
+def filter_all(cut_date, pos_df_daily, pct_n, if_return_pnl=False, if_only_long=False):
+    pnl_df = (pos_df_daily * pct_n).sum(axis=1)
+    pnl_df = pnl_df.replace(np.nan, 0)
+    # pnl_df = pd.Series(pnl_df)
+    # 样本内表现
+    return_in = pct_n[pct_n.index < cut_date]
+
+    pnl_df_in = pnl_df[pnl_df.index < cut_date]
+    asset_df_in = pnl_df_in.cumsum()
+    last_asset_in = asset_df_in.iloc[-1]
+    pos_df_daily_in = pos_df_daily[pos_df_daily.index < cut_date]
+    pot_in = AZ_Pot(pos_df_daily_in, last_asset_in)
+
+    leve_ratio = AZ_Leverage_ratio(asset_df_in)
+    if leve_ratio < 0:
+        leve_ratio = 100
+    sharpe_q_in_df = bt.AZ_Rolling_sharpe(pnl_df_in, roll_year=1, year_len=250, min_periods=1,
+                                          cut_point_list=[0.3, 0.5, 0.7], output=False)
+    sp_in = bt.AZ_Sharpe_y(pnl_df_in)
+    fit_ratio = bt.AZ_fit_ratio(pos_df_daily_in, return_in)
+    ic = round(bt.AZ_Normal_IC(pos_df_daily_in, pct_n, min_valids=None, lag=0).mean(), 6)
+    sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d = sharpe_q_in_df.values
+    in_condition_u = sharpe_q_in_df_u > 0.9 and leve_ratio > 1
+    in_condition_d = sharpe_q_in_df_d < -0.9 and leve_ratio > 1
+    # 分双边和只做多
+    if if_only_long:
+        in_condition = in_condition_u
     else:
-        if end_date is None:
-            return df[df[column] > begin_date]
-        else:
-            return df[(df[column] > begin_date) & (df[column] < end_date)]
+        in_condition = in_condition_u | in_condition_d
+
+    if sharpe_q_in_df_m > 0:
+        way = 1
+    else:
+        way = -1
+
+    # 样本外表现
+    pnl_df_out = pnl_df[pnl_df.index >= cut_date]
+    out_condition, sharpe_q_out = out_sample_perf_c(pnl_df_out, way=way)
+    if if_return_pnl:
+        return in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+               fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
+    else:
+        return in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+               fit_ratio, leve_ratio, sp_in, sharpe_q_out
 
 
-def create_fun_set_2(fun_set):
-    mix_fun_set = []
-    for fun_1, fun_2 in product(fun_set, repeat=2):
-        exe_str_1 = """def {0}_{1}_fun(a, b, c):
-            mix_1 = {0}_fun(a, b)
-            mix_2 = {1}_fun(mix_1, c)
-            return mix_2
-        """.format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0])
-        exec(compile(exe_str_1, '', 'exec'))
-        exec('mix_fun_set += [{0}_{1}_fun]'.format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0]))
-    return mix_fun_set
+def out_sample_perf_c(pnl_df_out, way=1):
+    # 根据sharpe大小,统计样本外的表现
+    # if cut_point_list is None:
+    #     cut_point_list = [0.30]
+    # if way == 1:
+    #     rolling_sharpe, cut_sharpe = \
+    #         bt.AZ_Rolling_sharpe(pnl_df_out, roll_year=0.5, year_len=250, cut_point_list=cut_point_list, output=True)
+    # else:
+    #     rolling_sharpe, cut_sharpe = \
+    #         bt.AZ_Rolling_sharpe(-pnl_df_out, roll_year=0.5, year_len=250, cut_point_list=cut_point_list, output=True)
+    if way == 1:
+        sharpe_out = bt.AZ_Sharpe_y(pnl_df_out)
+    else:
+        sharpe_out = bt.AZ_Sharpe_y(-pnl_df_out)
+    out_condition = sharpe_out > 0.8
+    return out_condition, round(sharpe_out * way, 2)
 
 
-def create_fun_set_2_(fun_set):
-    mix_fun_set = {}
-    for fun_1, fun_2 in product(fun_set, repeat=2):
-        exe_str_1 = """def {0}_{1}_fun(a, b, c):
-            mix_1 = {0}_fun(a, b)
-            mix_2 = {1}_fun(mix_1, c)
-            return mix_2
-        """.format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0])
-        exec(compile(exe_str_1, '', 'exec'))
-        exec('mix_fun_set[\'{0}_{1}_fun\'] = {0}_{1}_fun'
-             .format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0]))
-    return mix_fun_set
+def AZ_Leverage_ratio(asset_df):
+    """
+    返回250天的return/(负的 一个月的return)
+    :param asset_df:
+    :return:
+    """
+    asset_20 = asset_df - asset_df.shift(20)
+    asset_250 = asset_df - asset_df.shift(250)
+    if asset_250.mean() > 0:
+        return round(asset_250.mean() / (-asset_20.min()), 2)
+    else:
+        return round(asset_250.mean() / (-asset_20.max()), 2)
+
+
+def pos_daily_fun(df, n=5):
+    return df.rolling(window=n, min_periods=1).sum()
+
+
+def AZ_Pot(pos_df_daily, last_asset):
+    trade_times = pos_df_daily.diff().abs().sum().sum()
+    if trade_times == 0:
+        return 0
+    else:
+        pot = last_asset / trade_times * 10000
+        return round(pot, 2)
 
 
 class FactorTest:
@@ -128,11 +161,7 @@ class FactorTest:
             ic_weight = 0
 
         index_df_1 = self.load_index_data('000300').fillna(0)
-        # index_weight_1 = self.load_index_weight_data('000300')
         index_df_2 = self.load_index_data('000905').fillna(0)
-        # index_weight_2 = self.load_index_weight_data('000905')
-        #
-        # weight_df = if_weight * index_weight_1 + ic_weight * index_weight_2
         hedge_df = if_weight * index_df_1 + ic_weight * index_df_2
 
         self.return_choose = return_choose.sub(hedge_df, axis=0)
@@ -275,15 +304,6 @@ class FactorTest:
         target_df = data[index_name].reindex(index=self.xinx)
         return target_df * 0.01
 
-    # 读取部分factor
-    def load_part_factor(self, sector_name, xnms, xinx, file_list):
-        factor_set = OrderedDict()
-        for file_name in file_list:
-            load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + sector_name)
-            target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl'))
-            factor_set[file_name] = target_df.reindex(columns=xnms, index=xinx).fillna(0)
-        return factor_set
-
     # 读取factor
     def load_factor(self, file_name):
         factor_set = OrderedDict()
@@ -309,52 +329,12 @@ class FactorTest:
         daily_pos.fillna(method='ffill', inplace=True)
         return daily_pos
 
-    def save_load_control(self, tech_name_list, funda_name_list, suffix_name, file_name):
-        # 参数存储与加载的路径控制
-        result_save_path = '/mnt/mfs/dat_whs/result'
-        if self.if_new_program:
-            now_time = datetime.now().strftime('%Y%m%d_%H%M')
-            if self.if_only_long:
-                file_name = '{}_{}_{}_hold_{}_{}_{}_long.txt' \
-                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
-            else:
-                file_name = '{}_{}_{}_hold_{}_{}_{}.txt' \
-                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
-
-            log_save_file = os.path.join(result_save_path, 'log', file_name)
-            result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
-            para_dict = dict()
-            para_ready_df = pd.DataFrame(list(self.create_all_para(tech_name_list, funda_name_list)))
-            total_para_num = len(para_ready_df)
-            if self.if_save:
-                self.create_log_save_path(log_save_file)
-                self.create_log_save_path(result_save_file)
-                self.create_log_save_path(para_save_file)
-                para_dict['para_ready_df'] = para_ready_df
-                para_dict['tech_name_list'] = tech_name_list
-                para_dict['funda_name_list'] = funda_name_list
-                pd.to_pickle(para_dict, para_save_file)
-
-        else:
-            log_save_file = os.path.join(result_save_path, 'log', file_name)
-            result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
-
-            para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
-            para_all_df = pd.read_pickle(para_save_file)
-            total_para_num = len(para_all_df)
-            para_ready_df = para_all_df.loc[sorted(list(set(para_all_df.index) - set(para_tested_df.index)))]
-        print(file_name)
-        print(f'para_num:{len(para_ready_df)}')
-        return para_ready_df, log_save_file, result_save_file, total_para_num
-
     @staticmethod
     def create_all_para_(change_list, ratio_list, tech_list):
         target_list = list(product(change_list, ratio_list, tech_list))
         return target_list
 
-    def save_load_control_(self, change_list, ratio_list, tech_list, suffix_name, file_name):
+    def save_load_control_(self, index_list, suffix_name):
         # 参数存储与加载的路径控制
         result_save_path = '/mnt/mfs/dat_whs/result'
         if self.if_new_program:
@@ -368,34 +348,92 @@ class FactorTest:
 
             log_save_file = os.path.join(result_save_path, 'log', file_name)
             result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
+
             para_dict = dict()
-            para_ready_df = pd.DataFrame(list(self.create_all_para_(change_list, ratio_list, tech_list)))
-            total_para_num = len(para_ready_df)
+            total_para_num = len(index_list)
             if self.if_save:
                 self.create_log_save_path(log_save_file)
                 self.create_log_save_path(result_save_file)
-                self.create_log_save_path(para_save_file)
-                para_dict['para_ready_df'] = para_ready_df
-                para_dict['change_list'] = change_list
-                para_dict['ratio_list'] = ratio_list
-                para_dict['tech_list'] = tech_list
-                pd.to_pickle(para_dict, para_save_file)
+                para_dict['index_list'] = index_list
 
+            print(file_name)
+            return log_save_file, result_save_file, total_para_num
         else:
-            log_save_file = os.path.join(result_save_path, 'log', file_name)
-            result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
-            para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
-            para_all_df = pd.read_pickle(para_save_file)
-            total_para_num = len(para_all_df)
-            para_ready_df = para_all_df.loc[sorted(list(set(para_all_df.index) - set(para_tested_df.index)))]
-        print(file_name)
-        print(f'para_num:{len(para_ready_df)}')
-        return para_ready_df, log_save_file, result_save_file, total_para_num
+            print('save load control error!')
+            exit(-1)
+
+    def load_tech_factor(self, file_name):
+        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+        target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        return target_df
+
+    def load_notice_factor(self, file_name):
+        load_path = '/mnt/mfs/dat_whs/EM_Funda/my_data_test'
+        tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
+        return target_df
+
+    def part_test_index_3_(self, name_1, log_save_file, result_save_file):
+        lock = Lock()
+        start_time = time.time()
+        load_time_1 = time.time()
+        # load因子,同时根据stock_universe筛选数据.
+        index_factor = self.load_notice_factor(name_1)
+        # '/mnt/mfs/dat_whs/EM_Funda/my_data_test'
+        # mix_factor = mul_fun(index_factor, tech_factor)
+        mix_factor = index_factor
+        print(index_factor.sum().sum())
+        # print(mix_factor.sum().sum())
+
+        daily_pos = self.deal_mix_factor(mix_factor).shift(2)
+
+        # 返回样本内筛选结果
+        *result_dict, pnl_df = filter_all(self.cut_date, daily_pos, self.return_choose,
+                                          if_return_pnl=True, if_only_long=self.if_only_long)
+        if bt.AZ_Sharpe_y(pnl_df) > 0.8:
+            plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
+                             f'{name_1}_{self.sector_name}_{self.hold_time}',
+                             str(bt.AZ_Sharpe_y(pnl_df)))
+        in_condition, *filter_result = result_dict
+        # result 存储
+        if in_condition:
+            if self.if_save:
+                with lock:
+                    f = open(result_save_file, 'a')
+                    write_list = [name_1, self.sector_name, in_condition] + filter_result
+                    f.write('|'.join([str(x) for x in write_list]) + '\n')
+            print([in_condition, name_1] + filter_result)
+        end_time = time.time()
+        # 参数存储
+        if self.if_save:
+            with lock:
+                f = open(log_save_file, 'a')
+                write_list = [name_1, self.sector_name, round(end_time - start_time, 4)]
+                f.write('|'.join([str(x) for x in write_list]) + '\n')
+
+        print('{}, cost {} seconds'.format(name_1, round(end_time - start_time, 2)))
+
+    def test_index_3_(self, index_list, pool_num=20, suffix_name=''):
+        log_save_file, result_save_file, total_para_num = self.save_load_control_(index_list, suffix_name)
+        self.check_factor(index_list, result_save_file)
+        a_time = time.time()
+        # pool = Pool(pool_num)
+        for name_1 in index_list:
+            print(name_1)
+            args_list = (name_1, log_save_file, result_save_file)
+            # pool.apply_async(self.part_test_index_3_, args=args_list)
+            self.part_test_index_3_(*args_list)
+
+        # pool.close()
+        # pool.join()
+
+        b_time = time.time()
+        print('Success!Processing end, Cost {} seconds'.format(round(b_time - a_time, 2)))
 
 
-if __name__ == '__main__':
+def main_fun(sector_name, hold_time):
     root_path = '/mnt/mfs/DAT_EQT'
     if_save = False
     if_new_program = True
@@ -403,42 +441,102 @@ if __name__ == '__main__':
     begin_date = pd.to_datetime('20100101')
     cut_date = pd.to_datetime('20160401')
     end_date = pd.to_datetime('20180901')
-
-    sector_name = 'market_top_2000'
-    index_name = '000905'
-    return_file = 'pct_p1d'
-    hold_time = 20
     lag = 2
     return_file = ''
 
     if_hedge = True
-    if_only_long = False
+    if_only_long = True
     time_para_dict = OrderedDict()
 
-    time_para_dict['time_para_1'] = [pd.to_datetime('20110101'), pd.to_datetime('20150101'),
+    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
                                      pd.to_datetime('20150401'), pd.to_datetime('20150701'),
                                      pd.to_datetime('20151001'), pd.to_datetime('20160101')]
 
-    time_para_dict['time_para_2'] = [pd.to_datetime('20120101'), pd.to_datetime('20160101'),
+    time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
                                      pd.to_datetime('20160401'), pd.to_datetime('20160701'),
                                      pd.to_datetime('20161001'), pd.to_datetime('20170101')]
 
-    time_para_dict['time_para_3'] = [pd.to_datetime('20130601'), pd.to_datetime('20170601'),
+    time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
                                      pd.to_datetime('20170901'), pd.to_datetime('20171201'),
                                      pd.to_datetime('20180301'), pd.to_datetime('20180601')]
 
-    time_para_dict['time_para_4'] = [pd.to_datetime('20140601'), pd.to_datetime('20180601'),
+    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
                                      pd.to_datetime('20180901'), pd.to_datetime('20180901'),
                                      pd.to_datetime('20180901'), pd.to_datetime('20180901')]
 
-    time_para_dict['time_para_5'] = [pd.to_datetime('20140701'), pd.to_datetime('20180701'),
+    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
                                      pd.to_datetime('20180901'), pd.to_datetime('20180901'),
                                      pd.to_datetime('20180901'), pd.to_datetime('20180901')]
 
-    time_para_dict['time_para_6'] = [pd.to_datetime('20140801'), pd.to_datetime('20180801'),
+    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
                                      pd.to_datetime('20180901'), pd.to_datetime('20180901'),
                                      pd.to_datetime('20180901'), pd.to_datetime('20180901')]
 
-    main = FactorTest(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict, sector_name,
-                      hold_time, lag, return_file, if_hedge, if_only_long)
+    if sector_name.startswith('market_top_300plus'):
+        if_weight = 1
+        ic_weight = 0
 
+    elif sector_name.startswith('market_top_300to800plus'):
+        if_weight = 0
+        ic_weight = 1
+
+    else:
+        if_weight = 0.5
+        ic_weight = 0.5
+
+    main_model = FactorTest(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
+                            sector_name, hold_time, lag, return_file, if_hedge, if_only_long,
+                            if_weight, ic_weight)
+
+    index_list = ['staff_changes',
+                  'funds',
+                  'meeting_decide',
+                  'restricted_shares',
+                  'son_company',
+                  'suspend',
+                  'shares',
+                  ]
+
+    # tech_list = ['BBANDS_20_1.5',
+    #              'BBANDS_40_1.5',
+    #              'BBANDS_100_1.5',
+    #              'BBANDS_140_1.5',
+    #              'BBANDS_200_1.5',
+    #              'MACD_12_26_9',
+    #              'MACD_20_60_18',
+    #              'MA_LINE_10_5',
+    #              'MA_LINE_60_20',
+    #              'MA_LINE_120_60',
+    #              ]
+
+    pool_num = 20
+    main_model.test_index_3_(index_list, pool_num, suffix_name='single')
+
+
+if __name__ == '__main__':
+    sector_name_list = ['market_top_300plus',
+                        'market_top_300plus_industry_10_15',
+                        'market_top_300plus_industry_20_25_30_35',
+                        'market_top_300plus_industry_40',
+                        'market_top_300plus_industry_45_50',
+                        'market_top_300plus_industry_55',
+
+                        'market_top_300to800plus',
+                        'market_top_300to800plus_industry_10_15',
+                        'market_top_300to800plus_industry_20_25_30_35',
+                        'market_top_300to800plus_industry_40',
+                        'market_top_300to800plus_industry_45_50',
+                        'market_top_300to800plus_industry_55',
+
+                        'market_top_800plus',
+                        'market_top_800plus_industry_10_15',
+                        'market_top_800plus_industry_20_25_30_35',
+                        'market_top_800plus_industry_40',
+                        'market_top_800plus_industry_45_50',
+                        'market_top_800plus_industry_55'
+                        ]
+
+    hold_time_list = [5, 20]
+    for hold_time in hold_time_list:
+        for sector_name in sector_name_list:
+            main_fun(sector_name, hold_time)

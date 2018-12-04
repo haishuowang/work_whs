@@ -214,7 +214,7 @@ def config_create(main_model, sector_name, result_file_name, config_name, data, 
     sharpe_df_before.name = 'sharpe_df_before'
     sharpe_df = part_sum_pnl_df.apply(bt.AZ_Sharpe_y)
     sharpe_df.name = 'sharpe_df'
-    info_df = pd.concat([sharpe_df_before, sharpe_df_after], axis=1)
+    # info_df = pd.concat([sharpe_df_before, sharpe_df_after], axis=1)
 
     # _________________________________________________________________________________
     target_df = (sum_pnl_df > 0).astype(int)
@@ -236,7 +236,10 @@ def config_create(main_model, sector_name, result_file_name, config_name, data, 
         target_df = target_df.append(part_target_df)
 
     print(len(target_df))
+    print(Counter(target_df['name1'].values))
+    print(Counter(target_df['name2'].values))
     print(Counter(target_df['name3'].values))
+
     config_info = dict()
     config_info['factor_info'] = target_df
     config_info['sector_name'] = sector_name
@@ -246,7 +249,7 @@ def config_create(main_model, sector_name, result_file_name, config_name, data, 
     config_info['hold_time'] = main_model.hold_time
     config_info['if_hedge'] = main_model.if_hedge
     config_info['if_only_long'] = main_model.if_only_long
-    pd.to_pickle(config_info, '/mnt/mfs/alpha_whs/{}.pkl'.format(config_name))
+    pd.to_pickle(config_info, '/mnt/mfs/dat_whs/alpha_data/{}.pkl'.format(config_name))
 
 
 def bkt_fun(main_model, pnl_save_path, a_n, i):
@@ -439,7 +442,7 @@ def survive_ratio_test(data, para_adj_set_list):
 
 
 def config_test(main_model, config_name, result_file_name, cut_date):
-    config_set = pd.read_pickle(f'/mnt/mfs/alpha_whs/{config_name}.pkl')
+    config_set = pd.read_pickle(f'/mnt/mfs/dat_whs/alpha_data/{config_name}.pkl')
     config_data = config_set['factor_info']
     sum_factor_df = pd.DataFrame()
     for i in config_data.index:
@@ -581,11 +584,14 @@ def main(result_file_name, time_para_dict):
     if_new_program = True
 
     hold_time = int(result_file_name.split('hold')[-1].split('_')[1])
+    # 加载对应脚本
     script_num = result_file_name.split('_')[-1]
+    # script_num = 10
     print(hold_time)
     loc = locals()
     exec(f'from work_whs.AZ_2018_Q2.factor_script.main_file import main_file_sector_{script_num} as mf')
     mf = loc['mf']
+    time_para_dict = mf.time_para_dict
     # from work_whs.AZ_2018_Q2.factor_script.main_file import main_file_sector_6 as mf
 
     lag = 2
@@ -686,7 +692,7 @@ def main(result_file_name, time_para_dict):
 
     config_create(main_model, sector_name, result_file_name, config_name, data, time_para, **survive_result,
                   n=5, use_factor_num=40)
-    ############################################################################
+    ###########################################################################
     # 测试config结果
     begin_date, cut_date, end_date = time_para_dict[time_para]
     sum_pos_df, pnl_df, sp = config_test(main_model, config_name, result_file_name, cut_date)
@@ -703,7 +709,8 @@ def main(result_file_name, time_para_dict):
     corr_self = sum_pnl_df_c.corr()[[result_file_name]]
     print(corr_self)
     print('______________________________________')
-    if len(corr_self[corr_self > 0.7]) >= 2:
+    print(corr_self[corr_self > 0.7].dropna(axis=0))
+    if len(corr_self[corr_self > 0.7].dropna(axis=0)) >= 2:
         print('FAIL!')
         send_email.send_email('FAIL!\n' + pd.DataFrame(corr_self).to_html(),
                               ['whs@yingpei.com'],
@@ -750,13 +757,18 @@ if __name__ == '__main__':
     # begin_time = datetime(2018, 11, 11, 6, 11, 13)
     # end_time = datetime(2018, 11, 18, 6, 30, 13)
 
-    begin_time = datetime(2018, 11, 18, 6, 11, 13)
-    end_time = datetime(2018, 11, 20, 6, 30, 13)
+    begin_time = datetime(2018, 11, 28, 18, 11, 13)
+    end_time = datetime(2018, 12, 4, 18, 30, 13)
 
     time_type = 'm'
-    endswith = '10'
+    endswith = '12'
+
     result_file_name_list = find_target_file(begin_time, end_time, time_type, endswith)
-    # result_file_name_list = ['market_top_800plus_industry_55_True_20181116_1514_hold_5__10']
+
+    # result_file_name_list = [
+    #                          # 'market_top_300to800plus_True_20181123_1447_hold_5__11',
+    #                          'market_top_300to800plus_True_20181124_1156_hold_20__11'
+    #                          ]
     for result_file_name in result_file_name_list:
         pass_result_list = []
         if result_file_name in pass_result_list:

@@ -812,7 +812,7 @@ class FactorTestSector(FactorTest):
         fun_mix_2_set = create_fun_set_2_(fun_set)
         fun = fun_mix_2_set[fun_name]
         change_factor = self.load_tech_factor(name1)
-        ratio_factor = self.load_tech_factor(name2)
+        ratio_factor = self.load_ratio_factor(name2)
         tech_factor = self.load_tech_factor(name3)
         mix_factor = fun(change_factor, ratio_factor, tech_factor)
         # daily_pos = self.deal_mix_factor(mix_factor).shift(2)
@@ -825,8 +825,8 @@ class FactorTestSector(FactorTest):
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/'
-                                f'market_top_300plus_False_20181109_1634_hold_20__8.pkl')
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/'
+                                f'market_top_300plus_True_20181115_1919_hold_5__7.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
     alpha_name = 'WHSZIWHEN04'
@@ -872,8 +872,8 @@ def config_test():
     if ic_weight != 0:
         sum_pos_df_new['IC01'] = -ic_weight * sum_pos_df_new.sum(axis=1)
 
-    pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
+    # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
     sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 

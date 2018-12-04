@@ -10,8 +10,8 @@ from datetime import datetime
 import sys
 
 sys.path.append('/mnt/mfs/work_whs')
-sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
 sys.path.append('/mnt/mfs')
+sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
 import loc_lib.shared_tools.back_test as bt
 from loc_lib.shared_tools import send_email
 # 读取数据的函数 以及
@@ -142,7 +142,6 @@ def out_sample_perf_c(pnl_df_out, way=1):
 
 def filter_all(cut_date, pos_df_daily, pct_n,
                if_return_pnl=False, if_only_long=False):
-
     pnl_df = (pos_df_daily * pct_n).sum(axis=1)
     pnl_df = pnl_df.replace(np.nan, 0)
     # pnl_df = pd.Series(pnl_df)
@@ -313,6 +312,8 @@ class FactorTestSector(mf.FactorTest):
         load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
         target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
             .reindex(index=self.xinx, columns=self.xnms)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
         return target_df
 
     def load_ratio_factor(self, file_name):
@@ -321,6 +322,17 @@ class FactorTestSector(mf.FactorTest):
             .reindex(index=self.xinx, columns=self.xnms)
 
         target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
+        return target_df
+
+    def load_notice_factor(self, file_name):
+        load_path = '/mnt/mfs/dat_whs/EM_Funda/my_data_test'
+        tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
         return target_df
 
     @staticmethod
@@ -383,7 +395,7 @@ class FactorTestSector(mf.FactorTest):
         load_time_1 = time.time()
         # load因子,同时根据stock_universe筛选数据.
         change_factor = self.load_tech_factor(name_1)
-        ratio_factor = self.load_ratio_factor(name_2)
+        ratio_factor = self.load_tech_factor(name_2)
         tech_factor = self.load_tech_factor(name_3)
         load_time_2 = time.time()
         # 加载花费数据时间
@@ -453,8 +465,8 @@ class FactorTestSector(mf.FactorTest):
         fun_set = [add_fun, sub_fun, mul_fun]
         fun_mix_2_set = create_fun_set_2_(fun_set)
         fun = fun_mix_2_set[fun_name]
-        change_factor = self.load_tech_factor(name1).shift(10)
-        ratio_factor = self.load_ratio_factor(name2)
+        change_factor = self.load_tech_factor(name1)
+        ratio_factor = self.load_tech_factor(name2)
         tech_factor = self.load_tech_factor(name3)
         mix_factor = fun(change_factor, ratio_factor, tech_factor)
         daily_pos = self.deal_mix_factor(mix_factor).shift(2)
@@ -496,86 +508,53 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long,
                             if_weight, ic_weight)
 
-    my_factor_list = ['tab1_1_row_extre_0.3',
-                      'tab1_2_row_extre_0.3',
-                      'tab1_5_row_extre_0.3',
-                      'tab1_7_row_extre_0.3',
-                      'tab1_8_row_extre_0.3',
-                      'tab1_9_row_extre_0.3',
-                      'tab2_11_row_extre_0.3',
-                      'tab2_1_row_extre_0.3',
-                      'tab2_4_row_extre_0.3',
-                      'tab2_7_row_extre_0.3',
-                      'tab2_8_row_extre_0.3',
-                      'tab2_9_row_extre_0.3',
-                      'tab4_1_row_extre_0.3',
-                      'tab4_2_row_extre_0.3',
-                      'tab4_5_row_extre_0.3',
-                      'tab5_13_row_extre_0.3',
-                      'tab5_14_row_extre_0.3',
-                      'tab5_15_row_extre_0.3',
-                      ]
-
-    ratio_list = ['R_DebtAssets_QTTM',
-                  'R_EBITDA_IntDebt_QTTM',
-                  'R_EBITDA_sales_TTM_First',
-                  'R_BusinessCycle_First',
-                  'R_DaysReceivable_First',
-                  'R_DebtEqt_First',
-                  'R_FairVal_TotProfit_TTM_First',
-                  'R_LTDebt_WorkCap_QTTM',
-                  'R_OPCF_TotDebt_QTTM',
-                  'R_OPEX_sales_TTM_First',
-                  'R_SalesGrossMGN_QTTM',
-                  'R_CurrentAssetsTurnover_QTTM',
-                  'R_TangAssets_TotLiab_QTTM',
-                  'R_NetROA_TTM_First',
-                  'R_ROE_s_First',
-                  'R_EBIT_sales_QTTM',
-                  ]
-
-    tech_list = ['ADX_40_20_10',
-                 'ADX_100_20_10',
-                 'ADX_200_20_10',
-                 'AROON_40_80',
-                 'AROON_200_80',
-                 'CMO_40_0',
-                 'CMO_200_0',
-                 'MFI_40_70_30',
-                 'MFI_140_70_30',
-                 'ADOSC_20_60_0',
-                 'ADOSC_60_120_0',
-                 'ATR_40_0.2',
-                 'ATR_140_0.2',
-                 'RSI_40_30',
-                 'RSI_140_30',
-                 'CCI_p150d_limit_12',
-                 'MACD_40_160',
-                 'bias_turn_p60d',
-                 'vol_p50d',
-                 'vol_p100d',
-                 'vol_p200d',
-                 'evol_p30d',
-                 'evol_p90d',
-                 'moment_p30200d',
-                 'moment_p50300d',
-                 'turn_p30d_0.24',
-                 'turn_p150d_0.18',
-                 'TVOL_p30d_col_extre_0.2',
-                 'TVOL_p90d_col_extre_0.2',
-                 'TVOL_row_extre_0.2',
-                 'aadj_r_p20d_col_extre_0.2',
-                 'aadj_r_p345d_continue_ud_pct',
-                 'aadj_r_p345d_continue_ud',
-                 'volume_moment_p1040d',
-                 'volume_moment_p20120d',
-                 'return_p30d_0.2',
-                 'return_p90d_0.2'
-                 ]
+    tech_list = [
+        'BBANDS_20_1.5',
+        'BBANDS_40_1.5',
+        'BBANDS_100_1.5',
+        'BBANDS_140_1.5',
+        'BBANDS_200_1.5',
+        'MACD_12_26_9',
+        'MACD_20_60_18',
+        'MA_LINE_10_5',
+        'MA_LINE_60_20',
+        'MA_LINE_120_60',
+        'WILLR_10_30',
+        'WILLR_10_40',
+        'WILLR_20_30',
+        'WILLR_40_30',
+        'WILLR_100_20',
+    ]
 
     pool_num = 10
-    main.test_index_3_(my_factor_list, ratio_list, tech_list, pool_num, suffix_name='7')
+    main.test_index_3_(tech_list, tech_list, tech_list, pool_num, suffix_name='12')
 
+
+time_para_dict = OrderedDict()
+
+time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+                                 pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+                                 pd.to_datetime('20151001'), pd.to_datetime('20160101')]
+
+time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+                                 pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+                                 pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+
+time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
+                                 pd.to_datetime('20170901'), pd.to_datetime('20171201'),
+                                 pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+
+time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+
+time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
 
 if __name__ == '__main__':
     sector_name_list = ['market_top_300plus',
@@ -592,44 +571,17 @@ if __name__ == '__main__':
                         'market_top_300to800plus_industry_45_50',
                         'market_top_300to800plus_industry_55',
 
-                        'market_top_800plus',
-                        'market_top_800plus_industry_10_15',
-                        'market_top_800plus_industry_20_25_30_35',
-                        'market_top_800plus_industry_40',
-                        'market_top_800plus_industry_45_50',
-                        'market_top_800plus_industry_55'
+                        # 'market_top_800plus',
+                        # 'market_top_800plus_industry_10_15',
+                        # 'market_top_800plus_industry_20_25_30_35',
+                        # 'market_top_800plus_industry_40',
+                        # 'market_top_800plus_industry_45_50',
+                        # 'market_top_800plus_industry_55'
                         ]
 
-    time_para_dict = OrderedDict()
+    hold_time_list = [5, 20]
 
-    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
-                                     pd.to_datetime('20150401'), pd.to_datetime('20150701'),
-                                     pd.to_datetime('20151001'), pd.to_datetime('20160101')]
-
-    time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
-                                     pd.to_datetime('20160401'), pd.to_datetime('20160701'),
-                                     pd.to_datetime('20161001'), pd.to_datetime('20170101')]
-
-    time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
-                                     pd.to_datetime('20170901'), pd.to_datetime('20171201'),
-                                     pd.to_datetime('20180301'), pd.to_datetime('20180601')]
-
-    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-    # hold_time_list = [5, 20]
-    hold_time_list = [20]
     for if_only_long in [False, True]:
         for hold_time in hold_time_list:
             for sector_name in sector_name_list:
                 main_fun(sector_name, hold_time, if_only_long, time_para_dict)
-

@@ -142,7 +142,10 @@ class BaseDeal:
     def judge_save_fun(self, target_df, file_name, save_root_path, fun, raw_data_path, args, if_filter=True,
                        if_replace=False):
         factor_to_fun = '/mnt/mfs/dat_whs/data/factor_to_fun'
-        if if_filter:
+        if target_df.sum().sum() == 0:
+            print('factor not enough!')
+            return -1
+        elif if_filter:
             print(f'{file_name}')
             print(target_df.iloc[-100:].abs().replace(0, np.nan).sum(axis=1).mean(), len(target_df.iloc[-100:].columns))
             print(target_df.iloc[-100:].abs().replace(0, np.nan).sum(axis=1).mean() / len(target_df.iloc[-100:].columns))
@@ -150,12 +153,13 @@ class BaseDeal:
             # 构建factor_to_fun的字典并存储
             self.info_dict_fun(fun, raw_data_path, args, os.path.join(factor_to_fun, file_name), if_replace)
             print(f'{file_name} success!')
+            return 0
         else:
             target_df.to_pickle(os.path.join(save_root_path, file_name + '.pkl'))
             # 构建factor_to_fun的字典并存储
             self.info_dict_fun(fun, raw_data_path, args, os.path.join(factor_to_fun, file_name), if_replace)
             print(f'{file_name} success!')
-
+            return 0
     # @staticmethod
     # def pnnd_volume_moment(volume, sector_df, n_short, n_long):
     #     volume_n_short = bt.AZ_Rolling_mean(volume, n_short)
@@ -389,6 +393,7 @@ if __name__ == '__main__':
 
     funda_base_deal = FundaBaseDeal(sector_df, root_path, table_num, table_name, data_name, save_root_path)
     funda_base_deal.row_extre_(0.2)
+
 
 # def pnd_continue_ud(raw_df, n_list):
 #     all_target_df = pd.DataFrame()

@@ -1577,6 +1577,10 @@ class FD:
                     args = (n, percent)
                     self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
+    class EM_Funda_test:
+        class EM_Funda_test_Deal(BaseDeal):
+            pass
+
 
 class SectorData(object):
     def __init__(self, root_path):
@@ -1624,7 +1628,6 @@ def find_fun(fun_list):
     # print(fun_list)
     for a in fun_list[:-1]:
         target_class = getattr(target_class, a)
-    # print(target_class)
     target_fun = getattr(target_class(), fun_list[-1])
     return target_fun
 
@@ -1714,16 +1717,17 @@ class PrecalcDataCreate:
 
     def data_create(self):
         for file_name in self.file_name_list:
-            # print(file_name)
             factor_to_fun = '/mnt/mfs/dat_whs/data/factor_to_fun'
             info_path = os.path.join(factor_to_fun, file_name)
             file_save_path = os.path.join(self.save_root_path, f'{file_name}.pkl')
             if os.path.exists(file_save_path):
-                cut_date = self.xinx[-5]
+                cut_date = self.xinx[-60]
+                month_begin = datetime(self.xinx[-1].year, self.xinx[-1].month, 1) - timedelta(400)
                 create_data = pd.read_pickle(file_save_path)
                 create_data = create_data[(create_data.index <= cut_date)]
                 part_create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms,
-                                                   self.xinx[-300:], self.target_date)
+                                                   self.xinx[self.xinx >= month_begin],
+                                                   self.target_date)
                 part_create_data = part_create_data[(part_create_data.index > cut_date)]
                 create_data = create_data.append(part_create_data, sort=False)
 
@@ -1734,7 +1738,7 @@ class PrecalcDataCreate:
 
 
 def main(config_name_dict):
-    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs'
+    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file'
     up_date_dict = OrderedDict()
     for config_name in config_name_dict.keys():
         # print(config_name)
@@ -1754,16 +1758,29 @@ def main(config_name_dict):
 
 if __name__ == '__main__':
     a = time.time()
-    config_name_dict = {#'market_top_300plus_False_20181109_1634_hold_20__8':
-                        #     ['name1', 'name2', 'name3'],
-                        # 'market_top_300to800plus_industry_20_25_30_35_False_20181107_0943_hold_5__8':
-                        #     ['name1', 'name2', 'name3'],
+    config_name_dict = {'market_top_300plus_False_20181101_1135_hold_5__8':
+                            ['name1', 'name2', 'name3'],
+                        'market_top_300plus_industry_20_25_30_35_False_20181102_2318_hold_5__8':
+                            ['name1', 'name2', 'name3'],
+                        'market_top_300plus_industry_40_False_20181103_1403_hold_5__8':
+                            ['name1', 'name2', 'name3'],
+                        'market_top_300plus_False_20181109_1634_hold_20__8':
+                            ['name1', 'name2', 'name3'],
+                        'market_top_300to800plus_industry_20_25_30_35_False_20181107_0943_hold_5__8':
+                            ['name1', 'name2', 'name3'],
                         'market_top_300to800plus_industry_10_15_True_20181117_2314_hold_5__7':
                             ['name1', 'name3'],
                         'market_top_300plus_True_20181115_1919_hold_5__7':
                             ['name1', 'name3'],
-                            }
-
+                        'market_top_800plus_True_20181119_0453_hold_5__7':
+                            ['name1', 'name3'],
+                        'market_top_800plus_industry_45_50_True_20181125_1657_hold_20__7':
+                            ['name1', 'name3'],
+                        'market_top_300to800plus_industry_10_15_True_20181123_0431_hold_20__7':
+                            ['name1', 'name3'],
+                        'market_top_300to800plus_True_20181122_0952_hold_20__7':
+                            ['name1', 'name3'],
+                        }
     main(config_name_dict)
     b = time.time()
     print('pre cal cost time:{} s'.format(b - a))

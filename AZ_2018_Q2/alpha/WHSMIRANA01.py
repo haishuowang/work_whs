@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import sys
+import warnings
+warnings.filterwarnings('ignore')
 sys.path.append("/mnt/mfs/LIB_ROOT")
-import open_lib_c.shared_paths.path as pt
+import open_lib.shared_paths.path as pt
 from itertools import product, permutations, combinations
 import os
 from collections import OrderedDict
@@ -155,7 +157,7 @@ def deal_mix_factor_c(mix_factor, sector_df, suspendday_df, limit_buy_df, limit_
 
 if __name__ == '__main__':
     mode = 'pro'
-    config_info_path = '/mnt/mfs/alpha_whs/config01.pkl'
+    config_info_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/config01.pkl'
     root_path = pt._BinFiles(mode)
     if mode == 'pro':
         root_factor_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/market_top_500'
@@ -206,4 +208,4 @@ if __name__ == '__main__':
                                   lag, if_only_long).round(14)
 
     daily_pos['IF01'] = daily_pos.sum(axis=1)
-    daily_pos.to_csv('/mnt/mfs/AAPOS/WHSMIRANA01.pos', sep='|', index_label='Date')
+    daily_pos.fillna(0).to_csv('/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/WHSMIRANA01.pos', sep='|', index_label='Date')

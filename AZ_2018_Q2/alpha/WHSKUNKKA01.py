@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import sys
 
 sys.path.append("/mnt/mfs/LIB_ROOT")
-import open_lib_c.shared_paths.path as pt
-from open_lib_c.shared_tools import send_email
+import open_lib.shared_paths.path as pt
+from open_lib.shared_tools import send_email
 
 
 def plot_send_result(pnl_df, sharpe_ratio, subject):
@@ -494,7 +494,7 @@ class FactorTest:
         self.if_only_long = if_only_long
 
         self.sector_df = self.load_sector_data()
-        print('Loaded sector DataFrame!')
+        # print('Loaded sector DataFrame!')
 
         return_choose = bt.AZ_Load_csv(os.path.join(root_path, 'EM_Funda/DERIVED_14/aadj_r.csv'))
 
@@ -509,7 +509,7 @@ class FactorTest:
 
         return_choose = return_choose.reindex(index=self.xinx, columns=self.xnms)
         self.return_choose = return_choose.sub(hedge_df, axis=0)
-        print('Loaded return DataFrame!')
+        # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
         limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
@@ -519,7 +519,7 @@ class FactorTest:
         suspendday_df_c.iloc[-1] = 1
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
-        print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+        # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
 
     @staticmethod
     def row_extre(raw_df, sector_df, percent):
@@ -560,7 +560,7 @@ class FactorTest:
 
     # 获取剔除新股的矩阵
     def get_new_stock_info(self, xnms, xinx):
-        new_stock_data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/CDSY_SECUCODE/LISTSTATE.csv'))
+        new_stock_data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab01/CDSY_SECUCODE/LISTSTATE.csv'))
         new_stock_data.fillna(method='ffill', inplace=True)
         # 获取交易日信息
         return_df = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_14/aadj_r.csv')).astype(float)
@@ -572,7 +572,7 @@ class FactorTest:
 
     # 获取剔除st股票的矩阵
     def get_st_stock_info(self, xnms, xinx):
-        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/CDSY_CHANGEINFO/CHANGEA.csv'))
+        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab01/CDSY_CHANGEINFO/CHANGEA.csv'))
         data = data.reindex(columns=xnms, index=xinx)
         data.fillna(method='ffill', inplace=True)
 
@@ -611,7 +611,7 @@ class FactorTest:
 
     # 获取index data
     def load_index_data(self, index_name):
-        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/INDEX_TD_DAILYSYS/CHG.csv'))
+        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab09/INDEX_TD_DAILYSYS/CHG.csv'))
         target_df = data[index_name].reindex(index=self.xinx)
         return target_df * 0.01
 
@@ -621,8 +621,9 @@ class FactorTest:
         # 下单日期pos
         order_df = mix_factor.replace(np.nan, 0)
         # 排除入场场涨跌停的影响
-        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
         order_df = order_df.div(order_df.abs().sum(axis=1).replace(0, np.nan), axis=0)
+        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
+        order_df = order_df.astype(float)
         order_df[order_df > 0.05] = 0.05
         order_df[order_df < -0.05] = -0.05
         daily_pos = pos_daily_fun(order_df, n=self.hold_time)
@@ -719,7 +720,7 @@ class FactorTestSector(FactorTest):
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/CRTKUNKKA01.pkl')
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/CRTKUNKKA01.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
     alpha_name = 'WHSKUNKKA01'
@@ -731,7 +732,6 @@ def config_test():
     sum_factor_df = pd.DataFrame()
 
     root_path = '/media/hdd1/DAT_EQT'
-    root_path = '/media/hdd1/TEST/DAT_EQT'
     # root_path = '/mnt/mfs/DAT_EQT'
     if_save = False
     if_new_program = True
@@ -746,7 +746,7 @@ def config_test():
 
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long)
-    print(len(config_data.index))
+    # print(len(config_data.index))
     for i in config_data.index:
         # print(i)
         fun_name, name1, name2, name3, buy_sell = config_data.loc[i]
@@ -760,9 +760,9 @@ def config_test():
     sum_pos_df_new = main.deal_mix_factor(sum_factor_df)
     sum_pos_df_new['IC01'] = -sum_pos_df_new.sum(axis=1)
 
-    pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
-    sum_pos_df_new.round(10).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
+    sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 
 

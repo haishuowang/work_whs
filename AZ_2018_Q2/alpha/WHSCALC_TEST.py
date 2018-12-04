@@ -1577,6 +1577,10 @@ class FD:
                     args = (n, percent)
                     self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
+    class EM_Funda_test:
+        class EM_Funda_test_Deal(BaseDeal):
+            pass
+
 
 class SectorData(object):
     def __init__(self, root_path):
@@ -1624,7 +1628,6 @@ def find_fun(fun_list):
     # print(fun_list)
     for a in fun_list[:-1]:
         target_class = getattr(target_class, a)
-    # print(target_class)
     target_fun = getattr(target_class(), fun_list[-1])
     return target_fun
 
@@ -1693,14 +1696,14 @@ class SectorSplit:
 
 
 class PrecalcDataCreate:
-    def __init__(self, sector_name, file_name_list):
+    def __init__(self, sector_name, file_name_list, target_date):
         self.file_name_list = file_name_list
         mode = 'pro'
 
         begin_date = pd.to_datetime('20120101')
         end_date = datetime.now()
 
-        self.save_root_path = f'/media/hdd1/DAT_PreCalc/PreCalc_whs/{sector_name}'
+        self.save_root_path = f'/mnt/mfs/dat_whs/tmp/{target_date}/{sector_name}'
         bt.AZ_Path_create(self.save_root_path)
 
         self.root_path = pt._BinFiles(mode)
@@ -1714,28 +1717,30 @@ class PrecalcDataCreate:
 
     def data_create(self):
         for file_name in self.file_name_list:
+            # print(file_name)
             factor_to_fun = '/mnt/mfs/dat_whs/data/factor_to_fun'
             info_path = os.path.join(factor_to_fun, file_name)
             file_save_path = os.path.join(self.save_root_path, f'{file_name}.pkl')
             if os.path.exists(file_save_path):
-                cut_date = self.xinx[-60]
-                month_begin = datetime(self.xinx[-1].year, self.xinx[-1].month, 1) - timedelta(400)
+                cut_date = self.xinx[-5]
                 create_data = pd.read_pickle(file_save_path)
                 create_data = create_data[(create_data.index <= cut_date)]
                 part_create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms,
-                                                   self.xinx[self.xinx >= month_begin],
-                                                   self.target_date)
+                                                   self.xinx[-300:], self.target_date)
                 part_create_data = part_create_data[(part_create_data.index > cut_date)]
                 create_data = create_data.append(part_create_data, sort=False)
 
             else:
                 create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms, self.xinx,
                                               self.target_date)
-            create_data.to_pickle(file_save_path)
+            # create_data.to_pickle(file_save_path)
+
+            create_data.iloc[-5:].to_pickle(file_save_path)
 
 
 def main(config_name_dict):
-    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file'
+    target_date = datetime.now().strftime('%Y%m%d%H%M')
+    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs'
     up_date_dict = OrderedDict()
     for config_name in config_name_dict.keys():
         # print(config_name)
@@ -1749,25 +1754,20 @@ def main(config_name_dict):
             up_date_dict[sector_name] = set(factor_info[col_list].values.ravel())
     # print(up_date_dict)
     for sector_name in list(up_date_dict.keys()):
+
         file_name_list = sorted(list(up_date_dict[sector_name]))
-        PrecalcDataCreate(sector_name, file_name_list).data_create()
+        PrecalcDataCreate(sector_name, file_name_list, target_date).data_create()
 
 
 if __name__ == '__main__':
     a = time.time()
-    config_name_dict = {'CRTMEDUSA01': ['name3'],
-                        'CRTMEDUSA04': ['name1', 'name3'],
-                        'CRTMEDUSA05': ['name1', 'name3'],
-                        'CRTMEDUSA07': ['name3'],
-                        'CRTMEDUSA08': ['name3'],
-                        'CRTKUNKKA01': ['name3'],
-                        'CRTKUNKKA02': ['name3'],
-                        'CRTRUBICK01': ['name3'],
-                        'CRTRUBICK02': ['name3'],
-                        'CRTKUNKKA03': ['name3'],
-                        'CRTKUNKKA04': ['name1', 'name3'],
+    config_name_dict = {'market_top_300to800plus_industry_10_15_True_20181117_2314_hold_5__7':
+                            ['name1', 'name3'],
+                        'market_top_300plus_True_20181115_1919_hold_5__7':
+                            ['name1', 'name3'],
+                        'market_top_800plus_True_20181119_0453_hold_5__7':
+                            ['name1', 'name3'],
                         }
-
     main(config_name_dict)
     b = time.time()
     print('pre cal cost time:{} s'.format(b - a))

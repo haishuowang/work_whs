@@ -4,11 +4,14 @@ import sys
 import os
 from datetime import datetime, timedelta
 import time
+
 sys.path.append("/mnt/mfs/LIB_ROOT")
 # import funda_data as fd
 # from funda_data.funda_data_deal import SectorData
 import open_lib.shared_paths.path as pt
-from open_lib.shared_tools.send_email import send_email
+from open_lib.shared_tools import send_email
+
+
 # import warnings
 # warnings.filterwarnings('ignore')
 # import loc_lib.shared_tools.back_test as bt
@@ -192,9 +195,6 @@ class BaseDeal:
             print(f'{file_name} success!')
 
 
-
-
-
 class FD:
     class funda_data_deal:
         class BaseDeal:
@@ -229,7 +229,7 @@ class FD:
                 all_target_df = pd.DataFrame()
                 for n in n_list:
                     target_df = raw_df.rolling(window=n).apply(lambda x: 1 if (x >= 0).all() and sum(x) > 0
-                    else (-1 if (x <= 0).all() and sum(x) < 0 else 0),raw=True)
+                    else (-1 if (x <= 0).all() and sum(x) < 0 else 0), raw=True)
                     target_df = target_df * sector_df
                     all_target_df = all_target_df.add(target_df, fill_value=0)
                 return all_target_df
@@ -461,14 +461,13 @@ def find_fun(fun_list):
 def load_raw_data(root_path, raw_data_path, xnms, xinx, if_replace, target_date):
     raw_data_list = []
     for target_path in raw_data_path:
-        load_root_data_path = os.path.join('/media/hdd1/DAT_EQT', target_path)
-        print(load_root_data_path)
-        tmp_data = bt.AZ_Load_csv(load_root_data_path).reindex(columns=xnms, index=xinx)
+        tmp_data = bt.AZ_Load_csv(os.path.join('/media/hdd1/DAT_EQT', target_path)).reindex(columns=xnms, index=xinx)
         if tmp_data.index[-1] != target_date:
-            send_email(target_path + ' Data Error!',
-                       ['whs@yingpei.com'],
-                       [],
-                       '[{}]'.format(target_date.strftime('%Y%m%d')))
+            print(send_email)
+            send_email.send_email(target_path + ' Data Error!',
+                                  ['whs@yingpei.com'],
+                                  [],
+                                  '[{}]'.format(target_date.strftime('%Y%m%d')))
         if if_replace:
             tmp_data = tmp_data.replace(0, np.nan)
         raw_data_list += [tmp_data]
@@ -488,12 +487,12 @@ def create_data_fun(mode, info_path, sector_df, xnms, xinx, target_date):
     target_fun = find_fun(fun_list)
     target_df = target_fun(*raw_data_list, sector_df, *args)
     if (target_df.iloc[-1] != 0).sum() == 0:
-        send_email(info_path, ['whs@yingpei.com'], [], 'Data Update Warning')
+        send_email.send_email(info_path, ['whs@yingpei.com'], [], 'Data Update Warning')
     return target_df
 
 
 def main():
-    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs'
+    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file'
     mode = 'pro'
 
     begin_date = pd.to_datetime('20120101')
@@ -544,10 +543,14 @@ def main():
         info_path = os.path.join(factor_to_fun, file_name)
         file_save_path = os.path.join(save_root_path, f'{file_name}.pkl')
         if os.path.exists(file_save_path):
-            cut_date = xinx[-5]
+            cut_date = xinx[-60]
+            month_begin = datetime(xinx[-1].year, xinx[-1].month, 1) - timedelta(400)
             create_data = pd.read_pickle(file_save_path)
             create_data = create_data[(create_data.index <= cut_date)]
-            part_create_data = create_data_fun(mode, info_path, sector_df, xnms, xinx[-300:], target_date)
+            part_create_data = create_data_fun(mode, info_path, sector_df, xnms,
+                                               xinx[xinx >= month_begin],
+                                               target_date)
+
             part_create_data = part_create_data[(part_create_data.index > cut_date)]
             create_data = create_data.append(part_create_data, sort=False)
 
@@ -561,4 +564,4 @@ if __name__ == '__main__':
     a = time.time()
     main()
     b = time.time()
-    print('pre cal cost time:{} s'.format(b-a))
+    print('pre cal cost time:{} s'.format(b - a))

@@ -431,21 +431,21 @@ def main_fun(sector_name, hold_time):
                                      pd.to_datetime('20160401'), pd.to_datetime('20160701'),
                                      pd.to_datetime('20161001'), pd.to_datetime('20170101')]
 
-    time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
-                                     pd.to_datetime('20170901'), pd.to_datetime('20171201'),
+    time_para_dict['time_para_3'] = [pd.to_datetime('20130101'), pd.to_datetime('20180101'),
+                                     pd.to_datetime('20180101'), pd.to_datetime('20171201'),
                                      pd.to_datetime('20180301'), pd.to_datetime('20180601')]
 
-    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+    time_para_dict['time_para_4'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
 
-    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+    time_para_dict['time_para_5'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
 
-    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+    time_para_dict['time_para_6'] = [pd.to_datetime('20130901'), pd.to_datetime('20180901'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
     if sector_name.startswith('market_top_300plus'):
         if_weight = 1
         ic_weight = 0

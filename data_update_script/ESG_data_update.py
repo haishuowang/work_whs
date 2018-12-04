@@ -117,6 +117,17 @@ def company_to_stock(map_data_c, company_code_df):
     return company_code_df
 
 
+def save_fun(df, save_path, sep='|'):
+    print(1)
+    old_df = pd.read_csv(save_path, sep=sep, index_col=0, parse_dates=True)
+    last_date = old_df.index[-1]
+    # df[df.index>last_date]
+    # df.to_csv(save_path, sep=sep)
+    # test_save_path = '/mnt/mfs/dat_whs/EM_Funda/{}'.format(datetime.now().strftime('%Y%m%d'))
+    # bt.AZ_Path_create(test_save_path)
+    # df.to_csv(os.path.join(test_save_path, os.path.split(save_path)[-1]))
+
+
 class LICO_MO_DSHJS_deal:
     def __init__(self, conn, date_index, map_data_c, save_path):
         # super(LICO_MO_DSHJS_deal, self).__init__(conn, root_path)
@@ -142,7 +153,7 @@ class LICO_MO_DSHJS_deal:
             .dropna(how='any', subset=['STARTDATE', 'ENDDATE'])
         company_code_df_ds = data_deal(self.date_index, data_ds)
         stock_code_df_tab1_1 = company_to_stock(self.map_data_c, company_code_df_ds)
-        stock_code_df_tab1_1.to_csv(os.path.join(self.save_path, 'stock_code_df_tab1_1'), sep='|')
+        save_fun(stock_code_df_tab1_1, os.path.join(self.save_path, 'stock_code_df_tab1_1'), sep='|')
         return stock_code_df_tab1_1
 
     def index_tab1_8(self):
@@ -150,7 +161,6 @@ class LICO_MO_DSHJS_deal:
         3 年内董事长变动(不含退休、任期届满)次数
         :return:
         """
-
         def f(df):
             date_series = df['STARTDATE']
             target_df = pd.DataFrame(index=date_series, columns=['3Y_DSZ_num'])
@@ -171,7 +181,7 @@ class LICO_MO_DSHJS_deal:
             lambda x: x.iloc[-1]).unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab1_8 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab1_8.to_csv(os.path.join(self.save_path, 'stock_code_df_tab1_8'), sep='|')
+        save_fun(stock_code_df_tab1_8, os.path.join(self.save_path, 'stock_code_df_tab1_8'), sep='|')
         return stock_code_df_tab1_8
 
     def index_tab1_9(self):
@@ -190,7 +200,7 @@ class LICO_MO_DSHJS_deal:
         dlds_ratio = company_code_df_dlds / company_code_df_ds
         dlds_ratio = fill_index(self.map_data_c, self.date_index, dlds_ratio)
         stock_code_df_tab1_9 = company_to_stock(self.map_data_c, dlds_ratio)
-        stock_code_df_tab1_9.to_csv(os.path.join(self.save_path, 'stock_code_df_tab1_9'), sep='|')
+        save_fun(stock_code_df_tab1_9, os.path.join(self.save_path, 'stock_code_df_tab1_9'), sep='|')
         return stock_code_df_tab1_9
 
 
@@ -238,7 +248,7 @@ class LICO_MO_MANHOLDRPAY_deal:
         data_part_dsz_fill = data_part_dsz_fill.reindex(index=self.date_index)
         data_dsz_ceo = (data_part_ceo_fill == data_part_dsz_fill).astype(int)
         stock_code_df_tab1_2 = company_to_stock(self.map_data_c, data_dsz_ceo)
-        stock_code_df_tab1_2.to_csv(os.path.join(self.save_path, 'stock_code_df_tab1_2'), sep='|')
+        save_fun(stock_code_df_tab1_2, os.path.join(self.save_path, 'stock_code_df_tab1_2'), sep='|')
         return stock_code_df_tab1_2
 
     def index_tab2_4(self):
@@ -262,7 +272,7 @@ class LICO_MO_MANHOLDRPAY_deal:
         raw_df = data_js.groupby(['NOTICEDATE', 'COMPANYCODE'])['EHN'].apply(f_2).unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab2_4 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab2_4.to_csv(os.path.join(self.save_path, 'stock_code_df_tab2_4'), sep='|')
+        save_fun(stock_code_df_tab2_4, os.path.join(self.save_path, 'stock_code_df_tab2_4'), sep='|')
         return stock_code_df_tab2_4
 
     def index_tab2_5(self):
@@ -288,7 +298,7 @@ class LICO_MO_MANHOLDRPAY_deal:
         raw_df = data_gg.groupby(['NOTICEDATE', 'COMPANYCODE'])['EHN'].apply(f_2).unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab2_5 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab2_5.to_csv(os.path.join(self.save_path, 'stock_code_df_tab2_5'), sep='|')
+        save_fun(stock_code_df_tab2_5, os.path.join(self.save_path, 'stock_code_df_tab2_5'), sep='|')
         return stock_code_df_tab2_5
 
     def index_tab4_1(self):
@@ -319,7 +329,7 @@ class LICO_MO_MANHOLDRPAY_deal:
         raw_df = data_ds.groupby(['NOTICEDATE', 'COMPANYCODE'])['ANUALWAGE'].apply(fun).unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df, limit=300)
         stock_code_df_tab4_1 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab4_1.to_csv(os.path.join(self.save_path, 'stock_code_df_tab4_1'), sep='|')
+        save_fun(stock_code_df_tab4_1, os.path.join(self.save_path, 'stock_code_df_tab4_1'), sep='|')
         return stock_code_df_tab4_1
 
     def index_tab4_2(self):
@@ -348,7 +358,7 @@ class LICO_MO_MANHOLDRPAY_deal:
         raw_df = data_ds.groupby(['NOTICEDATE', 'COMPANYCODE'])['ANUALWAGE'].apply(fun).unstack()
         raw_df = raw_df.fillna(method='ffill', limit=300)
         stock_code_df_tab4_2 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab4_2.to_csv(os.path.join(self.save_path, 'stock_code_df_tab4_2'), sep='|')
+        save_fun(stock_code_df_tab4_2, os.path.join(self.save_path, 'stock_code_df_tab4_2'), sep='|')
         return stock_code_df_tab4_2
 
 
@@ -372,11 +382,11 @@ class LICO_MO_MANS_deal:
         """
         part_data = self.raw_df[self.raw_df['PERSONTYPE'] == '02']
         company_meet = part_data.groupby(['PASSNOTICEDATE', 'COMPANYCODE'])['PERSONTYPE'].sum().unstack()
-        company_meet = company_meet.reindex(set(company_meet.index) | set(self.date_index))
+        company_meet = company_meet.reindex(sorted(set(company_meet.index) | set(self.date_index)))
         company_meet_num = company_meet.notna().astype(int)
         company_meet_num_s = company_meet_num.rolling(window=time_period).sum()
         stock_code_df_tab1_5 = company_to_stock(self.map_data_c, company_meet_num_s)
-        stock_code_df_tab1_5.to_csv(os.path.join(self.save_path, 'stock_code_df_tab1_5'), sep='|')
+        save_fun(stock_code_df_tab1_5, os.path.join(self.save_path, 'stock_code_df_tab1_5'), sep='|')
         return stock_code_df_tab1_5
 
 
@@ -422,7 +432,7 @@ class LICO_MO_BUSILEVEL_deal:
             lambda x: x.iloc[-1]).unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab1_7 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab1_7.to_csv(os.path.join(self.save_path, 'stock_code_df_tab1_7'), sep='|')
+        save_fun(stock_code_df_tab1_7, os.path.join(self.save_path, 'stock_code_df_tab1_7'), sep='|')
         return stock_code_df_tab1_7
 
 
@@ -457,7 +467,7 @@ class LICO_ES_LISHOLD_deal:
         raw_df = self.raw_df.groupby(['NOTICEDATE', 'COMPANYCODE'])[['SHAREHDRATIO', 'SHAREHDCODE']].apply(f).unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab2_1 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab2_1.to_csv(os.path.join(self.save_path, 'stock_code_df_tab2_1'), sep='|')
+        save_fun(stock_code_df_tab2_1, os.path.join(self.save_path, 'stock_code_df_tab2_1'), sep='|')
         return stock_code_df_tab2_1
 
     def index_tab2_7(self):
@@ -472,7 +482,7 @@ class LICO_ES_LISHOLD_deal:
         raw_df = data_jj.groupby(['NOTICEDATE', 'COMPANYCODE'])['SHAREHDRATIO'].sum().unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab2_7 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab2_7.to_csv(os.path.join(self.save_path, 'stock_code_df_tab2_7'), sep='|')
+        save_fun(stock_code_df_tab2_7, os.path.join(self.save_path, 'stock_code_df_tab2_7'), sep='|')
         return stock_code_df_tab2_7
 
     def index_tab2_8(self):
@@ -485,7 +495,7 @@ class LICO_ES_LISHOLD_deal:
         raw_df = data_sbjj.groupby(['NOTICEDATE', 'COMPANYCODE'])['SHAREHDRATIO'].sum().unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab2_8 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab2_8.to_csv(os.path.join(self.save_path, 'stock_code_df_tab2_8'), sep='|')
+        save_fun(stock_code_df_tab2_8, os.path.join(self.save_path, 'stock_code_df_tab2_8'), sep='|')
         return stock_code_df_tab2_8
 
     def index_tab2_9(self):
@@ -498,7 +508,7 @@ class LICO_ES_LISHOLD_deal:
         raw_df = data_qfii.groupby(['NOTICEDATE', 'COMPANYCODE'])['SHAREHDRATIO'].sum().unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab2_9 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab2_9.to_csv(os.path.join(self.save_path, 'stock_code_df_tab2_9'), sep='|')
+        save_fun(stock_code_df_tab2_9, os.path.join(self.save_path, 'stock_code_df_tab2_9'), sep='|')
         return stock_code_df_tab2_9
 
     def index_tab2_10(self):
@@ -511,7 +521,7 @@ class LICO_ES_LISHOLD_deal:
         raw_df = data_fjr.groupby(['NOTICEDATE', 'COMPANYCODE'])['SHAREHDRATIO'].sum().unstack()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab2_10 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab2_10.to_csv(os.path.join(self.save_path, 'stock_code_df_tab2_10'), sep='|')
+        save_fun(stock_code_df_tab2_10, os.path.join(self.save_path, 'stock_code_df_tab2_10'), sep='|')
         return stock_code_df_tab2_10
 
 
@@ -538,7 +548,7 @@ class LICO_ES_EMSHAREDE_deal:
             .sum().unstack().fillna(method='ffill', limit=300)
 
         stock_code_df_tab4_3 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab4_3.to_csv(os.path.join(self.save_path, 'stock_code_df_tab4_3'), sep='|')
+        save_fun(stock_code_df_tab4_3, os.path.join(self.save_path, 'stock_code_df_tab4_3'), sep='|')
         return stock_code_df_tab4_3
 
 
@@ -565,7 +575,7 @@ class LICO_MO_GQJLJBZL_deal:
             .sum().unstack().fillna(method='ffill', limit=300)
 
         stock_code_df_tab4_5 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab4_5.to_csv(os.path.join(self.save_path, 'stock_code_df_tab4_5'), sep='|')
+        save_fun(stock_code_df_tab4_5, os.path.join(self.save_path, 'stock_code_df_tab4_5'), sep='|')
         return stock_code_df_tab4_5
 
 
@@ -594,7 +604,7 @@ class LICO_CM_ILLEGAL_deal:
         raw_df = violation_df_mask.rolling(250).sum()
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab5_13 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab5_13.to_csv(os.path.join(self.save_path, 'stock_code_df_tab5_13'), sep='|')
+        save_fun(stock_code_df_tab5_13, os.path.join(self.save_path, 'stock_code_df_tab5_13'), sep='|')
         return stock_code_df_tab5_13
 
 
@@ -626,7 +636,7 @@ class LICO_CM_LAWARBI_deal:
         Revenue_TTM = pd.read_csv('/mnt/mfs/DAT_EQT/EM_Funda/daily/R_Revenue_TTM_First.csv', sep='|', index_col=0,
                                   parse_dates=True).reindex(index=self.date_index, columns=stock_code_df.columns)
         stock_code_df_tab5_14 = (stock_code_df / Revenue_TTM * 10000).round(8).replace(0, np.nan)
-        stock_code_df_tab5_14.to_csv(os.path.join(self.save_path, 'stock_code_df_tab5_14'), sep='|')
+        save_fun(stock_code_df_tab5_14, os.path.join(self.save_path, 'stock_code_df_tab5_14'), sep='|')
         return stock_code_df_tab5_14
 
 
@@ -673,7 +683,7 @@ class LICO_ES_SHHDFROZEN_deal:
         raw_df = (df_start_cum - df_end_cum).round(5)
         raw_df = fill_index(self.map_data_c, self.date_index, raw_df)
         stock_code_df_tab5_15 = company_to_stock(self.map_data_c, raw_df)
-        stock_code_df_tab5_15.to_csv(os.path.join(self.save_path, 'stock_code_df_tab5_15'), sep='|')
+        save_fun(stock_code_df_tab5_15, os.path.join(self.save_path, 'stock_code_df_tab5_15'), sep='|')
         return stock_code_df_tab5_15
 
 
@@ -687,8 +697,7 @@ def singleprocessing_fun():
     conn = engine.connect()
     a = time.time()
 
-    return_df = pd.read_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_r.csv',
-                            sep='|', index_col=0, parse_dates=True)
+    return_df = pd.read_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_r.csv', sep='|', index_col=0, parse_dates=True)
     date_index = return_df.index
     map_data = pd.read_sql('SELECT * FROM choice_fndb.CDSY_SECUCODE', conn)
     map_data.index = map_data['COMPANYCODE']
@@ -696,7 +705,6 @@ def singleprocessing_fun():
     map_data_c = map_data_c[map_data_c.apply(select_astock)]
     save_path = f'{root_path}/EM_Funda/dat_whs'
 
-    pool = Pool(5)
     cls_0 = LICO_MO_DSHJS_deal(conn, date_index, map_data_c, save_path)
     print('load LICO_MO_DSHJS_deal')
     cls_1 = LICO_MO_MANHOLDRPAY_deal(conn, date_index, map_data_c, save_path)
@@ -747,14 +755,12 @@ def singleprocessing_fun():
     cls_8.index_tab5_14()
     print(9)
     cls_9.index_tab5_15()
-    #
-    pool.close()
-    pool.join()
+
     b = time.time()
     print('cost time:{}'.format(b - a))
 
 
-def multiprocessing_fun():
+def multiprocessing_fun(cpu_num):
     usr_name = 'whs'
     pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
     engine = create_engine('mysql+pymysql://{}:{}@192.168.16.33:3306/choice_fndb?charset=utf8'
@@ -773,7 +779,7 @@ def multiprocessing_fun():
     map_data_c = map_data_c[map_data_c.apply(select_astock)]
     save_path = f'{root_path}/EM_Funda/dat_whs'
 
-    pool = Pool(5)
+    pool = Pool(cpu_num)
     cls_0 = LICO_MO_DSHJS_deal(conn, date_index, map_data_c, save_path)
     print('load LICO_MO_DSHJS_deal')
     cls_1 = LICO_MO_MANHOLDRPAY_deal(conn, date_index, map_data_c, save_path)

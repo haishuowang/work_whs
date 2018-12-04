@@ -381,14 +381,14 @@ class FactorTest:
         self.if_only_long = if_only_long
 
         self.sector_df = self.load_sector_data()
-        print('Loaded sector DataFrame!')
+        # print('Loaded sector DataFrame!')
         self.xnms = self.sector_df.columns
 
         return_choose = bt.AZ_Load_csv(os.path.join(root_path, 'EM_Funda/DERIVED_14/aadj_r.csv'))
         return_choose = return_choose.reindex(columns=self.xnms)
         self.return_choose = return_choose[(return_choose.index >= begin_date) & (return_choose.index <= begin_date)]
         self.xinx = self.sector_df.index
-        print('Loaded return DataFrame!')
+        # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
         limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
@@ -398,9 +398,9 @@ class FactorTest:
         suspendday_df_c.iloc[-1] = 1
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
-        print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+        # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
         self.index_df = self.load_index_data()
-        print('Loaded index DataFrame!')
+        # print('Loaded index DataFrame!')
 
     @staticmethod
     def pos_daily_fun(df, n=5):
@@ -530,8 +530,9 @@ class FactorTest:
         # 下单日期pos
         order_df = mix_factor.replace(np.nan, 0)
         # 排除入场场涨跌停的影响
-        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
         order_df = order_df.div(order_df.abs().sum(axis=1).replace(0, np.nan), axis=0)
+        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
+        order_df = order_df.astype(float)
         daily_pos = pos_daily_fun(order_df, n=self.hold_time)
         # 排除出场涨跌停的影响
         daily_pos = daily_pos * self.limit_buy_sell_df_c * self.suspendday_df_c
@@ -674,28 +675,8 @@ class FactorTestCRT(FactorTest):
 
 
 def main():
-    config_set = pd.read_pickle(f'/mnt/mfs/alpha_whs/CRTJUN01.pkl')
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/CRTJUN01.pkl')
     config_data = config_set['factor_info']
-
-    time_para_dict = dict()
-
-    time_para_dict['time_para_1'] = [pd.to_datetime('20110101'), pd.to_datetime('20150101'),
-                                     pd.to_datetime('20150701')]
-
-    time_para_dict['time_para_2'] = [pd.to_datetime('20120101'), pd.to_datetime('20160101'),
-                                     pd.to_datetime('20160701')]
-
-    time_para_dict['time_para_3'] = [pd.to_datetime('20130601'), pd.to_datetime('20170601'),
-                                     pd.to_datetime('20171201')]
-
-    time_para_dict['time_para_4'] = [pd.to_datetime('20140601'), pd.to_datetime('20180601'),
-                                     pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_5'] = [pd.to_datetime('20140701'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_6'] = [pd.to_datetime('20140801'), pd.to_datetime('20180801'),
-                                     pd.to_datetime('20180901')]
 
     begin_date = pd.to_datetime('20140601')
     cut_date = pd.to_datetime('20180601')
@@ -719,7 +700,7 @@ def main():
 
     main = FactorTestCRT(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                          sector_name, index_name, hold_time, lag, return_file, if_hedge, if_only_long)
-    print(len(config_data.index))
+    # print(len(config_data.index))
     for i in config_data.index:
         fun_name, name1, name2, name3, buy_sell = config_data.loc[i]
         mix_factor = main.single_test(fun_name, name1, name2, name3)
@@ -732,7 +713,7 @@ def main():
 
     sum_pos_df = main.deal_mix_factor(sum_factor_df)
     sum_pos_df['IC01'] = -sum_pos_df.sum(axis=1)
-    sum_pos_df.round(10).to_csv(f'/mnt/mfs/AAPOS/WHSCRTSUM01.pos', sep='|', index_label='Date')
+    sum_pos_df.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/WHSCRTSUM01.pos', sep='|', index_label='Date')
 
 
 if __name__ == '__main__':

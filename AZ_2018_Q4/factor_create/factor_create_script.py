@@ -1057,19 +1057,6 @@ class FactorMomentum:
         target_df = MA_diff_copy - MA_diff_copy.shift(1)
         return target_df * sector_df
 
-    @staticmethod
-    def WILLR(High, Low, Close, sector_df, timeperiod=14, limit_up_dn=30):
-        real = -AZ_Factor_Momentum.WILLR(High, Low, Close, timeperiod)
-        buy_df = (real < -limit_up_dn + 50).astype(int)
-        sell_df = (real > limit_up_dn + 50).astype(int)
-        target_df = buy_df - sell_df
-        return target_df * sector_df
-
-    @staticmethod
-    def TRIX(Close, timeperiod=30):
-        real = AZ_Factor_Momentum.TRIX(Close, timeperiod)
-        return real
-
 
 class FactorVolume:
     # @staticmethod
@@ -1084,17 +1071,6 @@ class FactorVolume:
         real = AZ_Factor_Volume.ADOSC(High, Low, Close, Volume, fastperiod, slowperiod)
         target_df = (real > limit_up_dn).astype(int) - (real < -limit_up_dn).astype(int)
         return target_df * sector_df
-
-    @staticmethod
-    def ADOSC(High, Low, Close, Volume, sector_df, fastperiod, slowperiod, limit_up_dn=0):
-        real = AZ_Factor_Volume.ADOSC(High, Low, Close, Volume, fastperiod, slowperiod)
-        target_df = (real > limit_up_dn).astype(int) - (real < -limit_up_dn).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def OBV(Close, Volume):
-        real = AZ_Factor_Volume.OBV(Close, Volume)
-        return real
 
 
 class FactorOverlap:
@@ -1210,7 +1186,7 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
         target_df = self.MACD(self.aadj_p, self.sector_df, fastperiod, slowperiod, signalperiod)
         file_name = f'MACD_{fastperiod}_{slowperiod}_{signalperiod}'
         fun = 'Tech_Factor.FactorMomentum.MACD'
-        raw_data_path = (self.aadj_p_path,)
+        raw_data_path = (self.aadj_p_path, )
         args = (fastperiod, slowperiod, signalperiod)
         self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
@@ -1233,38 +1209,3 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
                 raw_data_path = (self.aadj_p_path,)
                 args = (n, limit_up_dn)
                 self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def WILLR_(self, n_list, limit_up_dn_list):
-        for n in n_list:
-            for limit_up_dn in limit_up_dn_list:
-                target_df = self.WILLR(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.sector_df, n, limit_up_dn)
-                file_name = f'WILLR_{n}_{limit_up_dn}'
-                fun = 'Tech_Factor.FactorMomentum.WILLR'
-                raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_HIGH)
-                args = (n, limit_up_dn)
-                self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def TRIX_(self):
-        self.TRIX(self.aadj_p, timeperiod=30)
-
-
-def main(sector_df, root_path, save_root_path):
-    techfactor = TechFactor(root_path, sector_df, save_root_path)
-    n_list = [10, 20, 40, 100, 140, 200]
-    long_short_list = [(5, 10), (20, 60), (40, 100), (60, 120), (60, 160)]
-    # techfactor.ADX_(n_list, limit_up=20, limit_dn=10)
-    # techfactor.AROON_(n_list, limit=80)
-    # techfactor.CMO_(n_list, limit=0)
-    # techfactor.MFI_(n_list, limit_up=70, limit_dn=30)
-    # techfactor.ADOSC_(long_short_list, limit_up_dn=0)
-    # techfactor.ATR_(n_list, percent=0.2)
-    # techfactor.RSI_(n_list, limit_up_dn=10)
-    # techfactor.RSI_(n_list)
-
-    techfactor.MACD_(fastperiod=12, slowperiod=26,  signalperiod=9)
-    techfactor.MACD_(fastperiod=20, slowperiod=60, signalperiod=18)
-    techfactor.MA_LINE_(long_short_list)
-    limit_list = [1, 1.5, 2]
-    techfactor.BBANDS_(n_list, limit_list)
-    limit_up_dn_list = [20, 30, 40]
-    techfactor.WILLR_(n_list, limit_up_dn_list)
