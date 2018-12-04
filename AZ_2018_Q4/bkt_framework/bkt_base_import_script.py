@@ -1,1230 +1,541 @@
-import funda_data.funda_data_deal as fdd
-import talib as ta
-import loc_lib.shared_paths.path as pt
-import loc_lib.shared_tools.back_test as bt
-import loc_lib.shared_paths.path as pt
-import pandas as pd
-import numpy as np
-import sklearn
-from datetime import datetime, timedelta
-import time
-
-BaseDeal = fdd.BaseDeal
-FundaBaseDeal = fdd.FundaBaseDeal
-SectorData = fdd.SectorData
-TechBaseDeal = fdd.TechBaseDeal
-
-
-class AZ_Factor_Momentum:
-    @staticmethod
-    def ADX(High, Low, Close, timeperiod=14):
-        adx = pd.DataFrame()
-        for i in High.columns:
-            adx[i] = ta.ADX(High[i], Low[i], Close[i], timeperiod)
-        return adx
-
-    @staticmethod
-    def ADXR(High, Low, Close, timeperiod=14):
-        adxr = pd.DataFrame()
-        for i in High.columns:
-            adxr[i] = ta.ADXR(High[i], Low[i], Close[i], timeperiod)
-        return adxr
-
-    @staticmethod
-    def APO(Close, fastperiods=12, lowperiod=26, matype=0):  # default
-        return Close.apply(lambda col: ta.APO(col, fastperiods, lowperiod, matype), axis=0)
-
-    @staticmethod
-    def AROON(High, Low, timeperiod=14):
-        aroondown, aroonup = pd.DataFrame(), pd.DataFrame()
-        for i in High.columns:
-            aroondown[i], aroonup[i] = ta.AROON(High[i], Low[i], timeperiod)
-        return aroondown, aroonup
-
-    @staticmethod
-    def AROONOSC(High, Low, timeperiod=14):
-        aroonosc = pd.DataFrame()
-        for i in High.columns:
-            aroonosc[i] = ta.AROONOSC(High[i], Low[i], timeperiod)
-        return aroonosc
-
-    @staticmethod
-    def BOP(Open, High, Low, Close):
-        bop = pd.DataFrame()
-        for i in High.columns:
-            bop[i] = ta.BOP(Open[i], High[i], Low[i], Close[i])
-        return bop
-
-    @staticmethod
-    def CCI(High, Low, Close, timeperiod=14):
-        cci = pd.DataFrame()
-        for i in High.columns:
-            cci[i] = ta.CCI(High[i], Low[i], Close[i], timeperiod)
-        return cci
-
-    @staticmethod
-    def CMO(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.CMO(col, timeperiod), axis=0)
-
-    @staticmethod
-    def DX(High, Low, Close, timeperiod=14):
-        dx = pd.DataFrame()
-        for i in High.columns:
-            dx[i] = ta.DX(High[i], Low[i], Close[i], timeperiod)
-        return dx
-
-    @staticmethod
-    def MACD(Close, fastperiod=12, slowperiod=26, signalperiod=9):
-        macd, macdsignal, macdhist = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            macd[i], macdsignal[i], macdhist[i] = ta.MACD(Close[i], fastperiod, slowperiod, signalperiod)
-        return macd, macdsignal, macdhist
-
-    @staticmethod
-    def MACDEXT(Close, fastperiod=12, fastmatype=0, slowperiod=26, slowmatype=0, signalperiod=9, signalmatype=0):
-        macd, macdsignal, macdhist = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            macd[i], macdsignal[i], macdhist[i] = ta.MACDEXT(Close[i], fastperiod, fastmatype, slowperiod, slowmatype,
-                                                             signalperiod, signalmatype)
-        return macd, macdsignal, macdhist
-
-    @staticmethod
-    def MACDFIX(Close, signalperiod=9):
-        macd, macdsignal, macdhist = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            macd[i], macdsignal[i], macdhist[i] = ta.MACDFIX(Close[i], signalperiod)
-        return macd, macdsignal, macdhist
-
-    @staticmethod
-    def MFI(High, Low, Close, Volume, timeperiod=14):
-        mfi = pd.DataFrame()
-        for i in High.columns:
-            mfi[i] = ta.MFI(High[i], Low[i], Close[i], Volume[i], timeperiod)
-        return mfi
-
-    @staticmethod
-    def MINUS_DI(High, Low, Close, timeperiod=14):
-        minus_di = pd.DataFrame()
-        for i in High.columns:
-            minus_di[i] = ta.MINUS_DI(High[i], Low[i], Close[i], timeperiod)
-        return minus_di
-
-    @staticmethod
-    def MINUS_DM(High, Low, timeperiod=14):
-        minus_dm = pd.DataFrame()
-        for i in High.columns:
-            minus_dm[i] = ta.MINUS_DM(High[i], Low[i], timeperiod)
-        return minus_dm
-
-    @staticmethod
-    def MOM(Close, timeperiod=10):
-        return Close.apply(lambda col: ta.MOM(col, timeperiod), axis=0)
-
-    @staticmethod
-    def PLUS_DI(High, Low, Close, timeperiod=14):
-        plus_di = pd.DataFrame()
-        for i in High.columns:
-            plus_di[i] = ta.PLUS_DI(High[i], Low[i], Close[i], timeperiod)
-        return plus_di
-
-    @staticmethod
-    def PLUS_DM(High, Low, timeperiod=14):
-        plus_dm = pd.DataFrame()
-        for i in High.columns:
-            plus_dm[i] = ta.PLUS_DM(High[i], Low[i], timeperiod)
-        return plus_dm
-
-    @staticmethod
-    def PPO(Close, fastperiod=12, slowperiod=26, matype=0):
-        return Close.apply(lambda col: ta.PPO(col, fastperiod, slowperiod, matype), axis=0)
-
-    @staticmethod
-    def ROC(Close, timeperiod=10):
-        return Close.apply(lambda col: ta.ROC(col, timeperiod), axis=0)
-
-    @staticmethod
-    def ROCP(Close, timeperiod=10):
-        return Close.apply(lambda col: ta.ROCP(col, timeperiod), axis=0)
-
-    @staticmethod
-    def ROCR(Close, timeperiod=10):
-        return Close.apply(lambda col: ta.ROCR(col, timeperiod), axis=0)
-
-    @staticmethod
-    def ROCR100(Close, timeperiod=10):
-        return Close.apply(lambda col: ta.ROCR100(col, timeperiod), axis=0)
-
-    @staticmethod
-    def RSI(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.RSI(col, timeperiod), axis=0)
-
-    @staticmethod
-    def STOCH(High, Low, Close, fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3, slowd_matype=0):
-        slowk, slowd = pd.DataFrame(), pd.DataFrame()
-        for i in High.columns:
-            slowk[i], slowd[i] = ta.STOCH(High[i], Low[i], Close[i], fastk_period, slowk_period, slowk_matype,
-                                          slowd_period, slowd_matype)
-        return slowk, slowd
-
-    @staticmethod
-    def STOCHF(High, Low, Close, fastk_period=5, fastd_period=3, fastd_matype=0):
-        fastk, fastd = pd.DataFrame(), pd.DataFrame()
-        for i in High.columns:
-            fastk[i], fastd[i] = ta.STOCHF(High[i], Low[i], Close[i], fastk_period, fastd_period, fastd_matype)
-        return fastk, fastd
-
-    @staticmethod
-    def STOCHRSI(Close, timeperiod=14, fastk_period=5, fastd_period=3, fastd_matype=0):
-        fastk, fastd = pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            fastk[i], fastd[i] = ta.STOCHRSI(Close[i], timeperiod, fastk_period, fastd_period, fastd_matype)
-        return fastk, fastd
-
-    @staticmethod
-    def TRIX(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.TRIX(col, timeperiod), axis=0)
-
-    @staticmethod
-    def ULTOSC(High, Low, Close, timeperiod1=7, timeperiod2=14, timeperiod3=28):
-        ultosc = pd.DataFrame()
-        for i in Close.columns:
-            ultosc[i] = ta.ULTOSC(High[i], Low[i], Close[i], timeperiod1, timeperiod2, timeperiod3)
-        return ultosc
-
-    @staticmethod
-    def WILLR(High, Low, Close, timeperiod=14):
-        willr = pd.DataFrame()
-        for i in High.columns:
-            willr[i] = ta.WILLR(High[i], Low[i], Close[i], timeperiod)
-        return willr
-
-
-class AZ_Factor_Overlap:
-
-    @staticmethod
-    def BBANDS(Close, timeperiod=5, nbdevup=2, nbdevdn=2, matype=0):
-        upperband, middleband, lowerband = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            upperband[i], middleband[i], lowerband[i] = ta.BBANDS(Close[i], timeperiod, nbdevup, nbdevdn, matype)
-        upperband.replace(np.nan, 0, inplace=True)
-        middleband.replace(np.nan, 0, inplace=True)
-        lowerband.replace(np.nan, 0, inplace=True)
-        return upperband, middleband, lowerband
-
-    @staticmethod
-    def DEMA(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.DEMA(col, timeperiod), axis=0)
-
-    @staticmethod
-    def EMA(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.EMA(col, timeperiod), axis=0)
-
-    @staticmethod
-    def HT_TRENDLINE(Close):
-        return Close.apply(lambda col: ta.HT_TRENDLINE(col), axis=0)
-
-    @staticmethod
-    def KAMA(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.KAMA(col, timeperiod), axis=0)
-
-    @staticmethod
-    def MA(Close, timeperiod=30, matype=0):
-        return Close.apply(lambda col: ta.MA(col, timeperiod, matype), axis=0)
-
-    @staticmethod
-    def MAMA(Close, fastlimit=0, slowlimit=0):
-        mama, fama = pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            mama[i], fama[i] = ta.MAMA(Close[i], fastlimit, slowlimit)
-        return mama, fama
-
-    @staticmethod
-    def MAVP(Close, periods, minperiod=2, maxperiod=30, matype=0):  # periods　should be array
-        return Close.apply(lambda col: ta.MAVP(col, periods, minperiod, maxperiod, matype), axis=0)
-
-    @staticmethod
-    def MIDPOINT(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.MIDPOINT(col, timeperiod), axis=0)
-
-    @staticmethod
-    def MIDPRICE(High, Low, timeperiod=14):
-        midprice = pd.DataFrame()
-        for i in High.columns:
-            midprice[i] = ta.MIDPRICE(High[i], Low[i], timeperiod)
-        return midprice
-
-    @staticmethod
-    def SAR(High, Low, acceleration=0, maximum=0):
-        sar = pd.DataFrame()
-        for i in High.columns:
-            sar[i] = ta.SAR(High[i], Low[i], acceleration=0, maximum=0)
-        return sar
-
-    @staticmethod
-    def SAREXT(High, Low, startvalue=0, offsetonreverse=0, accelerationinitlong=0, accelerationlong=0,
-               accelerationmaxlong=0, accelerationinitshort=0, accelerationshort=0, accelerationmaxshort=0):
-        sarext = pd.DataFrame()
-        for i in High.columns:
-            sarext[i] = ta.SAREXT(High[i], Low[i], startvalue, offsetonreverse, accelerationinitlong, accelerationlong,
-                                  accelerationmaxlong, accelerationinitshort, accelerationshort, accelerationmaxshort)
-        return sarext
-
-    @staticmethod
-    def SMA(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.SMA(col, timeperiod), axis=0)
-
-    @staticmethod
-    def T3(Close, timeperiod=5, vfactor=0):
-        return Close.apply(lambda col: ta.T3(col, timeperiod, vfactor), axis=0)
-
-    @staticmethod
-    def TEMA(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.TEMA(col, timeperiod), axis=0)
-
-    @staticmethod
-    def TRIMA(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.TRIMA(col, timeperiod), axis=0)
-
-    @staticmethod
-    def WMA(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.WMA(col, timeperiod), axis=0)
-
-
-class AZ_Factor_Volume:
-
-    @staticmethod
-    def AD(High, Low, Close, Volume):
-        ad = pd.DataFrame()
-        for i in High.columns:
-            ad[i] = ta.AD(High[i], Low[i], Close[i], Volume[i])
-        return ad
-
-    @staticmethod
-    def ADOSC(High, Low, Close, Volume, fastperiod=3, slowperiod=10):
-        adosc = pd.DataFrame()
-        for i in High.columns:
-            adosc[i] = ta.ADOSC(High[i], Low[i], Close[i], Volume[i], fastperiod, slowperiod)
-        return adosc
-
-    @staticmethod
-    def OBV(Close, Volume):
-        obv = pd.DataFrame()
-        for i in Close.columns:
-            obv[i] = ta.OBV(Close[i], Volume[i])
-        return obv
-
-
-class AZ_Factor_Volatility:
-
-    @staticmethod
-    def ATR(High, Low, Close, timeperiod=14):
-        atr = pd.DataFrame()
-        for i in High.columns:
-            atr[i] = ta.ATR(High[i], Low[i], Close[i], timeperiod)
-        return atr
-
-    @staticmethod
-    def NATR(High, Low, Close, timeperiod=14):
-        natr = pd.DataFrame()
-        for i in High.columns:
-            natr[i] = ta.NATR(High[i], Low[i], Close[i], timeperiod)
-        return natr
-
-    @staticmethod
-    def TRANGE(High, Low, Close):
-        trange = pd.DataFrame()
-        for i in High.columns:
-            trange[i] = ta.TRANGE(High[i], Low[i], Close[i])
-        return trange
-
-
-class AZ_Factor_Price:
-
-    @staticmethod
-    def AVGPRICE(Open, High, Low, Close):
-        avgprice = pd.DataFrame()
-        for i in High.columns:
-            avgprice[i] = ta.AVGPRICE(Open[i], High[i], Low[i], Close[i])
-        return avgprice
-
-    @staticmethod
-    def MEDPRICE(High, Low):
-        medprice = pd.DataFrame()
-        for i in High.columns:
-            medprice[i] = ta.MEDPRICE(High[i], Low[i])
-        return medprice
-
-    @staticmethod
-    def TYPPRICE(High, Low, Close):
-        typprice = pd.DataFrame()
-        for i in High.columns:
-            typprice[i] = ta.TYPPRICE(High[i], Low[i], Close[i])
-        return typprice
-
-    @staticmethod
-    def WCLPRICE(High, Low, Close):
-        wclprice = pd.DataFrame()
-        for i in High.columns:
-            wclprice[i] = ta.WCLPRICE(High[i], Low[i], Close[i])
-        return wclprice
-
-
-class AZ_Factor_Cycle:
-
-    @staticmethod
-    def HT_DCPERIOD(Close):
-        return Close.apply(lambda col: ta.HT_DCPERIOD(col), axis=0)
-
-    @staticmethod
-    def HT_DCPHASE(Close):
-        return Close.apply(lambda col: ta.HT_DCPHASE(col), axis=0)
-
-    @staticmethod
-    def HT_PHASOR(Close):
-        inphase, quadrature = pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            inphase[i], quadrature[i] = ta.HT_PHASOR(Close[i])
-        return inphase, quadrature
-
-    @staticmethod
-    def HT_SINE(Close):
-        sine, leadsine = pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            sine[i], leadsine[i] = ta.HT_SINE(Close[i])
-        return sine, leadsine
-
-    @staticmethod
-    def HT_TRENDMODE(Close):
-        return Close.apply(lambda col: ta.HT_TRENDMODE(col), axis=0)
-
-
-class AZ_Factor_Pattern:
-
-    @staticmethod
-    def CDL2CROWS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDL2CROWS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDL3BLACKCROWS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDL3BLACKCROWS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDL3INSIDE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDL3INSIDE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDL3LINESTRIKE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDL3LINESTRIKE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDL3OUTSIDE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDL3OUTSIDE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDL3STARSINSOUTH(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDL3STARSINSOUTH(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDL3WHITESOLDIERS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDL3WHITESOLDIERS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLABANDONEDBABY(Open, High, Low, Close, penetration=0):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLABANDONEDBABY(Open[i], High[i], Low[i], Close[i], penetration)
-        return integer
-
-    @staticmethod
-    def CDLADVANCEBLOCK(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLADVANCEBLOCK(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLBELTHOLD(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLBELTHOLD(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLBREAKAWAY(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLBREAKAWAY(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLCLOSINGMARUBOZU(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLCLOSINGMARUBOZU(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLCONCEALBABYSWALL(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLCONCEALBABYSWALL(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLCOUNTERATTACK(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLCOUNTERATTACK(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLDARKCLOUDCOVER(Open, High, Low, Close, penetration=0):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLDARKCLOUDCOVER(Open[i], High[i], Low[i], Close[i], penetration)
-        return integer
-
-    @staticmethod
-    def CDLDOJI(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLDOJI(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLDOJISTAR(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLDOJISTAR(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLDRAGONFLYDOJI(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLDRAGONFLYDOJI(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLENGULFING(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLENGULFING(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLEVENINGDOJISTAR(Open, High, Low, Close, penetration=0):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLEVENINGDOJISTAR(Open[i], High[i], Low[i], Close[i], penetration)
-        return integer
-
-    @staticmethod
-    def CDLEVENINGSTAR(Open, High, Low, Close, penetration=0):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLEVENINGSTAR(Open[i], High[i], Low[i], Close[i], penetration)
-        return integer
-
-    @staticmethod
-    def CDLGAPSIDESIDEWHITE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLGAPSIDESIDEWHITE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLGRAVESTONEDOJI(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLGRAVESTONEDOJI(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHAMMER(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHAMMER(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHANGINGMAN(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHANGINGMAN(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHARAMI(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHARAMI(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHARAMICROSS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHARAMICROSS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHIGHWAVE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHIGHWAVE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHIKKAKE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHIKKAKE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHIKKAKEMOD(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHIKKAKEMOD(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLHOMINGPIGEON(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLHOMINGPIGEON(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLIDENTICAL3CROWS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLIDENTICAL3CROWS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLINNECK(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLINNECK(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLINVERTEDHAMMER(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLINVERTEDHAMMER(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLKICKING(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLKICKING(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLKICKINGBYLENGTH(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLKICKINGBYLENGTH(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLLADDERBOTTOM(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLLADDERBOTTOM(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLLONGLEGGEDDOJI(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLLONGLEGGEDDOJI(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLLONGLINE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLLONGLINE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLMARUBOZU(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLMARUBOZU(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLMATHOLD(Open, High, Low, Close, penetration=0):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLMATHOLD(Open[i], High[i], Low[i], Close[i], penetration)
-        return integer
-
-    @staticmethod
-    def CDLMORNINGDOJISTAR(Open, High, Low, Close, penetration=0):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLMORNINGDOJISTAR(Open[i], High[i], Low[i], Close[i], penetration)
-        return integer
-
-    @staticmethod
-    def CDLONNECK(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLONNECK(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLPIERCING(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLPIERCING(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLRICKSHAWMAN(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLRICKSHAWMAN(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLRISEFALL3METHODS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLRISEFALL3METHODS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLSEPARATINGLINES(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLSEPARATINGLINES(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLSHOOTINGSTAR(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLSHOOTINGSTAR(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLSHORTLINE(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLSHORTLINE(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLSPINNINGTOP(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLSPINNINGTOP(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLSTALLEDPATTERN(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLSTALLEDPATTERN(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLSTICKSANDWICH(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLSTICKSANDWICH(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLTAKURI(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLTAKURI(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLTASUKIGAP(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLTASUKIGAP(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLTHRUSTING(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLTHRUSTING(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLTRISTAR(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLTRISTAR(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLUNIQUE3RIVER(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLUNIQUE3RIVER(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLUPSIDEGAP2CROWS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLUPSIDEGAP2CROWS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-    @staticmethod
-    def CDLXSIDEGAP3METHODS(Open, High, Low, Close):
-        integer = pd.DataFrame()
-        for i in High.columns:
-            integer[i] = ta.CDLXSIDEGAP3METHODS(Open[i], High[i], Low[i], Close[i])
-        return integer
-
-
-class AZ_Factor_Statistic:
-
-    @staticmethod
-    def BETA(High, Low, timeperiod=5):
-        real = pd.DataFrame()
-        for i in High.columns:
-            real[i] = ta.BETA(High[i], Low[i], timeperiod)
-        return real
-
-    @staticmethod
-    def CORREL(High, Low, timeperiod=30):
-        real = pd.DataFrame()
-        for i in High.columns:
-            real[i] = ta.CORREL(High[i], Low[i], timeperiod)
-        return real
-
-    @staticmethod
-    def LINEARREG(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.LINEARREG(col, timeperiod), axis=0)
-
-    @staticmethod
-    def LINEARREG_ANGLE(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.LINEARREG_ANGLE(col, timeperiod), axis=0)
-
-    @staticmethod
-    def LINEARREG_INTERCEPT(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.LINEARREG_INTERCEPT(col, timeperiod), axis=0)
-
-    @staticmethod
-    def LINEARREG_SLOPE(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.LINEARREG_SLOPE(col, timeperiod), axis=0)
-
-    @staticmethod
-    def STDDEV(Close, timeperiod=5, nbdev=1):
-        return Close.apply(lambda col: ta.STDDEV(col, timeperiod, nbdev), axis=0)
-
-    @staticmethod
-    def TSF(Close, timeperiod=14):
-        return Close.apply(lambda col: ta.TSF(col, timeperiod), axis=0)
-
-    @staticmethod
-    def VAR(Close, timeperiod=5, nbdev=1):
-        return Close.apply(lambda col: ta.VAR(col, timeperiod, nbdev), axis=0)
-
-
-class AZ_Factor_Math:
-
-    @staticmethod
-    def ACOS(Close):
-        return Close.apply(lambda col: ta.ACOS(col), axis=0)
-
-    @staticmethod
-    def ASIN(Close):
-        return Close.apply(lambda col: ta.ASIN(col), axis=0)
-
-    @staticmethod
-    def ATAN(Close):
-        return Close.apply(lambda col: ta.ATAN(col), axis=0)
-
-    @staticmethod
-    def CEIL(Close):
-        return Close.apply(lambda col: ta.CEIL(col), axis=0)
-
-    @staticmethod
-    def COS(Close):
-        return Close.apply(lambda col: ta.COS(col), axis=0)
-
-    @staticmethod
-    def COSH(Close):
-        return Close.apply(lambda col: ta.COSH(col), axis=0)
-
-    @staticmethod
-    def EXP(Close):
-        return Close.apply(lambda col: ta.EXP(col), axis=0)
-
-    @staticmethod
-    def FLOOR(Close):
-        return Close.apply(lambda col: ta.FLOOR(col), axis=0)
-
-    @staticmethod
-    def LN(Close):
-        return Close.apply(lambda col: ta.LN(col), axis=0)
-
-    @staticmethod
-    def LOG10(Close):
-        return Close.apply(lambda col: ta.LOG10(col), axis=0)
-
-    @staticmethod
-    def SIN(Close):
-        return Close.apply(lambda col: ta.SIN(col), axis=0)
-
-    @staticmethod
-    def SINH(Close):
-        return Close.apply(lambda col: ta.SINH(col), axis=0)
-
-    @staticmethod
-    def SQRT(Close):
-        return Close.apply(lambda col: ta.SQRT(col), axis=0)
-
-    @staticmethod
-    def TAN(Close):
-        return Close.apply(lambda col: ta.TAN(col), axis=0)
-
-    @staticmethod
-    def TANH(Close):
-        return Close.apply(lambda col: ta.TANH(col), axis=0)
-
-    @staticmethod
-    def ADD(High, Low):
-        real = pd.DataFrame()
-        for i in High.columns:
-            real[i] = ta.ADD(High[i], Low[i])
-        return real
-
-    @staticmethod
-    def DIV(High, Low):
-        real = pd.DataFrame()
-        for i in High.columns:
-            real[i] = ta.DIV(High[i], Low[i])
-        return real
-
-    @staticmethod
-    def MAX(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.TSF(col, timeperiod), axis=0)
-
-    @staticmethod
-    def MAXINDEX(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.TSF(col, timeperiod), axis=0)
-
-    @staticmethod
-    def MIN(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.TSF(col, timeperiod), axis=0)
-
-    @staticmethod
-    def MININDEX(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.TSF(col, timeperiod), axis=0)
-
-    @staticmethod
-    def MINMAX(Close, timeperiod=30):
-        min, max = pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            min[i], max[i] = ta.MINMAX(Close[i], timeperiod)
-        return min, max
-
-    @staticmethod
-    def MINMAXINDEX(Close, timeperiod=30):
-        minidx, maxidx = pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            minidx[i], maxidx[i] = ta.MINMAXINDEX(Close[i], timeperiod)
-        return minidx, maxidx
-
-    @staticmethod
-    def MULT(High, Close):
-        real = pd.DataFrame()
-        for i in Close.columns:
-            real[i] = ta.MULT(High[i], Close[i])
-        return real
-
-    @staticmethod
-    def SUB(High, Close):
-        real = pd.DataFrame()
-        for i in Close.columns:
-            real[i] = ta.SUB(High[i], Close[i])
-        return real
-
-    @staticmethod
-    def SUM(Close, timeperiod=30):
-        return Close.apply(lambda col: ta.SUM(col, timeperiod), axis=0)
-
-
-class FactorMomentum:
-    @staticmethod
-    def ADX(High, Low, Close, sector_df, timeperiod, limit_up=40, limit_dn=20):
-        """趋势强弱指标"""
-        real = AZ_Factor_Momentum.ADX(High, Low, Close, timeperiod)
-        target_df = (real > limit_up).astype(int) - (real < limit_dn).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def ADXR(High, Low, Close, sector_df, timeperiod, limit_up=40, limit_dn=20):
-        real = AZ_Factor_Momentum.ADXR(High, Low, Close, timeperiod)
-        target_df = (real > limit_up).astype(int) - (real < limit_dn).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def APO(Close, sector_df, fastperiods=12, lowperiod=26, matype=0):  # default
-        real = AZ_Factor_Momentum.APO(Close, fastperiods, lowperiod, matype)
-        target_df = (real > 0).astype(int) - (real < 0).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def AROON(High, Low, sector_df, timeperiod, limit=80):
-        aroondn, aroonup = AZ_Factor_Momentum.AROON(High, Low, timeperiod)
-        target_df = (aroondn > limit).astype(int) - (aroonup > limit).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def AROONSC(High, Low, sector_df, timeperiod, limit=80):
-        aroondn, aroonup = AZ_Factor_Momentum.AROONOSC(High, Low, timeperiod)
-        target_df = (aroondn > limit).astype(int) - (aroonup > limit).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def CMO(Close, sector_df, timeperiod, limit=0):
-        real = AZ_Factor_Momentum.CMO(Close, timeperiod)
-        target_df = (real > limit).astype(int) - (real < limit).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def MACD(Close, sector_df, fastperiod=12, slowperiod=26, signalperiod=9):
-        macd, macdsignal, macdhist = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-        for i in Close.columns:
-            macd[i], macdsignal[i], macdhist[i] = ta.MACD(Close[i], fastperiod, slowperiod, signalperiod)
-        macdhist_copy = macdhist.copy()
-        macdhist_copy.replace(np.nan, 0)
-        macdhist_copy[macdhist > 0] = 1
-        macdhist_copy[macdhist < 0] = 0
-        target_df = macdhist_copy - macdhist_copy.shift(1)
-        return target_df * sector_df
-
-    @staticmethod
-    def MFI(High, Low, Close, Volume, sector_df, timeperiod, limit_up=80, limit_dn=20):
-        real = AZ_Factor_Momentum.MFI(High, Low, Close, Volume, timeperiod)
-        target_df = (real > limit_up).astype(int) - (real > limit_dn).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def RSI(Close, sector_df, timeperiod=14, limit_up_dn=30):
-        real = AZ_Factor_Momentum.RSI(Close, timeperiod) - 50
-        target_df = (real > limit_up_dn).astype(int) - (real < limit_up_dn).astype(int)
-        return target_df * sector_df
-
-    @staticmethod
-    def MA_LINE(Close, sector_df, slowperiod, fastperiod):
-        slow_line = Close.rolling(slowperiod, min_periods=0).mean()
-        fast_line = Close.rolling(fastperiod, min_periods=0).mean()
-        MA_diff = fast_line - slow_line
-        MA_diff_copy = MA_diff.copy()
-        MA_diff_copy[MA_diff > 0] = 1
-        MA_diff_copy[MA_diff < 0] = 0
-        target_df = MA_diff_copy - MA_diff_copy.shift(1)
-        return target_df * sector_df
-
-
-class FactorVolume:
-    # @staticmethod
-    # def AD(High, Low, Close, Volume):
-    #     ad = pd.DataFrame()
-    #     for i in High.columns:
-    #         ad[i] = ta.AD(High[i], Low[i], Close[i], Volume[i])
-    #     return ad
-
-    @staticmethod
-    def ADOSC(High, Low, Close, Volume, sector_df, fastperiod, slowperiod, limit_up_dn=0):
-        real = AZ_Factor_Volume.ADOSC(High, Low, Close, Volume, fastperiod, slowperiod)
-        target_df = (real > limit_up_dn).astype(int) - (real < -limit_up_dn).astype(int)
-        return target_df * sector_df
-
-
-class FactorOverlap:
-    @staticmethod
-    def BBANDS(Close, sector_df, timeperiod, limit_up_down):
-        up_line, mid_line, down_line = AZ_Factor_Overlap.BBANDS(Close, timeperiod, nbdevup=limit_up_down, nbdevdn=limit_up_down, matype=0)
-        target_df = Close.copy()
-        target_df.iloc[:, :] = 0
-        target_df[(Close <= up_line) & (Close >= down_line)] = 0
-        target_df[Close > up_line] = 1
-        target_df[Close < down_line] = -1
-        return target_df * sector_df
-
-
-class FactorVolatility(BaseDeal):
-    def ATR(self, High, Low, Close, sector_df, timeperiod, percent):
-        real = AZ_Factor_Volatility.ATR(High, Low, Close, timeperiod)
-        tmp_df = bt.AZ_Row_zscore(real)
-        target_df = self.row_extre(tmp_df, sector_df, percent)
+import sys
+
+sys.path.append('/mnt/mfs')
+
+from work_whs.loc_lib.pre_load import *
+
+
+def mul_fun(a, b):
+    a_l = a.where(a > 0, 0)
+    a_s = a.where(a < 0, 0)
+
+    b_l = b.where(b > 0, 0)
+    b_s = b.where(b < 0, 0)
+
+    pos_l = a_l.mul(b_l)
+    pos_s = a_s.mul(b_s)
+
+    pos = pos_l.sub(pos_s)
+    return pos
+
+
+def out_sample_perf_c(pnl_df_out, way=1):
+    if way == 1:
+        sharpe_out = bt.AZ_Sharpe_y(pnl_df_out)
+    else:
+        sharpe_out = bt.AZ_Sharpe_y(-pnl_df_out)
+    out_condition = sharpe_out > 0.8
+    return out_condition, round(sharpe_out * way, 2)
+
+
+def simu_fun(cut_date, pos_df_daily, pct_n, if_return_pnl=False, if_only_long=False):
+    pnl_df = (pos_df_daily * pct_n).sum(axis=1)
+    pnl_df = pnl_df.replace(np.nan, 0)
+    # 样本内表现
+    return_in = pct_n[pct_n.index < cut_date]
+
+    pnl_df_in = pnl_df[pnl_df.index < cut_date]
+    asset_df_in = pnl_df_in.cumsum()
+    last_asset_in = asset_df_in.iloc[-1]
+    pos_df_daily_in = pos_df_daily[pos_df_daily.index < cut_date]
+    pot_in = bt.AZ_Pot(pos_df_daily_in, last_asset_in)
+
+    leve_ratio = bt.AZ_Leverage_ratio(asset_df_in)
+    if leve_ratio < 0:
+        leve_ratio = 100
+    sharpe_q_in_df = bt.AZ_Rolling_sharpe(pnl_df_in, roll_year=1, year_len=250, min_periods=1,
+                                          cut_point_list=[0.3, 0.5, 0.7], output=False)
+    sp_in = bt.AZ_Sharpe_y(pnl_df_in)
+    fit_ratio = bt.AZ_fit_ratio(pos_df_daily_in, return_in)
+    # ic = round(bt.AZ_Normal_IC(pos_df_daily_in, pct_n, min_valids=None, lag=0).mean(), 6)
+    ic = 0
+    sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d = sharpe_q_in_df.values
+    in_condition_u = sharpe_q_in_df_u > 0.9 and leve_ratio > 1
+    in_condition_d = sharpe_q_in_df_d < -0.9 and leve_ratio > 1
+    # 分双边和只做多
+    if if_only_long:
+        in_condition = in_condition_u
+    else:
+        in_condition = in_condition_u | in_condition_d
+
+    if sharpe_q_in_df_m > 0:
+        way = 1
+    else:
+        way = -1
+
+    # 样本外表现
+    pnl_df_out = pnl_df[pnl_df.index >= cut_date]
+    out_condition, sharpe_q_out = out_sample_perf_c(pnl_df_out, way=way)
+    if if_return_pnl:
+        return in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+               fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
+    else:
+        return in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+               fit_ratio, leve_ratio, sp_in, sharpe_q_out
+
+
+def simu_time_para_fun(time_para_dict, pos_df_daily, adj_return, if_return_pnl=False, if_only_long=False):
+    pnl_df = (pos_df_daily * adj_return).sum(axis=1)
+
+    pnl_df = pnl_df.replace(np.nan, 0)
+    result_dict = OrderedDict()
+    xinx = adj_return.index
+    for time_key in time_para_dict.keys():
+        begin_para, cut_para, end_para_1, end_para_2, end_para_3, end_para_4 = time_para_dict[time_key]
+
+        # 样本内索引
+        sample_in_index = (xinx >= begin_para) & (xinx < cut_para)
+        # 样本外索引
+        sample_out_index_1 = (xinx >= cut_para) & (xinx < end_para_1)
+        sample_out_index_2 = (xinx >= cut_para) & (xinx < end_para_2)
+        sample_out_index_3 = (xinx >= cut_para) & (xinx < end_para_3)
+        sample_out_index_4 = (xinx >= cut_para) & (xinx < end_para_4)
+        # 样本内表现
+        pos_df_daily_in = pos_df_daily[sample_in_index]
+        adj_return_in = adj_return[sample_in_index]
+        pnl_df_in = pnl_df[sample_in_index]
+
+        asset_df_in = pnl_df_in.cumsum()
+        last_asset_in = asset_df_in.iloc[-1]
+
+        pot_in = bt.AZ_Pot(pos_df_daily_in, last_asset_in)
+
+        leve_ratio = bt.AZ_Leverage_ratio(asset_df_in)
+
+        if leve_ratio < 0:
+            leve_ratio = 100
+        sharpe_q_in_df = bt.AZ_Rolling_sharpe(pnl_df_in, roll_year=1, year_len=250, min_periods=1,
+                                              cut_point_list=[0.3, 0.5, 0.7], output=False)
+        sharpe_q_in_df = round(sharpe_q_in_df, 4)
+        sp_in = bt.AZ_Sharpe_y(pnl_df_in)
+        fit_ratio = bt.AZ_fit_ratio(pos_df_daily_in, adj_return_in)
+
+        ic = 0
+        sp_in_u, sp_in_m, sp_in_d = sharpe_q_in_df.values
+
+        in_condition_u = sp_in_u > 0.9 and leve_ratio > 1
+        in_condition_d = sp_in_d < -0.9 and leve_ratio > 1
+        # 分双边和只做多
+        if if_only_long:
+            in_condition = in_condition_u
+        else:
+            in_condition = in_condition_u | in_condition_d
+
+        if sp_in_m > 0:
+            way = 1
+        else:
+            way = -1
+
+        # 样本外表现
+        pnl_df_out_1 = pnl_df[sample_out_index_1]
+        pnl_df_out_2 = pnl_df[sample_out_index_2]
+        pnl_df_out_3 = pnl_df[sample_out_index_3]
+        pnl_df_out_4 = pnl_df[sample_out_index_4]
+
+        out_condition_1, sp_out_1 = out_sample_perf_c(pnl_df_out_1, way=way)
+        out_condition_2, sp_out_2 = out_sample_perf_c(pnl_df_out_2, way=way)
+        out_condition_3, sp_out_3 = out_sample_perf_c(pnl_df_out_3, way=way)
+        out_condition_4, sp_out_4 = out_sample_perf_c(pnl_df_out_4, way=way)
+        if if_return_pnl:
+            result_dict[time_key] = [in_condition, out_condition_1, out_condition_2, out_condition_3, out_condition_4,
+                                     ic, sp_in_u, sp_in_m, sp_in_d, pot_in, fit_ratio, leve_ratio,
+                                     sp_in, sp_out_1, sp_out_2, sp_out_3, sp_out_4, pnl_df]
+        else:
+            result_dict[time_key] = [in_condition, out_condition_1, out_condition_2, out_condition_3, out_condition_4,
+                                     ic, sp_in_u, sp_in_m, sp_in_d, pot_in, fit_ratio, leve_ratio,
+                                     sp_in, sp_out_1, sp_out_2, sp_out_3, sp_out_4]
+    return result_dict
+
+
+class FactorTestBase:
+    def __init__(self, root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict, sector_name,
+                 hold_time, lag, return_file, if_hedge, if_only_long, if_weight=0.5, ic_weight=0.5,
+                 para_adj_set_list=None):
+
+        self.root_path = root_path
+        self.if_save = if_save
+        self.if_new_program = if_new_program
+        self.begin_date = begin_date
+        self.cut_date = cut_date
+        self.end_date = end_date
+        self.time_para_dict = time_para_dict
+        self.sector_name = sector_name
+        self.hold_time = hold_time
+        self.lag = lag
+        self.return_file = return_file
+        self.if_hedge = if_hedge
+        self.if_only_long = if_only_long
+        self.if_weight = if_weight
+        self.ic_weight = ic_weight
+
+        if para_adj_set_list is None:
+            self.para_adj_set_list = [
+                {'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+                {'pot_in_num': 40, 'leve_ratio_num': 2, 'sp_in': 1.5, 'ic_num': 0.0, 'fit_ratio': 2},
+                {'pot_in_num': 50, 'leve_ratio_num': 2, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+                {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 2},
+                {'pot_in_num': 50, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1},
+                {'pot_in_num': 40, 'leve_ratio_num': 1, 'sp_in': 1, 'ic_num': 0.0, 'fit_ratio': 1}]
+
+        return_choose = self.load_return_data()
+        self.xinx = return_choose.index
+        sector_df = self.load_sector_data()
+        self.xnms = sector_df.columns
+
+        return_choose = return_choose.reindex(columns=self.xnms)
+        self.sector_df = sector_df.reindex(index=self.xinx)
+        print('Loaded sector DataFrame!')
+        if if_hedge:
+            if ic_weight + if_weight != 1:
+                exit(-1)
+        else:
+            if_weight = 0
+            ic_weight = 0
+
+        index_df_1 = self.load_index_data('000300').fillna(0)
+        index_df_2 = self.load_index_data('000905').fillna(0)
+        hedge_df = if_weight * index_df_1 + ic_weight * index_df_2
+
+        self.return_choose = return_choose.sub(hedge_df, axis=0)
+        print('Loaded return DataFrame!')
+
+        suspendday_df, limit_buy_sell_df = self.load_locked_data()
+        limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
+        limit_buy_sell_df_c.iloc[-1] = 1
+
+        suspendday_df_c = suspendday_df.shift(-1)
+        suspendday_df_c.iloc[-1] = 1
+        self.suspendday_df_c = suspendday_df_c
+        self.limit_buy_sell_df_c = limit_buy_sell_df_c
+        print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+
+    # 获取剔除新股的矩阵
+    def get_new_stock_info(self, xnms, xinx):
+        new_stock_data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab01/CDSY_SECUCODE/LISTSTATE.csv'))
+        new_stock_data.fillna(method='ffill', inplace=True)
+        # 获取交易日信息
+        return_df = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_14/aadj_r.csv')).astype(float)
+        trade_time = return_df.index
+        new_stock_data = new_stock_data.reindex(index=trade_time).fillna(method='ffill')
+        target_df = new_stock_data.shift(40).notnull().astype(int)
+        target_df = target_df.reindex(columns=xnms, index=xinx)
+        return target_df
+
+    # 获取剔除st股票的矩阵
+    def get_st_stock_info(self, xnms, xinx):
+        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab01/CDSY_CHANGEINFO/CHANGEA.csv'))
+        data = data.reindex(columns=xnms, index=xinx)
+        data.fillna(method='ffill', inplace=True)
+
+        data = data.astype(str)
+        target_df = data.applymap(lambda x: 0 if 'ST' in x or 'PT' in x else 1)
+        return target_df
+
+    def load_return_data(self):
+        return_choose = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_14/aadj_r.csv'))
+        return_choose = return_choose[(return_choose.index >= self.begin_date) & (return_choose.index < self.end_date)]
+        return return_choose
+
+    # 获取sector data
+    def load_sector_data(self):
+        market_top_n = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_10/' + self.sector_name + '.csv'))
+        market_top_n = market_top_n.reindex(index=self.xinx)
+        market_top_n.dropna(how='all', axis='columns', inplace=True)
+        xnms = market_top_n.columns
+        xinx = market_top_n.index
+
+        new_stock_df = self.get_new_stock_info(xnms, xinx)
+        st_stock_df = self.get_st_stock_info(xnms, xinx)
+        sector_df = market_top_n * new_stock_df * st_stock_df
+        sector_df.replace(0, np.nan, inplace=True)
+        return sector_df
+
+    def load_index_data(self, index_name):
+        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/INDEX_TD_DAILYSYS/CHG.csv'))
+        target_df = data[index_name].reindex(index=self.xinx)
+        return target_df * 0.01
+
+    # 涨跌停都不可交易
+    def load_locked_data(self):
+        raw_suspendday_df = bt.AZ_Load_csv(
+            os.path.join(self.root_path, 'EM_Funda/TRAD_TD_SUSPENDDAY/SUSPENDREASON.csv'))
+        suspendday_df = raw_suspendday_df.isnull().astype(int)
+        suspendday_df = suspendday_df.reindex(columns=self.xnms, index=self.xinx, fill_value=True)
+        suspendday_df.replace(0, np.nan, inplace=True)
+
+        return_df = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_14/aadj_r.csv')).astype(float)
+        limit_buy_sell_df = (return_df.abs() < 0.095).astype(int)
+        limit_buy_sell_df = limit_buy_sell_df.reindex(columns=self.xnms, index=self.xinx, fill_value=1)
+        limit_buy_sell_df.replace(0, np.nan, inplace=True)
+        return suspendday_df, limit_buy_sell_df
+
+    @staticmethod
+    def pos_daily_fun(df, n=5):
+        return df.rolling(window=n, min_periods=1).mean() * 100
+
+    def deal_mix_factor(self, mix_factor):
+        if self.if_only_long:
+            mix_factor = mix_factor[mix_factor > 0]
+        # 下单日期pos
+        order_df = mix_factor.replace(np.nan, 0)
+        # 排除入场场涨跌停的影响
+        order_df = order_df * self.sector_df * self.limit_buy_sell_df_c * self.suspendday_df_c
+        order_df = order_df.div(order_df.abs().sum(axis=1).replace(0, np.nan), axis=0)
+        order_df[order_df > 0.05] = 0.05
+        order_df[order_df < -0.05] = -0.05
+        daily_pos = self.pos_daily_fun(order_df, n=self.hold_time)
+        daily_pos.fillna(0, inplace=True)
+        # 排除出场涨跌停的影响
+        daily_pos = daily_pos * self.limit_buy_sell_df_c * self.suspendday_df_c
+        daily_pos.fillna(method='ffill', inplace=True)
+        return daily_pos
+
+    def check_factor(self, name_list, file_name):
+        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+        exist_factor = set([x[:-4] for x in os.listdir(load_path)])
+        print()
+        use_factor = set(name_list)
+        a = use_factor - exist_factor
+        if len(a) != 0:
+            print('factor not enough!')
+            print(a)
+            print(len(a))
+            send_email.send_email(f'{file_name} factor not enough!', ['whs@yingpei.com'], [], 'Factor Test Warning!')
+
+    @staticmethod
+    def create_all_para_(*args):
+        target_list = list(product(*args))
+        return target_list
+
+    @staticmethod
+    def create_log_save_path(target_path):
+        top_path = os.path.split(target_path)[0]
+        if not os.path.exists(top_path):
+            os.mkdir(top_path)
+        if not os.path.exists(target_path):
+            os.mknod(target_path)
+
+    def save_load_control_(self, suffix_name, file_name, *args):
+        # 参数存储与加载的路径控制
+        result_save_path = '/mnt/mfs/dat_whs/result_new'
+        if self.if_new_program:
+            now_time = datetime.now().strftime('%Y%m%d_%H%M')
+            if self.if_only_long:
+                file_name = '{}_{}_{}_hold_{}_{}_{}_long.txt' \
+                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
+            else:
+                file_name = '{}_{}_{}_hold_{}_{}_{}.txt' \
+                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
+
+            log_save_file = os.path.join(result_save_path, 'log', file_name)
+            result_save_file = os.path.join(result_save_path, 'result', file_name)
+            para_save_file = os.path.join(result_save_path, 'para', file_name)
+
+            para_dict = dict()
+            para_ready_df = pd.DataFrame(list(self.create_all_para_(*args)))
+            total_para_num = len(para_ready_df)
+            if self.if_save:
+                self.create_log_save_path(log_save_file)
+                self.create_log_save_path(result_save_file)
+                self.create_log_save_path(para_save_file)
+                para_dict['para_ready_df'] = para_ready_df
+                para_dict['args'] = args
+                pd.to_pickle(para_dict, para_save_file)
+
+        else:
+            log_save_file = os.path.join(result_save_path, 'log', file_name)
+            result_save_file = os.path.join(result_save_path, 'result', file_name)
+            para_save_file = os.path.join(result_save_path, 'para', file_name)
+            para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
+            para_all_df = pd.read_pickle(para_save_file)
+            total_para_num = len(para_all_df)
+            para_ready_df = para_all_df.loc[sorted(list(set(para_all_df.index) - set(para_tested_df.index)))]
+        print(file_name)
+        print(f'para_num:{len(para_ready_df)}')
+        return para_ready_df, log_save_file, result_save_file, total_para_num
+
+
+class MixFun:
+    @staticmethod
+    def load_daily_data(file_name, xinx, xnms, sector_df):
+        load_path = '/mnt/mfs/DAT_EQT/EM_Funda/daily/'
+        tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv'))
+        tmp_df = tmp_df.reindex(index=xinx, columns=xnms) * sector_df
+        target_df = bt.AZ_Row_zscore(tmp_df, cap=5)
+        return target_df
+
+    @staticmethod
+    def load_filter_data(filter_name, xinx, xnms):
+        load_path = '/mnt/mfs/dat_whs/data/new_factor_data/'
+        target_df = pd.read_pickle(os.path.join(load_path, filter_name + '.pkl')).reindex(index=xinx, columns=xnms)
+        return target_df
+
+    @staticmethod
+    def row_extre(raw_df, sector_df, percent):
+        raw_df = raw_df * sector_df
+        target_df = raw_df.rank(axis=1, pct=True)
+        target_df[target_df >= 1 - percent] = 1
+        target_df[target_df <= percent] = -1
+        target_df[(target_df > percent) & (target_df < 1 - percent)] = 0
+        return target_df
+
+    def load_mix_factor(self, name_1, xinx, xnms, sector_df, percent):
+        factor_1 = self.load_daily_data(name_1, xinx, xnms, sector_df)
+        # factor_2 = self.load_daily_data(name_2, xinx, xnms, sector_df)
+        score_df_1 = bt.AZ_Row_zscore(factor_1, cap=5)
+        # score_df_2 = bt.AZ_Row_zscore(factor_2, cap=5)
+        mix_df = score_df_1
+        target_df = self.row_extre(mix_df, sector_df, percent)
         return target_df
 
 
-class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, BaseDeal):
-    def __init__(self, root_path, sector_df, save_root_path):
-        self.sector_df = sector_df
-        xnms = sector_df.columns
-        # xinx = sector_df.index
-        # load_path = '/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14'
-        self.aadj_p_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p.csv'
-        self.aadj_p = bt.AZ_Load_csv(self.aadj_p_path).reindex(columns=xnms)
+class FactorTest(FactorTestBase, MixFun):
+    def __init__(self, *args):
+        super(FactorTest, self).__init__(*args)
 
-        self.aadj_p_HIGH_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p_HIGH.csv'
-        self.aadj_p_HIGH = bt.AZ_Load_csv(self.aadj_p_HIGH_path).reindex(columns=xnms)
+    @staticmethod
+    def save_file_fun(target_file, write_list, if_save, lock):
+        if if_save:
+            with lock:
+                f = open(target_file, 'a')
+                f.write('|'.join([str(x) for x in write_list]) + '\n')
+                f.close()
 
-        self.aadj_p_LOW_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p_LOW.csv'
-        self.aadj_p_LOW = bt.AZ_Load_csv(self.aadj_p_LOW_path).reindex(columns=xnms)
+    def part_test_fun(self, key, log_save_file, result_save_file, total_para_num, filter_name, *args):
+        lock = Lock()
+        start_time = time.time()
+        load_time_1 = time.time()
+        percent = 0.3
+        mix_factor = self.load_mix_factor(*args, xinx=self.xinx, xnms=self.xnms,
+                                          sector_df=self.sector_df, percent=percent)
+        # filter_factor = self.filter_name
+        filter_factor = mix_factor.copy()
+        filter_factor.iloc[:, :] = 1
+        load_time_2 = time.time()
+        load_delta = round(load_time_2 - load_time_1, 2)
 
-        self.aadj_p_OPEN_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p_OPEN.csv'
-        self.aadj_p_OPEN = bt.AZ_Load_csv(self.aadj_p_OPEN_path).reindex(columns=xnms)
+        signal_df = mul_fun(mix_factor, filter_factor)
 
-        self.TVOL_path = root_path.EM_Funda.TRAD_SK_DAILY_JC / 'TVOL.csv'
-        self.TVOL = bt.AZ_Load_csv(self.TVOL_path).reindex(columns=xnms).replace(np.nan, 0)
-        self.save_root_path = save_root_path
+        pos_df = self.deal_mix_factor(signal_df)
+        result_dict = simu_time_para_fun(self.time_para_dict, pos_df, self.return_choose, if_return_pnl=False,
+                                         if_only_long=self.if_only_long)
 
-    def ADX_(self, n_list, limit_up, limit_dn):
-        for n in n_list:
-            target_df = self.ADX(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.sector_df,
-                                 n, limit_up, limit_dn)
-            file_name = 'ADX_{}_{}_{}'.format(n, limit_up, limit_dn)
-            fun = 'Tech_Factor.FactorMomentum.ADX'
-            raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path)
-            args = (n, limit_up, limit_dn)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+        for time_key in result_dict.keys():
+            in_condition, *filter_result = result_dict[time_key]
+            # result 存储
+            if in_condition:
+                self.save_file_fun(result_save_file, [time_key, key, *args, self.sector_name, in_condition] +
+                                   filter_result, self.if_save, lock)
+            print([time_key, in_condition, *args] + filter_result)
 
-    def AROON_(self, n_list, limit):
-        for n in n_list:
-            target_df = self.AROON(self.aadj_p_HIGH, self.aadj_p_LOW, self.sector_df, n, limit)
-            file_name = 'AROON_{}_{}'.format(n, limit)
-            fun = 'Tech_Factor.FactorMomentum.AROON'
-            raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path)
-            args = (n, limit)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+        end_time = time.time()
+        run_delta = round(end_time - start_time, 2)
+        # 参数存储
+        self.save_file_fun(log_save_file, [key, *args, self.sector_name, run_delta, load_delta], self.if_save, lock)
+        print('{}%, {}, cost {} seconds, load_cost {} seconds'
+              .format(round(key / total_para_num * 100, 4), key, run_delta, load_delta), *args)
 
-    def CMO_(self, n_list, limit):
-        for n in n_list:
-            target_df = self.CMO(self.aadj_p, self.sector_df, n, limit)
-            file_name = 'CMO_{}_{}'.format(n, limit)
-            fun = 'Tech_Factor.FactorMomentum.CMO'
-            raw_data_path = (self.aadj_p_path,)
-            args = (n, limit)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+    def main_test_fun(self, *args, pool_num=20, suffix_name='', old_file_name=''):
+        para_ready_df, log_save_file, result_save_file, total_para_num = \
+            self.save_load_control_(suffix_name, old_file_name, *args)
 
-    def MFI_(self, n_list, limit_up=80, limit_dn=20):
-        for n in n_list:
-            target_df = self.MFI(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.TVOL, self.sector_df, n, limit_up,
-                                 limit_dn)
-            file_name = 'MFI_{}_{}_{}'.format(n, limit_up, limit_dn)
-            fun = 'Tech_Factor.FactorMomentum.MFI'
-            raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path, self.TVOL_path)
-            args = (n, limit_up, limit_dn)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def RSI_(self, n_list, limit_up_dn=30):
-        for n in n_list:
-            target_df = self.RSI(self.aadj_p, self.sector_df, n, limit_up_dn)
-            file_name = 'RSI_{}_{}'.format(n, limit_up_dn)
-            fun = 'Tech_Factor.FactorMomentum.RSI'
-            raw_data_path = (self.aadj_p_path,)
-            args = (n, limit_up_dn)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def ADOSC_(self, long_short_list, limit_up_dn=0):
-        for long, short in long_short_list:
-            target_df = self.ADOSC(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.TVOL, self.sector_df,
-                                   long, short, limit_up_dn)
-            file_name = 'ADOSC_{}_{}_{}'.format(long, short, limit_up_dn)
-            fun = 'Tech_Factor.FactorVolume.ADOSC'
-            raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path, self.TVOL_path)
-            args = (long, short, limit_up_dn)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def ATR_(self, n_list, percent):
-        for n in n_list:
-            target_df = self.ATR(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.sector_df, n, percent)
-            file_name = 'ATR_{}_{}'.format(n, percent)
-            fun = 'Tech_Factor.FactorVolatility.ATR'
-            raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path)
-            args = (n, percent)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def MACD_(self, fastperiod, slowperiod, signalperiod):
-        target_df = self.MACD(self.aadj_p, self.sector_df, fastperiod, slowperiod, signalperiod)
-        file_name = f'MACD_{fastperiod}_{slowperiod}_{signalperiod}'
-        fun = 'Tech_Factor.FactorMomentum.MACD'
-        raw_data_path = (self.aadj_p_path, )
-        args = (fastperiod, slowperiod, signalperiod)
-        self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def MA_LINE_(self, long_short_list):
-        for slowperiod, fastperiod in long_short_list:
-            target_df = self.MA_LINE(self.aadj_p, self.sector_df, slowperiod, fastperiod)
-            file_name = f'MA_LINE_{fastperiod}_{slowperiod}'
-            fun = 'Tech_Factor.FactorMomentum.MA_LINE'
-            raw_data_path = (self.aadj_p_path,)
-            args = (fastperiod, slowperiod)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
-
-    def BBANDS_(self, n_list, limit_list):
-        for n in n_list:
-            for limit_up_dn in limit_list:
-                target_df = self.BBANDS(self.aadj_p, self.sector_df, n, limit_up_dn)
-                # print(target_df)
-                file_name = f'BBANDS_{n}_{limit_up_dn}'
-                fun = 'Tech_Factor.FactorOverlap.BBANDS'
-                raw_data_path = (self.aadj_p_path,)
-                args = (n, limit_up_dn)
-                self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+        pool = Pool(pool_num)
+        for key in list(para_ready_df.index):
+            # print(para_ready_df)
+            args = para_ready_df.loc[key]
+            args_list = (key, log_save_file, result_save_file, total_para_num, *args)
+            self.part_test_fun(*args_list)
+        #     pool.apply_async(self.part_test_fun, args=args_list)
+        # pool.close()
+        # pool.join()
+        pass
 
 
-def main(sector_df, root_path, save_root_path):
-    techfactor = TechFactor(root_path, sector_df, save_root_path)
-    n_list = [20, 40, 100, 140, 200]
-    long_short_list = [(5, 10), (20, 60), (40, 100), (60, 120), (60, 160)]
-    # techfactor.ADX_(n_list, limit_up=20, limit_dn=10)
-    # techfactor.AROON_(n_list, limit=80)
-    # techfactor.CMO_(n_list, limit=0)
-    # techfactor.MFI_(n_list, limit_up=70, limit_dn=30)
-    # techfactor.ADOSC_(long_short_list, limit_up_dn=0)
-    # techfactor.ATR_(n_list, percent=0.2)
-    # techfactor.RSI_(n_list, limit_up_dn=10)
-    # techfactor.RSI_(n_list)
+def main_fun(sector_name, hold_time):
+    root_path = '/mnt/mfs/DAT_EQT'
+    if_save = False
+    if_new_program = True
 
-    techfactor.MACD_(fastperiod=12, slowperiod=26,  signalperiod=9)
-    techfactor.MACD_(fastperiod=20, slowperiod=60, signalperiod=18)
-    techfactor.MA_LINE_(long_short_list)
-    limit_list = [1, 1.5, 2]
-    techfactor.BBANDS_(n_list, limit_list)
+    begin_date = pd.to_datetime('20100101')
+    cut_date = pd.to_datetime('20160401')
+    end_date = pd.to_datetime('20180901')
+    lag = 2
+    return_file = ''
+
+    if_hedge = True
+    if_only_long = False
+    time_para_dict = OrderedDict()
+
+    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+                                     pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+                                     pd.to_datetime('20151001'), pd.to_datetime('20160101')]
+
+    time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+                                     pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+                                     pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+
+    time_para_dict['time_para_3'] = [pd.to_datetime('20130101'), pd.to_datetime('20180101'),
+                                     pd.to_datetime('20180401'), pd.to_datetime('20180701'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+
+    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+
+    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+
+    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+
+    if sector_name.startswith('market_top_300plus'):
+        if_weight = 1
+        ic_weight = 0
+
+    elif sector_name.startswith('market_top_300to800plus'):
+        if_weight = 0
+        ic_weight = 1
+
+    else:
+        if_weight = 0.5
+        ic_weight = 0.5
+
+    main_model = FactorTest(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
+                            sector_name, hold_time, lag, return_file, if_hedge, if_only_long,
+                            if_weight, ic_weight)
+
+    ratio_list = ['R_DebtAssets_QTTM',
+                  'R_EBITDA_IntDebt_QTTM',
+                  'R_EBITDA_sales_TTM_First',
+                  'R_BusinessCycle_First',
+                  'R_DaysReceivable_First',
+                  'R_DebtEqt_First',
+                  'R_FairVal_TotProfit_TTM_First',
+                  'R_LTDebt_WorkCap_QTTM',
+                  'R_OPCF_TotDebt_QTTM',
+                  'R_OPEX_sales_TTM_First',
+                  'R_SalesGrossMGN_QTTM',
+                  'R_CurrentAssetsTurnover_QTTM',
+                  'R_TangAssets_TotLiab_QTTM',
+                  'R_NetROA_TTM_First',
+                  'R_ROE_s_First',
+                  'R_EBIT_sales_QTTM',
+                  ]
+
+    tech_list = ['aadj_r_p20d_col_extre_0.2',
+                 'aadj_r_p345d_continue_ud_pct',
+                 'aadj_r_p345d_continue_ud',
+                 'volume_moment_p1040d',
+                 'volume_moment_p20120d',
+                 'return_p30d_0.2',
+                 'return_p90d_0.2'
+                 ]
+
+    pool_num = 5
+    main_model.main_test_fun(tech_list, ratio_list, pool_num=pool_num, suffix_name='', old_file_name='')
+
+
+if __name__ == '__main__':
+    main_fun('market_top_300plus', 20)
