@@ -1,13 +1,13 @@
-import funda_data.funda_data_deal as fdd
+import create_data.funda_data_deal as fdd
 import talib as ta
 import loc_lib.shared_paths.path as pt
 import loc_lib.shared_tools.back_test as bt
-import loc_lib.shared_paths.path as pt
 import pandas as pd
 import numpy as np
 import sklearn
 from datetime import datetime, timedelta
 import time
+import os
 
 BaseDeal = fdd.BaseDeal
 FundaBaseDeal = fdd.FundaBaseDeal
@@ -1118,6 +1118,60 @@ class FactorVolatility(BaseDeal):
         return target_df
 
 
+def load_index_data(root_path, xinx, index_name_list, weight_list):
+    data = bt.AZ_Load_csv(os.path.join(root_path, 'EM_Funda/INDEX_TD_DAILYSYS/CHG.csv'))
+    target_df = data[index_name_list].mul(weight_list).sum(1).reindex(xinx)
+    return target_df * 0.01
+
+
+class TechFactorAlpha(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, BaseDeal):
+    def __init__(self, root_path, sector_df, save_root_path):
+        self.sector_df = sector_df
+        xnms = sector_df.columns
+        xinx = sector_df.index
+        self.aadj_r_path = root_path.EM_Funda.DERIVED_14 / 'aadj_r.csv'
+        self.aadj_r = bt.AZ_Load_csv(self.aadj_r_path).reindex(columns=xnms)
+        sector_name = os.path.split(save_root_path)[-1]
+
+        if sector_name.startswith('market_top_300plus'):
+            index_df = load_index_data(root_path, xinx, ['000300', '000905'], [1, 0])
+        elif sector_name.startswith('market_top_300to800plus'):
+            index_df = load_index_data(root_path, xinx, ['000300', '000905'], [0, 1])
+        else:
+            index_df = load_index_data(root_path, xinx, ['000300', '000905'], [1, 0])
+        self.save_root_path = save_root_path
+        self.aadj_r_alpha_cum = (self.aadj_r - index_df).cumsum()
+
+    def MACD_(self, fastperiod, slowperiod, signalperiod):
+        target_df = self.MACD(self.aadj_r_alpha_cum, self.sector_df, fastperiod, slowperiod, signalperiod)
+        file_name = f'MACD_{fastperiod}_{slowperiod}_{signalperiod}'
+        fun = 'Tech_Factor.FactorMomentum.MACD'
+        raw_data_path = (self.aadj_p_path,)
+        args = (fastperiod, slowperiod, signalperiod)
+        self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+
+    def MA_LINE_(self, long_short_list):
+        for slowperiod, fastperiod in long_short_list:
+            target_df = self.MA_LINE(self.aadj_p, self.sector_df, slowperiod, fastperiod)
+            file_name = f'MA_LINE_{fastperiod}_{slowperiod}'
+            fun = 'Tech_Factor.FactorMomentum.MA_LINE'
+            raw_data_path = (self.aadj_p_path,)
+            args = (fastperiod, slowperiod)
+            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+
+    def BBANDS_(self, n_list, limit_list):
+        for n in n_list:
+            for limit_up_dn in limit_list:
+                target_df = self.BBANDS(self.aadj_p, self.sector_df, n, limit_up_dn)
+                # print(target_df)
+                file_name = f'BBANDS_{n}_{limit_up_dn}'
+                fun = 'Tech_Factor.FactorOverlap.BBANDS'
+                raw_data_path = (self.aadj_p_path,)
+                args = (n, limit_up_dn)
+                self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+
+
+
 class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, BaseDeal):
     def __init__(self, root_path, sector_df, save_root_path):
         self.sector_df = sector_df
@@ -1252,16 +1306,17 @@ def main(sector_df, root_path, save_root_path):
     techfactor = TechFactor(root_path, sector_df, save_root_path)
     n_list = [10, 20, 40, 100, 140, 200]
     long_short_list = [(5, 10), (20, 60), (40, 100), (60, 120), (60, 160)]
-    # techfactor.ADX_(n_list, limit_up=20, limit_dn=10)
-    # techfactor.AROON_(n_list, limit=80)
-    # techfactor.CMO_(n_list, limit=0)
-    # techfactor.MFI_(n_list, limit_up=70, limit_dn=30)
-    # techfactor.ADOSC_(long_short_list, limit_up_dn=0)
-    # techfactor.ATR_(n_list, percent=0.2)
-    # techfactor.RSI_(n_list, limit_up_dn=10)
-    # techfactor.RSI_(n_list)
 
-    techfactor.MACD_(fastperiod=12, slowperiod=26,  signalperiod=9)
+    techfactor.ADX_(n_list, limit_up=20, limit_dn=10)
+    techfactor.AROON_(n_list, limit=80)
+    techfactor.CMO_(n_list, limit=0)
+    techfactor.MFI_(n_list, limit_up=70, limit_dn=30)
+    techfactor.ADOSC_(long_short_list, limit_up_dn=0)
+    techfactor.ATR_(n_list, percent=0.2)
+    techfactor.RSI_(n_list, limit_up_dn=10)
+    techfactor.RSI_(n_list)
+
+    techfactor.MACD_(fastperiod=12, slowperiod=26, signalperiod=9)
     techfactor.MACD_(fastperiod=20, slowperiod=60, signalperiod=18)
     techfactor.MA_LINE_(long_short_list)
     limit_list = [1, 1.5, 2]

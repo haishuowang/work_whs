@@ -10,13 +10,13 @@ import collections
 
 
 def data_load(file_name, target_dict):
-    data = pd.read_csv(os.path.join('/mnt/mfs/DAT_PUBLIC/Stk_1F_2018_0928/Stk_1F_2018', file_name), header=None,
+    data = pd.read_csv(os.path.join('/mnt/mfs/DAT_PUBLIC/Stk_Min1_201811', file_name), header=None,
                        index_col=1)
     data.columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Turnover']
     data.index.name = 'Time'
     date_list = np.array(sorted(set(data['Date'].values)))
-    date_list_part = date_list[date_list > '2018/08/15']
-    for date in date_list_part:
+    # date_list_part = date_list[date_list > '2018/08/15']
+    for date in date_list:
         part_data = data[data['Date'] == date]
         date_key = pd.to_datetime(date).strftime('%Y%m%d')
         part_Close = part_data['Close']
@@ -29,7 +29,7 @@ def data_load(file_name, target_dict):
         part_Open.name = file_name[:-4]
         part_Turnover = part_data['Turnover']
         part_Turnover.name = file_name[:-4]
-        part_Volume = part_data['Close']
+        part_Volume = part_data['Volume']
         part_Volume.name = file_name[:-4]
         if date_key not in target_dict.keys():
             part_dict = collections.OrderedDict()
@@ -71,7 +71,8 @@ def save_date(date_key, target_dict, root_save_path):
 
 
 def create_raw_data():
-    file_name_list = sorted(os.listdir('/mnt/mfs/DAT_PUBLIC/Stk_1F_2018_0928/Stk_1F_2018'))
+    # file_name_list = sorted(os.listdir('/mnt/mfs/DAT_PUBLIC/Stk_1F_2018_0928/Stk_1F_2018'))
+    file_name_list = sorted(os.listdir('/mnt/mfs/DAT_PUBLIC/Stk_Min1_201811'))
     root_save_path = '/mnt/mfs/DAT_PUBLIC/intraday_test/eqt_1mbar'
 
     # Close = pd.DataFrame()
@@ -87,15 +88,16 @@ def create_raw_data():
         target_dict = data_load(file_name, target_dict)
 
     date_list = np.array(sorted(list(target_dict.keys())))
-    date_list_adj = date_list[date_list > '20180815']
-    for date_key in date_list_adj:
+    # date_list_adj = date_list[date_list > '20180815']
+    for date_key in date_list:
         print(f'Deal {date_key}!')
         save_date(date_key, target_dict, root_save_path)
 
 
 def clear_raw_data():
     root_save_path = '/mnt/mfs/DAT_PUBLIC/intraday_test/eqt_1mbar'
-    year_list = ['2018']
+    # year_list = ['2018']
+    year_list = os.listdir(root_save_path)
     for year in sorted(year_list):
         year_path = os.path.join(root_save_path, year)
         month_list = os.listdir(year_path)
@@ -119,14 +121,14 @@ def clear_raw_data():
                     volume = pd.read_csv(os.path.join(day_path, 'Volume.csv'), index_col=0).astype(float)[EQT_list]
 
                     xnms = [x[2:] + '.' + x[:2] for x in EQT_list]
-                    print(xnms[0])
+                    # print(xnms[0])
                     high.columns = xnms
                     open.columns = xnms
                     low.columns = xnms
                     close.columns = xnms
                     turnover.columns = xnms
                     volume.columns = xnms
-                    print(close)
+                    # print(close[sorted(xnms)])
                     high.to_csv(os.path.join(day_path, 'High.csv'))
                     open.to_csv(os.path.join(day_path, 'Open.csv'))
                     low.to_csv(os.path.join(day_path, 'Low.csv'))
@@ -136,6 +138,6 @@ def clear_raw_data():
 
 
 if __name__ == '__main__':
-    # create_raw_data()
+    create_raw_data()
     # clear_raw_data()
     pass

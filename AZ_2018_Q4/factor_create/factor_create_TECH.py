@@ -1,18 +1,13 @@
-import funda_data.funda_data_deal as fdd
-import talib as ta
-import loc_lib.shared_paths.path as pt
-import loc_lib.shared_tools.back_test as bt
-import loc_lib.shared_paths.path as pt
+import sys
+sys.path.append('/mnt/mfs')
+from work_whs.loc_lib.pre_load import *
+from work_whs.AZ_2018_Q4.factor_create.BaseDeal import BaseDeal
 import pandas as pd
 import numpy as np
+import talib as ta
 import sklearn
 from datetime import datetime, timedelta
 import time
-
-BaseDeal = fdd.BaseDeal
-FundaBaseDeal = fdd.FundaBaseDeal
-SectorData = fdd.SectorData
-TechBaseDeal = fdd.TechBaseDeal
 
 
 class AZ_Factor_Momentum:
@@ -986,44 +981,44 @@ class AZ_Factor_Math:
 
 class FactorMomentum:
     @staticmethod
-    def ADX(High, Low, Close, sector_df, timeperiod, limit_up=40, limit_dn=20):
+    def ADX(High, Low, Close, timeperiod, limit_up=40, limit_dn=20):
         """趋势强弱指标"""
         real = AZ_Factor_Momentum.ADX(High, Low, Close, timeperiod)
         target_df = (real > limit_up).astype(int) - (real < limit_dn).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def ADXR(High, Low, Close, sector_df, timeperiod, limit_up=40, limit_dn=20):
+    def ADXR(High, Low, Close, timeperiod, limit_up=40, limit_dn=20):
         real = AZ_Factor_Momentum.ADXR(High, Low, Close, timeperiod)
         target_df = (real > limit_up).astype(int) - (real < limit_dn).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def APO(Close, sector_df, fastperiods=12, lowperiod=26, matype=0):  # default
+    def APO(Close, fastperiods=12, lowperiod=26, matype=0):  # default
         real = AZ_Factor_Momentum.APO(Close, fastperiods, lowperiod, matype)
         target_df = (real > 0).astype(int) - (real < 0).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def AROON(High, Low, sector_df, timeperiod, limit=80):
+    def AROON(High, Low, timeperiod, limit=80):
         aroondn, aroonup = AZ_Factor_Momentum.AROON(High, Low, timeperiod)
         target_df = (aroondn > limit).astype(int) - (aroonup > limit).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def AROONSC(High, Low, sector_df, timeperiod, limit=80):
+    def AROONSC(High, Low, timeperiod, limit=80):
         aroondn, aroonup = AZ_Factor_Momentum.AROONOSC(High, Low, timeperiod)
         target_df = (aroondn > limit).astype(int) - (aroonup > limit).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def CMO(Close, sector_df, timeperiod, limit=0):
+    def CMO(Close, timeperiod, limit=0):
         real = AZ_Factor_Momentum.CMO(Close, timeperiod)
         target_df = (real > limit).astype(int) - (real < limit).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def MACD(Close, sector_df, fastperiod=12, slowperiod=26, signalperiod=9):
+    def MACD(Close, fastperiod=12, slowperiod=26, signalperiod=9):
         macd, macdsignal, macdhist = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
         for i in Close.columns:
             macd[i], macdsignal[i], macdhist[i] = ta.MACD(Close[i], fastperiod, slowperiod, signalperiod)
@@ -1032,22 +1027,22 @@ class FactorMomentum:
         macdhist_copy[macdhist > 0] = 1
         macdhist_copy[macdhist < 0] = 0
         target_df = macdhist_copy - macdhist_copy.shift(1)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def MFI(High, Low, Close, Volume, sector_df, timeperiod, limit_up=80, limit_dn=20):
+    def MFI(High, Low, Close, Volume, timeperiod, limit_up=80, limit_dn=20):
         real = AZ_Factor_Momentum.MFI(High, Low, Close, Volume, timeperiod)
         target_df = (real > limit_up).astype(int) - (real > limit_dn).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def RSI(Close, sector_df, timeperiod=14, limit_up_dn=30):
+    def RSI(Close, timeperiod=14, limit_up_dn=30):
         real = AZ_Factor_Momentum.RSI(Close, timeperiod) - 50
         target_df = (real > limit_up_dn).astype(int) - (real < limit_up_dn).astype(int)
-        return target_df * sector_df
+        return target_df
 
     @staticmethod
-    def MA_LINE(Close, sector_df, slowperiod, fastperiod):
+    def MA_LINE(Close, slowperiod, fastperiod):
         slow_line = Close.rolling(slowperiod, min_periods=0).mean()
         fast_line = Close.rolling(fastperiod, min_periods=0).mean()
         MA_diff = fast_line - slow_line
@@ -1055,6 +1050,14 @@ class FactorMomentum:
         MA_diff_copy[MA_diff > 0] = 1
         MA_diff_copy[MA_diff < 0] = 0
         target_df = MA_diff_copy - MA_diff_copy.shift(1)
+        return target_df
+
+    @staticmethod
+    def WILLR(High, Low, Close, sector_df, timeperiod=14, limit_up_dn=30):
+        real = -AZ_Factor_Momentum.WILLR(High, Low, Close, timeperiod)
+        buy_df = (real < -limit_up_dn + 50).astype(int)
+        sell_df = (real > limit_up_dn + 50).astype(int)
+        target_df = buy_df - sell_df
         return target_df * sector_df
 
 
@@ -1067,15 +1070,15 @@ class FactorVolume:
     #     return ad
 
     @staticmethod
-    def ADOSC(High, Low, Close, Volume, sector_df, fastperiod, slowperiod, limit_up_dn=0):
+    def ADOSC(High, Low, Close, Volume, fastperiod, slowperiod, limit_up_dn=0):
         real = AZ_Factor_Volume.ADOSC(High, Low, Close, Volume, fastperiod, slowperiod)
         target_df = (real > limit_up_dn).astype(int) - (real < -limit_up_dn).astype(int)
-        return target_df * sector_df
+        return target_df
 
 
 class FactorOverlap:
     @staticmethod
-    def BBANDS(Close, sector_df, timeperiod, limit_up_down):
+    def BBANDS(Close, timeperiod, limit_up_down):
         up_line, mid_line, down_line = AZ_Factor_Overlap.BBANDS(Close, timeperiod, nbdevup=limit_up_down,
                                                                 nbdevdn=limit_up_down, matype=0)
         target_df = Close.copy()
@@ -1083,43 +1086,39 @@ class FactorOverlap:
         target_df[(Close <= up_line) & (Close >= down_line)] = 0
         target_df[Close > up_line] = 1
         target_df[Close < down_line] = -1
-        return target_df * sector_df
-
-
-class FactorVolatility(BaseDeal):
-    def ATR(self, High, Low, Close, sector_df, timeperiod, percent):
-        real = AZ_Factor_Volatility.ATR(High, Low, Close, timeperiod)
-        tmp_df = bt.AZ_Row_zscore(real)
-        target_df = self.row_extre(tmp_df, sector_df, percent)
         return target_df
 
 
-class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, BaseDeal):
-    def __init__(self, root_path, sector_df, save_root_path):
-        self.sector_df = sector_df
-        xnms = sector_df.columns
-        # xinx = sector_df.index
-        # load_path = '/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14'
-        self.aadj_p_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p.csv'
-        self.aadj_p = bt.AZ_Load_csv(self.aadj_p_path).reindex(columns=xnms)
+# class FactorVolatility(BaseDeal):
+#     def ATR(self, High, Low, Close, timeperiod, percent):
+#         real = AZ_Factor_Volatility.ATR(High, Low, Close, timeperiod)
+#         tmp_df = bt.AZ_Row_zscore(real)
+#         target_df = self.row_extre(tmp_df, percent)
+#         return target_df
+#     pass
 
-        self.aadj_p_HIGH_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p_HIGH.csv'
-        self.aadj_p_HIGH = bt.AZ_Load_csv(self.aadj_p_HIGH_path).reindex(columns=xnms)
 
-        self.aadj_p_LOW_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p_LOW.csv'
-        self.aadj_p_LOW = bt.AZ_Load_csv(self.aadj_p_LOW_path).reindex(columns=xnms)
+class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, BaseDeal):
+    def __init__(self, root_path, save_root_path, xinx, xnms):
+        self.aadj_p_path = f'{root_path}/EM_Funda/DERIVED_14/aadj_p.csv'
+        self.aadj_p = bt.AZ_Load_csv(self.aadj_p_path).reindex(index=xinx, columns=xnms)
 
-        self.aadj_p_OPEN_path = root_path.EM_Funda.DERIVED_14 / 'aadj_p_OPEN.csv'
-        self.aadj_p_OPEN = bt.AZ_Load_csv(self.aadj_p_OPEN_path).reindex(columns=xnms)
+        self.aadj_p_HIGH_path = f'{root_path}/EM_Funda/DERIVED_14/aadj_p_HIGH.csv'
+        self.aadj_p_HIGH = bt.AZ_Load_csv(self.aadj_p_HIGH_path).reindex(index=xinx, columns=xnms)
 
-        self.TVOL_path = root_path.EM_Funda.TRAD_SK_DAILY_JC / 'TVOL.csv'
-        self.TVOL = bt.AZ_Load_csv(self.TVOL_path).reindex(columns=xnms).replace(np.nan, 0)
+        self.aadj_p_LOW_path = f'{root_path}/EM_Funda/DERIVED_14/aadj_p_LOW.csv'
+        self.aadj_p_LOW = bt.AZ_Load_csv(self.aadj_p_LOW_path).reindex(index=xinx, columns=xnms)
+
+        self.aadj_p_OPEN_path = f'{root_path}/EM_Funda/DERIVED_14/aadj_p_OPEN.csv'
+        self.aadj_p_OPEN = bt.AZ_Load_csv(self.aadj_p_OPEN_path).reindex(index=xinx, columns=xnms)
+
+        self.TVOL_path = f'{root_path}/EM_Funda/TRAD_SK_DAILY_JC/TVOL.csv'
+        self.TVOL = bt.AZ_Load_csv(self.TVOL_path).reindex(index=xinx, columns=xnms).replace(np.nan, 0)
         self.save_root_path = save_root_path
 
     def ADX_(self, n_list, limit_up, limit_dn):
         for n in n_list:
-            target_df = self.ADX(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.sector_df,
-                                 n, limit_up, limit_dn)
+            target_df = self.ADX(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, n, limit_up, limit_dn)
             file_name = 'ADX_{}_{}_{}'.format(n, limit_up, limit_dn)
             fun = 'Tech_Factor.FactorMomentum.ADX'
             raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path)
@@ -1128,7 +1127,7 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
 
     def AROON_(self, n_list, limit):
         for n in n_list:
-            target_df = self.AROON(self.aadj_p_HIGH, self.aadj_p_LOW, self.sector_df, n, limit)
+            target_df = self.AROON(self.aadj_p_HIGH, self.aadj_p_LOW, n, limit)
             file_name = 'AROON_{}_{}'.format(n, limit)
             fun = 'Tech_Factor.FactorMomentum.AROON'
             raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path)
@@ -1137,7 +1136,7 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
 
     def CMO_(self, n_list, limit):
         for n in n_list:
-            target_df = self.CMO(self.aadj_p, self.sector_df, n, limit)
+            target_df = self.CMO(self.aadj_p, n, limit)
             file_name = 'CMO_{}_{}'.format(n, limit)
             fun = 'Tech_Factor.FactorMomentum.CMO'
             raw_data_path = (self.aadj_p_path,)
@@ -1146,8 +1145,7 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
 
     def MFI_(self, n_list, limit_up=80, limit_dn=20):
         for n in n_list:
-            target_df = self.MFI(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.TVOL, self.sector_df, n, limit_up,
-                                 limit_dn)
+            target_df = self.MFI(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.TVOL, n, limit_up, limit_dn)
             file_name = 'MFI_{}_{}_{}'.format(n, limit_up, limit_dn)
             fun = 'Tech_Factor.FactorMomentum.MFI'
             raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path, self.TVOL_path)
@@ -1156,7 +1154,7 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
 
     def RSI_(self, n_list, limit_up_dn=30):
         for n in n_list:
-            target_df = self.RSI(self.aadj_p, self.sector_df, n, limit_up_dn)
+            target_df = self.RSI(self.aadj_p, n, limit_up_dn)
             file_name = 'RSI_{}_{}'.format(n, limit_up_dn)
             fun = 'Tech_Factor.FactorMomentum.RSI'
             raw_data_path = (self.aadj_p_path,)
@@ -1165,25 +1163,24 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
 
     def ADOSC_(self, long_short_list, limit_up_dn=0):
         for long, short in long_short_list:
-            target_df = self.ADOSC(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.TVOL, self.sector_df,
-                                   long, short, limit_up_dn)
+            target_df = self.ADOSC(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.TVOL, long, short, limit_up_dn)
             file_name = 'ADOSC_{}_{}_{}'.format(long, short, limit_up_dn)
             fun = 'Tech_Factor.FactorVolume.ADOSC'
             raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path, self.TVOL_path)
             args = (long, short, limit_up_dn)
             self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
-    def ATR_(self, n_list, percent):
-        for n in n_list:
-            target_df = self.ATR(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.sector_df, n, percent)
-            file_name = 'ATR_{}_{}'.format(n, percent)
-            fun = 'Tech_Factor.FactorVolatility.ATR'
-            raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path)
-            args = (n, percent)
-            self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+    # def ATR_(self, n_list, percent):
+    #     for n in n_list:
+    #         target_df = self.ATR(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, self.sector_df, n, percent)
+    #         file_name = 'ATR_{}_{}'.format(n, percent)
+    #         fun = 'Tech_Factor.FactorVolatility.ATR'
+    #         raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_path)
+    #         args = (n, percent)
+    #         self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
 
     def MACD_(self, fastperiod, slowperiod, signalperiod):
-        target_df = self.MACD(self.aadj_p, self.sector_df, fastperiod, slowperiod, signalperiod)
+        target_df = self.MACD(self.aadj_p, fastperiod, slowperiod, signalperiod)
         file_name = f'MACD_{fastperiod}_{slowperiod}_{signalperiod}'
         fun = 'Tech_Factor.FactorMomentum.MACD'
         raw_data_path = (self.aadj_p_path, )
@@ -1192,7 +1189,7 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
 
     def MA_LINE_(self, long_short_list):
         for slowperiod, fastperiod in long_short_list:
-            target_df = self.MA_LINE(self.aadj_p, self.sector_df, slowperiod, fastperiod)
+            target_df = self.MA_LINE(self.aadj_p, slowperiod, fastperiod)
             file_name = f'MA_LINE_{fastperiod}_{slowperiod}'
             fun = 'Tech_Factor.FactorMomentum.MA_LINE'
             raw_data_path = (self.aadj_p_path,)
@@ -1202,10 +1199,47 @@ class TechFactor(FactorVolume, FactorOverlap, FactorMomentum, FactorVolatility, 
     def BBANDS_(self, n_list, limit_list):
         for n in n_list:
             for limit_up_dn in limit_list:
-                target_df = self.BBANDS(self.aadj_p, self.sector_df, n, limit_up_dn)
+                target_df = self.BBANDS(self.aadj_p, n, limit_up_dn)
                 # print(target_df)
                 file_name = f'BBANDS_{n}_{limit_up_dn}'
                 fun = 'Tech_Factor.FactorOverlap.BBANDS'
                 raw_data_path = (self.aadj_p_path,)
                 args = (n, limit_up_dn)
                 self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+
+    def WILLR_(self, n_list, limit_up_dn_list):
+        for n in n_list:
+            for limit_up_dn in limit_up_dn_list:
+                target_df = self.WILLR(self.aadj_p_HIGH, self.aadj_p_LOW, self.aadj_p, n, limit_up_dn)
+                file_name = f'WILLR_{n}_{limit_up_dn}'
+                fun = 'Tech_Factor.FactorMomentum.WILLR'
+                raw_data_path = (self.aadj_p_HIGH_path, self.aadj_p_LOW_path, self.aadj_p_HIGH)
+                args = (n, limit_up_dn)
+                self.judge_save_fun(target_df, file_name, self.save_root_path, fun, raw_data_path, args)
+
+
+if __name__ == '__main__':
+    save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data_v2'
+    root_path = '/mnt/mfs/DAT_EQT'
+
+    return_df = bt.AZ_Load_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_r.csv')
+    techfactor = TechFactor(root_path, save_root_path, return_df.index, return_df.columns)
+    n_list = [10, 20, 40, 100, 140, 200]
+    long_short_list = [(5, 10), (20, 60), (40, 100), (60, 120), (60, 160)]
+
+    techfactor.ADX_(n_list, limit_up=20, limit_dn=10)
+    techfactor.AROON_(n_list, limit=80)
+    techfactor.CMO_(n_list, limit=0)
+    techfactor.MFI_(n_list, limit_up=70, limit_dn=30)
+    techfactor.ADOSC_(long_short_list, limit_up_dn=0)
+    # techfactor.ATR_(n_list, percent=0.2)
+    techfactor.RSI_(n_list, limit_up_dn=10)
+    techfactor.RSI_(n_list)
+
+    techfactor.MACD_(fastperiod=12, slowperiod=26, signalperiod=9)
+    techfactor.MACD_(fastperiod=20, slowperiod=60, signalperiod=18)
+    techfactor.MA_LINE_(long_short_list)
+    limit_list = [1, 1.5, 2]
+    techfactor.BBANDS_(n_list, limit_list)
+    limit_up_dn_list = [20, 30, 40]
+    techfactor.WILLR_(n_list, limit_up_dn_list)

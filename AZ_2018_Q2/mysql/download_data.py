@@ -67,10 +67,12 @@ def Mysql_select_all_data(down_list, root_save_path, file_type='csv', except_lis
 
     print(down_list)
     start = time.time()
-    usr_name = 'whs'
-    pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
-    engine = create_engine('mysql+pymysql://{}:{}@192.168.16.33:3306/choice_fndb?charset=utf8'
-                           .format(usr_name, pass_word))
+    # usr_name = 'whs'
+    usr_name = 'jerry'
+
+    # pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
+    pass_word = 'o7ILR0WrdMN$gaqfju8!@pw9i'
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.33:3306/choice_fndb?charset=utf8')
 
     conn = engine.connect()
 
@@ -79,9 +81,9 @@ def Mysql_select_all_data(down_list, root_save_path, file_type='csv', except_lis
     for value in down_list:
         print('Table {} Start!'.format(value))
         df = pd.read_sql('SELECT * FROM choice_fndb.{}'.format(value), conn)
-        # print(df)
-        pd.to_pickle(df, os.path.join(root_save_path, '{}.pkl'.format(value)))
-        print('Table {} Done!'.format(value))
+        print(df)
+        # pd.to_pickle(df, os.path.join(root_save_path, '{}.pkl'.format(value)))
+        # print('Table {} Done!'.format(value))
 
     end = time.time()
     print('Processing Cost:{} second'.format(end - start))
@@ -168,3 +170,5 @@ if __name__ == '__main__':
     root_save_path = '/mnt/mfs/dat_whs/EM_Funda'
 
     Mysql_select_all_data(down_list, root_save_path, file_type='pkl', except_list=None)
+
+

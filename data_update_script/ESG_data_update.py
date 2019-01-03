@@ -119,13 +119,11 @@ def company_to_stock(map_data_c, company_code_df):
 
 def save_fun(df, save_path, sep='|'):
     print(1)
-    old_df = pd.read_csv(save_path, sep=sep, index_col=0, parse_dates=True)
-    last_date = old_df.index[-1]
-    # df[df.index>last_date]
-    # df.to_csv(save_path, sep=sep)
-    # test_save_path = '/mnt/mfs/dat_whs/EM_Funda/{}'.format(datetime.now().strftime('%Y%m%d'))
-    # bt.AZ_Path_create(test_save_path)
-    # df.to_csv(os.path.join(test_save_path, os.path.split(save_path)[-1]))
+    print(save_path)
+    df.to_csv(save_path, sep=sep)
+    test_save_path = '/mnt/mfs/dat_whs/EM_Funda/{}'.format(datetime.now().strftime('%Y%m%d'))
+    bt.AZ_Path_create(test_save_path)
+    df.to_csv(os.path.join(test_save_path, os.path.split(save_path)[-1]))
 
 
 class LICO_MO_DSHJS_deal:
@@ -698,7 +696,8 @@ def singleprocessing_fun():
     a = time.time()
 
     return_df = pd.read_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_r.csv', sep='|', index_col=0, parse_dates=True)
-    date_index = return_df.index
+    today_date = pd.to_datetime(datetime.now().strftime('%Y%m%d'))
+    date_index = list(return_df.index) + [today_date]
     map_data = pd.read_sql('SELECT * FROM choice_fndb.CDSY_SECUCODE', conn)
     map_data.index = map_data['COMPANYCODE']
     map_data_c = map_data['SECURITYCODE'][map_data['SECURITYTYPE'] == 'A股']

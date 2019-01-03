@@ -376,37 +376,6 @@ def survive_ratio(data, pot_in_num, leve_ratio_num, sp_in, ic_num, fit_ratio):
                  (data_6['leve_ratio'].abs() > leve_ratio_num) &
                  (data_6['sp_in'].abs() > sp_in) &
                  (data_6['fit_ratio'].abs() > fit_ratio)]
-    # print('_______________________________________')
-    # print(a_1['con_out_1'].sum() / len(a_1), len(a_1))
-    # print(a_2['con_out_1'].sum() / len(a_2), len(a_2))
-    # print(a_3['con_out_1'].sum() / len(a_3), len(a_3))
-    # print(a_4['con_out_1'].sum() / len(a_4), len(a_4))
-    # print(a_5['con_out_1'].sum() / len(a_5), len(a_5))
-    # print(a_6['con_out_1'].sum() / len(a_6), len(a_6))
-    #
-    # print('_______________________________________')
-    # print(a_1['con_out_2'].sum() / len(a_1), len(a_1))
-    # print(a_2['con_out_2'].sum() / len(a_2), len(a_2))
-    # print(a_3['con_out_2'].sum() / len(a_3), len(a_3))
-    # print(a_4['con_out_2'].sum() / len(a_4), len(a_4))
-    # print(a_5['con_out_2'].sum() / len(a_5), len(a_5))
-    # print(a_6['con_out_2'].sum() / len(a_6), len(a_6))
-
-    # print('_______________________________________')
-    # print(a_1['con_out_3'].sum() / len(a_1), len(a_1))
-    # print(a_2['con_out_3'].sum() / len(a_2), len(a_2))
-    # print(a_3['con_out_3'].sum() / len(a_3), len(a_3))
-    # print(a_4['con_out_3'].sum() / len(a_4), len(a_4))
-    # print(a_5['con_out_3'].sum() / len(a_5), len(a_5))
-    # print(a_6['con_out_3'].sum() / len(a_6), len(a_6))
-    #
-    # print('_______________________________________')
-    # print(a_1['con_out_4'].sum() / len(a_1), len(a_1))
-    # print(a_2['con_out_4'].sum() / len(a_2), len(a_2))
-    # print(a_3['con_out_4'].sum() / len(a_3), len(a_3))
-    # print(a_4['con_out_4'].sum() / len(a_4), len(a_4))
-    # print(a_5['con_out_4'].sum() / len(a_5), len(a_5))
-    # print(a_6['con_out_4'].sum() / len(a_6), len(a_6))
 
     return a_1, a_2, a_3, a_4, a_5, a_6
 
@@ -454,7 +423,7 @@ def config_test(main_model, config_name, result_file_name, cut_date):
         sp_out_c, pnl_df_c = main_model.single_test(fun_name, name1, name2, name3)
         # plot_send_result(pnl_df_c, bt.AZ_Sharpe_y(pnl_df_c), '{}, {}, {}, {}, {}'
         #                  .format(fun_name, name1, name2, name3, buy_sell))
-        print(con_in_c, con_out_c, ic_c, sp_u_c, sp_m_c, sp_d_c, pot_in_c, fit_ratio_c, leve_ratio_c, sp_out_c)
+        # print(con_in_c, con_out_c, ic_c, sp_u_c, sp_m_c, sp_d_c, pot_in_c, fit_ratio_c, leve_ratio_c, sp_out_c)
 
         if buy_sell > 0:
             sum_factor_df = sum_factor_df.add(mix_factor, fill_value=0)
@@ -585,9 +554,16 @@ def main(result_file_name, time_para_dict):
 
     hold_time = int(result_file_name.split('hold')[-1].split('_')[1])
     # 加载对应脚本
-    script_num = result_file_name.split('_')[-1]
-    # script_num = 10
-    print(hold_time)
+
+    if result_file_name.split('_')[-1] == 'long':
+        script_num = result_file_name.split('_')[-2]
+        if_only_long = True
+    else:
+        script_num = result_file_name.split('_')[-1]
+        if_only_long = False
+    # script_num = '15'
+    print('script_num : ', script_num)
+    print('hold_time : ', hold_time)
     loc = locals()
     exec(f'from work_whs.AZ_2018_Q2.factor_script.main_file import main_file_sector_{script_num} as mf')
     mf = loc['mf']
@@ -596,8 +572,6 @@ def main(result_file_name, time_para_dict):
 
     lag = 2
     return_file = ''
-
-    if_only_long = False
 
     sector_name, if_hedge = find_sector_name(result_file_name)
     if_hedge = True
@@ -630,9 +604,9 @@ def main(result_file_name, time_para_dict):
                               ('tab2_11_row_extre_0.3' in set(x)) or
                               ('tab1_8_row_extre_0.3' in set(x)) or
                               ('intra_dn_vol_col_score_row_extre_0.3' in set(x)) or
-                              ('intra_dn_vol_row_extre_0.3' in set(x))
-                              # ('RSI_140_30' in set(x)) or
-                              # ('CMO_200_0' in set(x)) or
+                              ('intra_dn_vol_row_extre_0.3' in set(x)) or
+                              ('turn_p30d_0.24' in set(x)) or
+                              ('evol_p30d' in set(x))
                               # ('CMO_40_0' in set(x))
                               # ('ATR_40_0.2' in set(x))
                               # ('ADX_200_40_20' in set(x))
@@ -681,7 +655,7 @@ def main(result_file_name, time_para_dict):
         if_weight = 0.5
         ic_weight = 0.5
     print('回测函数')
-    begin_date, cut_date, end_date = time_para_dict[time_para]
+    begin_date, cut_date, end_date, end_date, end_date, end_date = time_para_dict[time_para]
     main_model = mf.FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date,
                                      time_para_dict, sector_name, hold_time, lag, return_file, if_hedge,
                                      if_only_long, if_weight, ic_weight)
@@ -694,7 +668,7 @@ def main(result_file_name, time_para_dict):
                   n=5, use_factor_num=40)
     ###########################################################################
     # 测试config结果
-    begin_date, cut_date, end_date = time_para_dict[time_para]
+    begin_date, cut_date, end_date, end_date, end_date, end_date = time_para_dict[time_para]
     sum_pos_df, pnl_df, sp = config_test(main_model, config_name, result_file_name, cut_date)
     if sp < 2:
         return 0
@@ -745,6 +719,7 @@ if __name__ == '__main__':
 
     time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
                                      pd.to_datetime('20181001')]
+
     # # begin_time = datetime(2018, 11, 1, 6, 11, 13)
     # # end_time = datetime(2018, 11, 6, 6, 30, 13)
 
@@ -754,23 +729,25 @@ if __name__ == '__main__':
     # begin_time = datetime(2018, 10, 11, 6, 11, 13)
     # end_time = datetime(2018, 11, 13, 6, 30, 13)
 
-    # begin_time = datetime(2018, 11, 11, 6, 11, 13)
-    # end_time = datetime(2018, 11, 18, 6, 30, 13)
+    # begin_time = datetime(2018, 11, 19, 6, 11, 13)
+    # end_time = datetime(2018, 11, 26, 6, 30, 13)
 
-    begin_time = datetime(2018, 11, 28, 18, 11, 13)
-    end_time = datetime(2018, 12, 4, 18, 30, 13)
+    begin_time = datetime(2018, 12, 20, 00, 00, 00)
+    end_time = datetime(2019, 1, 2, 00, 00, 00)
 
     time_type = 'm'
-    endswith = '12'
+    endswith = '16'
 
     result_file_name_list = find_target_file(begin_time, end_time, time_type, endswith)
-
+    print(result_file_name_list)
     # result_file_name_list = [
-    #                          # 'market_top_300to800plus_True_20181123_1447_hold_5__11',
-    #                          'market_top_300to800plus_True_20181124_1156_hold_20__11'
-    #                          ]
+    #     'market_top_300to800plus_industry_55_True_20181119_0758_hold_20__10',
+    #     'market_top_800plus_industry_55_True_20181116_1514_hold_5__10',
+    #     'market_top_300plus_True_20181112_0940_hold_5__10.pkl',
+    #     'market_top_300plus_True_20181116_1713_hold_20__10.pkl'
+    # ]
     for result_file_name in result_file_name_list:
-        pass_result_list = []
+        pass_result_list = ['market_top_300plus_True_20181209_1837_hold_5__11_long']
         if result_file_name in pass_result_list:
             pass
         else:

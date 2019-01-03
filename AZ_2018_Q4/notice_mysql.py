@@ -21,8 +21,17 @@ def fill_index(raw_df, root_path, window):
     return target_df
 
 
+def save_fun(df, save_path, sep='|'):
+    print(1)
+    print(save_path)
+    df.to_csv(save_path, sep=sep)
+    test_save_path = '/mnt/mfs/dat_whs/EM_Funda/{}'.format(datetime.now().strftime('%Y%m%d'))
+    bt.AZ_Path_create(test_save_path)
+    df.to_csv(os.path.join(test_save_path, os.path.split(save_path)[-1]))
+
+
 def class_bulletintype(StockId):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     try:
         exe_str = f'SELECT * FROM crawl.StockBulletin_sina WHERE StockId="{StockId}"'
@@ -44,7 +53,7 @@ def class_bulletintype(StockId):
 
 
 def get_bulletin_num_table():
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     StockId_df = pd.read_sql('SELECT StockId FROM crawl.StockBulletin_sina', conn)
     StockId_list = sorted(list(set(StockId_df.values.ravel())))[:3]
@@ -64,11 +73,14 @@ def get_bulletin_num_table():
     target_df.to_pickle('/mnt/mfs/dat_whs/notice_mysql.pkl')
 
 
-def get_lsgg_table(save_path):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+def get_lsgg_table(root_path, save_path):
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
+    print(0)
+    print(datetime.now())
     lsgg_df = pd.read_sql('SELECT StockId, ReportDate FROM crawl.StockBulletin_sina WHERE BulletinType="LSGG"', conn)
-
+    print(datetime.now())
+    print(1)
     lsgg_df['mark'] = 1
     lsgg_num_df = lsgg_df.groupby(['ReportDate', 'StockId'])['mark'].sum().unstack()
     lsgg_num_df.index = pd.to_datetime(lsgg_num_df.index)
@@ -76,11 +88,12 @@ def get_lsgg_table(save_path):
     window_list = [5, 20, 60]
     for window in window_list:
         lsgg_num_df_c = fill_index(lsgg_num_df, root_path, window)
-        lsgg_num_df_c.to_csv(f'{save_path}/lsgg_num_df_{window}.csv', sep='|')
+        # lsgg_num_df_c.to_csv(f'{save_path}/lsgg_num_df_{window}.csv', sep='|')
+        save_fun(lsgg_num_df_c, f'{save_path}/lsgg_num_df_{window}.csv', sep='|')
 
 
-def get_bulletin_table(save_path):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+def get_bulletin_table(root_path, save_path):
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     lsgg_df = pd.read_sql('SELECT StockId, ReportDate FROM crawl.StockBulletin_sina', conn)
     # LSGG_df.to_pickle('/mnt/mfs/dat_whs/tmp/LSGG.pkl')
@@ -88,11 +101,13 @@ def get_bulletin_table(save_path):
     lsgg_num_df = lsgg_df.groupby(['ReportDate', 'StockId'])['mark'].sum().unstack()
     lsgg_num_df.index = pd.to_datetime(lsgg_num_df.index)
     lsgg_num_df.columns = bt.AZ_add_stock_suffix(lsgg_num_df.columns)
-    lsgg_num_df.to_csv(f'{save_path}/bulletin_num_df.csv', sep='|')
-    # window_list = [5, 20, 60]
-    # for window in window_list:
-    #     lsgg_num_df_c = fill_index(lsgg_num_df, root_path, window)
-    #     lsgg_num_df_c.to_csv(f'{save_path}/bulletin_num_df_{window}.csv', sep='|')
+    # lsgg_num_df.to_csv(f'{save_path}/bulletin_num_df.csv', sep='|')
+    save_fun(lsgg_num_df, f'{save_path}/bulletin_num_df.csv', sep='|')
+    window_list = [5, 20, 60]
+    for window in window_list:
+        lsgg_num_df_c = fill_index(lsgg_num_df, root_path, window)
+        # lsgg_num_df_c.to_csv(f'{save_path}/bulletin_num_df_{window}.csv', sep='|')
+        save_fun(lsgg_num_df_c, f'{save_path}/bulletin_num_df_{window}.csv', sep='|')
 
 
 def date_deal_fun(x):
@@ -105,8 +120,8 @@ def date_deal_fun(x):
         return datetime(year=x.year, month=x.month, day=x.day)
 
 
-def get_news_table(save_path):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+def get_news_table(root_path, save_path):
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     news_df = pd.read_sql('SELECT StockId, NewsDate FROM crawl.StockNews_xueqiu', conn)
     news_df['mark'] = 1
@@ -124,14 +139,16 @@ def get_news_table(save_path):
 
 class ClassifyBulletin:
     def __init__(self, save_path):
-        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
         conn = engine.connect()
+        print(1)
         news_df = pd.read_sql('SELECT StockId, BulletinTitle, ReportDate FROM crawl.StockBulletin_sina', conn)
+        print(2)
         news_df['mark'] = 1
         self.news_df = news_df
         self.save_path = save_path
 
-    def common_deal(self, key_word_list, save_file_name):
+    def key_word_fun(self, key_word_list, save_file_name):
         print(save_file_name)
         regx = re.compile('|'.join(key_word_list))
         a = [regx.search(x) for x in self.news_df['BulletinTitle']]
@@ -139,89 +156,203 @@ class ClassifyBulletin:
         tmp_df = part_news_df.groupby(['ReportDate', 'StockId'])['mark'].sum().unstack()
         target_df = tmp_df.notna().astype(int)
         target_df.columns = bt.AZ_add_stock_suffix(target_df.columns)
-        target_df.to_csv(f'{self.save_path}/{save_file_name}.csv', sep='|')
+        save_fun(target_df, f'{self.save_path}/{save_file_name}.csv', sep='|')
         return target_df
 
-    def staff_changes_fun(self):
-        key_word_list = ['任职', '聘任', '担任', '辞任', '候选人', '辞职']
-        save_file_name = 'staff_changes'
-        target_df = self.common_deal(key_word_list, save_file_name)
-        return target_df
-
-    def funds_fun(self):
-        key_word_list = ['资金']
-        save_file_name = 'funds'
-        target_df = self.common_deal(key_word_list, save_file_name)
-        return target_df
-
-    def meeting_decide_fun(self):
-        key_word_list = ['董事会决议', '董事会', '股东大会', '监事会']
-        save_file_name = 'meeting_decide'
-        target_df = self.common_deal(key_word_list, save_file_name)
-        return target_df
-
-    def restricted_shares_fun(self):
-        key_word_list = ['限售股解禁', '解除限购']
-        save_file_name = 'restricted_shares'
-        target_df = self.common_deal(key_word_list, save_file_name)
-        return target_df
-
-    def son_company_fun(self):
-        key_word_list = ['子公司']
-        save_file_name = 'son_company'
-        target_df = self.common_deal(key_word_list, save_file_name)
-        return target_df
-
-    def suspend_fun(self):
-        key_word_list = ['停牌']
-        save_file_name = 'suspend'
-        target_df = self.common_deal(key_word_list, save_file_name)
-        return target_df
-
-    def shares_fun(self):
-        key_word_list = ['股权分置', '股票激励', '股权激励', '分红', '派息', '质押']
-        save_file_name = 'shares'
-        target_df = self.common_deal(key_word_list, save_file_name)
-        return target_df
+    # def staff_changes_fun(self):
+    #     key_word_list = ['任职', '聘任', '担任', '辞任', '候选人', '辞职']
+    #     save_file_name = 'staff_changes'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def funds_fun(self):
+    #     key_word_list = ['资金']
+    #     save_file_name = 'funds'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def meeting_decide_fun(self):
+    #     key_word_list = ['董事会决议', '董事会', '股东大会', '监事会']
+    #     save_file_name = 'meeting_decide'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def restricted_shares_fun(self):
+    #     key_word_list = ['限售股解禁', '解除限购']
+    #     save_file_name = 'restricted_shares'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def son_company_fun(self):
+    #     key_word_list = ['子公司']
+    #     save_file_name = 'son_company'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def suspend_fun(self):
+    #     key_word_list = ['停牌']
+    #     save_file_name = 'suspend'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def shares_fun(self):
+    #     key_word_list = ['股权分置', '股票激励', '股权激励', '质押']
+    #     save_file_name = 'shares'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def repurchase_fun(self):
+    #     key_word_list = ['回购']
+    #     save_file_name = 'repurchase'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
+    #
+    # def dividend_fun(self):
+    #     key_word_list = ['分红', '派息']
+    #     save_file_name = 'dividend'
+    #     target_df = self.common_deal(key_word_list, save_file_name)
+    #     return target_df
 
 
 class ClassifyNews:
     def __init__(self, save_path):
-        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
         conn = engine.connect()
-        news_df = pd.read_sql('SELECT StockId, NewsDate FROM crawl.StockNews_xueqiu', conn)
+        news_df = pd.read_sql('SELECT StockId, NewsDate, NewsTitle, Summary FROM crawl.StockNews_xueqiu', conn)
         news_df['mark'] = 1
         news_df['NewsDate'] = [date_deal_fun(x) for x in news_df['NewsDate']]
         self.news_df = news_df
         self.save_path = save_path
+        self.key_word_data = pd.read_csv('/mnt/mfs/work_whs/AZ_2018_Q4/news_key_words.csv')
+
+    def title_key_word_fun(self, key_word_list, save_file):
+        regx = re.compile('|'.join(key_word_list))
+        a = np.array([len(regx.findall(x)) for x in self.news_df['Summary']])
+        part_news_df = self.news_df[pd.notna(a)][['StockId', 'NewsDate']]
+        part_news_df['key_word_num'] = a[pd.notna(a)]
+        tmp_df = part_news_df.groupby(['NewsDate', 'StockId'])['key_word_num'].sum().unstack()
+        tmp_df.columns = bt.AZ_add_stock_suffix(tmp_df.columns)
+        save_fun(tmp_df, f'{self.save_path}/{save_file}_news_title.csv', sep='|')
+
+    def summary_key_word_fun(self, key_word_list, save_file):
+        regx = re.compile('|'.join(key_word_list))
+        a = np.array([len(regx.findall(x)) for x in self.news_df['Summary']])
+        part_news_df = self.news_df[pd.notna(a)][['StockId', 'NewsDate']]
+        part_news_df['key_word_num'] = a[pd.notna(a)]
+        tmp_df = part_news_df.groupby(['NewsDate', 'StockId'])['key_word_num'].sum().unstack()
+        tmp_df.columns = bt.AZ_add_stock_suffix(tmp_df.columns)
+        save_fun(tmp_df, f'{self.save_path}/{save_file}_news_summary.csv', sep='|')
+
+    def title_key_word_buy_fun(self):
+        key_word_list = self.key_word_data['buy']
+        print('|'.join(key_word_list.dropna()))
+        regx = re.compile('|'.join(key_word_list.dropna()))
+        a = np.array([len(regx.findall(x)) for x in self.news_df['NewsTitle']])
+        part_news_df = self.news_df[pd.notna(a)][['StockId', 'NewsDate']]
+        part_news_df['key_word_num'] = a[pd.notna(a)]
+        tmp_df = part_news_df.groupby(['NewsDate', 'StockId'])['key_word_num'].sum().unstack()
+        tmp_df.columns = bt.AZ_add_stock_suffix(tmp_df.columns)
+        # tmp_df.to_csv(f'{self.save_path}/buy_key_title__word.csv', sep='|')
+        save_fun(tmp_df, f'{self.save_path}/buy_key_title__word.csv', sep='|')
+
+    def title_key_word_sell_fun(self):
+        key_word_list = self.key_word_data['sell']
+        print('|'.join(key_word_list.dropna()))
+        regx = re.compile('|'.join(key_word_list.dropna()))
+        a = np.array([len(regx.findall(x)) for x in self.news_df['NewsTitle']])
+        part_news_df = self.news_df[pd.notna(a)][['StockId', 'NewsDate']]
+        part_news_df['key_word_num'] = a[pd.notna(a)]
+        tmp_df = part_news_df.groupby(['NewsDate', 'StockId'])['key_word_num'].sum().unstack()
+        tmp_df.columns = bt.AZ_add_stock_suffix(tmp_df.columns)
+        # tmp_df.to_csv(f'{self.save_path}/sell_key_title_word.csv', sep='|')
+        save_fun(tmp_df, f'{self.save_path}/sell_key_title_word.csv', sep='|')
+
+    def summary_key_word_buy_fun(self):
+        key_word_list = self.key_word_data['buy']
+        print('|'.join(key_word_list.dropna()))
+        regx = re.compile('|'.join(key_word_list.dropna()))
+        a = np.array([len(regx.findall(x)) for x in self.news_df['Summary']])
+        part_news_df = self.news_df[pd.notna(a)][['StockId', 'NewsDate']]
+        part_news_df['key_word_num'] = a[pd.notna(a)]
+        tmp_df = part_news_df.groupby(['NewsDate', 'StockId'])['key_word_num'].sum().unstack()
+        tmp_df.columns = bt.AZ_add_stock_suffix(tmp_df.columns)
+        # tmp_df.to_csv(f'{self.save_path}/buy_summary_key_word.csv', sep='|')
+        save_fun(tmp_df, f'{self.save_path}/buy_summary_key_word.csv', sep='|')
+
+    def summary_key_word_sell_fun(self):
+        key_word_list = self.key_word_data['sell']
+        print('|'.join(key_word_list.dropna()))
+        regx = re.compile('|'.join(key_word_list.dropna()))
+        a = np.array([len(regx.findall(x)) for x in self.news_df['Summary']])
+        part_news_df = self.news_df[pd.notna(a)][['StockId', 'NewsDate']]
+        part_news_df['key_word_num'] = a[pd.notna(a)]
+        tmp_df = part_news_df.groupby(['NewsDate', 'StockId'])['key_word_num'].sum().unstack()
+        tmp_df.columns = bt.AZ_add_stock_suffix(tmp_df.columns)
+        # tmp_df.to_csv(f'{self.save_path}/sell_summary_key_word.csv', sep='|')
+        save_fun(tmp_df, f'{self.save_path}/sell_summary_key_word.csv', sep='|')
 
 
 def test_fun():
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.23:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
-    news_df = pd.read_sql('SELECT StockId, NewsDate, SourceDomain  FROM crawl.StockNews_xueqiu', conn)
+    news_df = pd.read_sql('SELECT StockId, NewsDate, SourceDomain FROM crawl.StockNews_xueqiu', conn)
     news_df['mark'] = 1
     news_df['NewsDate'] = [date_deal_fun(x) for x in news_df['NewsDate']]
     return list(set(news_df['SourceDomain']))
 
 
-if __name__ == '__main__':
-    root_path = '/mnt/mfs/DAT_EQT'
-    save_path = '/mnt/mfs/dat_whs/EM_Funda/my_data_test'
+def main(mod):
+    if mod == 'pro':
+        root_path = '/media/hdd1/DAT_EQT'
+    elif mod == 'bkt':
+        root_path = '/mnt/mfs/DAT_EQT'
+    else:
+        root_path = '/mnt/mfs/DAT_EQT'
+    save_path = f'{root_path}/EM_Funda/dat_whs'
+    key_word_dict = OrderedDict({
+        'repurchase': ['回购'],
+        'dividend': ['分红', '派息'],
+        'staff_changes': ['任职', '聘任', '担任', '辞任', '候选人', '辞职'],
+        'funds': ['资金'],
+        'meeting_decide': ['董事会决议', '董事会', '股东大会', '监事会'],
+        'restricted_shares': ['限售股解禁', '解除限购'],
+        'son_company': ['子公司'],
+        'suspend': ['停牌'],
+        'shares': ['股权分置', '股票激励', '股权激励', '质押']
+    })
+
     print('process begin')
     a = time.time()
-    get_lsgg_table(save_path)
-    get_bulletin_table(save_path)
-    get_news_table(save_path)
+    get_lsgg_table(root_path, save_path)
+    get_bulletin_table(root_path, save_path)
+    get_news_table(root_path, save_path)
 
     classify_bullitin = ClassifyBulletin(save_path)
-    staff_changes_df = classify_bullitin.staff_changes_fun()
-    funds_df = classify_bullitin.funds_fun()
-    meeting_decide_df = classify_bullitin.meeting_decide_fun()
-    restricted_shares_df = classify_bullitin.restricted_shares_fun()
-    son_company_df = classify_bullitin.son_company_fun()
-    suspend_df = classify_bullitin.suspend_fun()
-    shares_df = classify_bullitin.shares_fun()
+    for file_name in key_word_dict.keys():
+        classify_bullitin.key_word_fun(key_word_dict[file_name], file_name)
+
+    classify_news = ClassifyNews(save_path)
+
+    classify_news.title_key_word_buy_fun()
+    classify_news.title_key_word_sell_fun()
+
+    classify_news.summary_key_word_buy_fun()
+    classify_news.summary_key_word_sell_fun()
+
+    for file_name in key_word_dict.keys():
+        print(file_name)
+        classify_news.title_key_word_fun(key_word_dict[file_name], file_name)
+        classify_news.summary_key_word_fun(key_word_dict[file_name], file_name)
+
     b = time.time()
     print(b - a)
     print('get all stock id')
+
+
+if __name__ == '__main__':
+    mod = 'bkt'
+    main(mod)
+    # mod = 'pro'
+    # main(mod)
+    # mod = ''
+    # main(mod)

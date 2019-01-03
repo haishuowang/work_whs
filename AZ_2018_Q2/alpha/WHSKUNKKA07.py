@@ -807,11 +807,19 @@ class FactorTestSector(FactorTest):
             .reindex(index=self.xinx, columns=self.xnms)
         return target_df
 
+    def load_notice_factor(self, file_name):
+        # load_path = '/mnt/mfs/dat_whs/EM_Funda/my_data_test_TEST'
+        load_path = '/media/hdd1/DAT_EQT/EM_Funda/dat_whs'
+        tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
+        return target_df
+
     def single_test(self, fun_name, name1, name2, name3):
         fun_set = [add_fun, sub_fun, mul_fun]
         fun_mix_2_set = create_fun_set_2_(fun_set)
         fun = fun_mix_2_set[fun_name]
-        change_factor = self.load_tech_factor(name1)
+        change_factor = self.load_notice_factor(name1)
         ratio_factor = self.load_ratio_factor(name2)
         tech_factor = self.load_tech_factor(name3)
         mix_factor = fun(change_factor, ratio_factor, tech_factor)
@@ -825,8 +833,10 @@ class FactorTestSector(FactorTest):
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/'
-                                f'market_top_300to800plus_True_20181124_1156_hold_20__11.pkl')
+    config_name = 'market_top_800plus_industry_45_50_True_20181206_2040_hold_5__11'
+
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/'
+                                f'{config_name}.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
     alpha_name = 'WHSKUNKKA07'

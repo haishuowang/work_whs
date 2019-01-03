@@ -140,8 +140,7 @@ def out_sample_perf_c(pnl_df_out, way=1):
     return out_condition, round(sharpe_out * way, 2)
 
 
-def filter_all(cut_date, pos_df_daily, pct_n,
-               if_return_pnl=False, if_only_long=False):
+def filter_all(cut_date, pos_df_daily, pct_n, if_return_pnl=False, if_only_long=False):
     pnl_df = (pos_df_daily * pct_n).sum(axis=1)
     pnl_df = pnl_df.replace(np.nan, 0)
     # pnl_df = pd.Series(pnl_df)
@@ -417,7 +416,8 @@ class FactorTestSector(mf.FactorTest):
             daily_pos = self.deal_mix_factor(mix_factor).shift(2)
             # 返回样本内筛选结果
 
-            result_dict = filter_time_para_fun(self.time_para_dict, daily_pos, self.return_choose, if_only_long=False)
+            result_dict = filter_time_para_fun(self.time_para_dict, daily_pos, self.return_choose,
+                                               if_return_pnl=False, if_only_long=self.if_only_long)
             for time_key in result_dict.keys():
                 in_condition, *filter_result = result_dict[time_key]
                 # result 存储
@@ -472,7 +472,8 @@ class FactorTestSector(mf.FactorTest):
         daily_pos = self.deal_mix_factor(mix_factor).shift(2)
         in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
         fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = \
-            filter_all(self.cut_date, daily_pos, self.return_choose, if_return_pnl=True, if_only_long=False)
+            filter_all(self.cut_date, daily_pos, self.return_choose,
+                       if_return_pnl=True, if_only_long=self.if_only_long)
         # result_dict = filter_all(self.cut_date, daily_pos, self.return_choose)
         return mix_factor, in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, \
                pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df

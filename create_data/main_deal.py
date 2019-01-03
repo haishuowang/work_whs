@@ -25,23 +25,25 @@ def main_fun(sector_name):
     begin_date = pd.to_datetime('20100101')
     end_date = datetime.now()
     save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/{}'.format(sector_name)
+    # save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data_v2'
     bt.AZ_Path_create(save_root_path)
     root_path = pt._BinFiles(mode)
 
     # # 1 load sector
-    sector_data_class = SectorData(root_path)
-    sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
+    # sector_data_class = SectorData(root_path)
+    # sector_df = sector_data_class.load_sector_data(begin_date, end_date, sector_name)
 
     # 2 load self sector
-    # return_df = pd.read_csv('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_p.csv', sep='|', index_col=0, parse_dates=True)
+    sector_df = pd.read_csv('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_p.csv', sep='|', index_col=0, parse_dates=True)
+    sector_df[sector_df > 0] = 1
     # sector_df = bt.AZ_Load_csv(f'/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_10/{sector_name}.csv')
     # sector_df = sector_df[(sector_df.index >= begin_date) & (sector_df.index <= end_date)]
     # sector_df = sector_df.reindex(index=return_df.index)
 
     print('***************************table 14********************************')
-    # data_name_list = ['RZRQYE', 'RZMRE', 'RZYE', 'RQMCL', 'RQYE', 'RQYL', 'RQCHL', 'RZCHE']
-    # table_num, table_name = ('EM_Funda', 'TRAD_MT_MARGIN')
-    # EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path, if_replace=True)
+    data_name_list = ['RZRQYE', 'RZMRE', 'RZYE', 'RQMCL', 'RQYE', 'RQYL', 'RQCHL', 'RZCHE']
+    table_num, table_name = ('EM_Funda', 'TRAD_MT_MARGIN')
+    EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path, if_replace=True)
 
     # table_num, table_name = ('EM_Funda', 'TRAD_SK_DAILY_JC')
     # data_name_list = ['TVOL']
@@ -49,9 +51,9 @@ def main_fun(sector_name):
     # EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path,
     #                     n_list=[3, 4, 5], window_list=[30, 90])
     #
-    # table_num, table_name = ('EM_Funda', 'DERIVED_14')
-    # data_name_list = ['aadj_r']
-    # EM_Tab14.DERIVED_14_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
+    table_num, table_name = ('EM_Funda', 'DERIVED_14')
+    data_name_list = ['aadj_r']
+    EM_Tab14.DERIVED_14_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
     #
     # EM_Tab14.base_data_fun(sector_df, root_path, save_root_path)
     #
@@ -59,7 +61,7 @@ def main_fun(sector_name):
     # data_name_list = ['PE_TTM', 'PS_TTM', 'PBLast']
     # table_num, table_name = ('EM_Funda', 'TRAD_SK_REVALUATION')
     # EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
-    #
+
     # EM_Tab14.TRAD_SK_DAILY_JC_fun(sector_df, root_path, save_root_path)
 
     print('***************************table funda********************************')
@@ -76,7 +78,6 @@ def main_fun(sector_name):
     #                   'R_TotRev_TTM_Y3YGR',
     #                   'R_FCFTot_Y3YGR',
     #                   'R_SUMLIAB_Y3YGR',
-    #                   # 'R_EBIT_Y3YGR',
     #                   'R_Tax_TotProfit_QTTM',
     #                   'R_RevenuePS_s_First',
     #                   'R_OPCF_sales_s_First',
@@ -132,63 +133,59 @@ def main_fun(sector_name):
     # EM_Funda.common_fun(sector_df, root_path, data_name_list, save_root_path, if_replace=False, percent=0.2)
     # EM_Funda.daily_fun(sector_df, root_path, save_root_path)
     # EM_Funda.speciel_fun(sector_df, root_path, save_root_path)
-    print('***************************tech factor********************************')
-    Tech_Factor.main(sector_df, root_path, save_root_path)
-    print('***************************self factor********************************')
+    # print('***************************tech factor********************************')
+    # Tech_Factor.main(sector_df, root_path, save_root_path)
+    # print('***************************self factor********************************')
     # EM_Funda_test.common_deal(sector_df, save_root_path)
-    print('***************************intra factor********************************')
+    # print('***************************intra factor********************************')
     # IntradayData.intra_fun(sector_df, save_root_path)
 
 
 if __name__ == '__main__':
 
-    # sector_name_list = ['market_top_1000_industry_10_15',
-    #                     'market_top_1000_industry_20_25_30_35',
-    #                     'market_top_1000_industry_40',
-    #                     'market_top_1000_industry_45_50',
-    #                     'market_top_1000_industry_55',
-    #
-    #                     'market_top_2000_industry_10_15',
-    #                     'market_top_2000_industry_20_25_30_35',
-    #                     'market_top_2000_industry_40',
-    #                     'market_top_2000_industry_45_50',
-    #                     'market_top_2000_industry_55',
-    #
-    #                     'market_top_800plus_industry_10_15',
-    #                     'market_top_800plus_industry_20_25_30_35',
-    #                     'market_top_800plus_industry_40',
-    #                     'market_top_800plus_industry_45_50',
-    #                     'market_top_800plus_industry_55']
+    sector_name_list = [
+        'market_top_300plus',
+        'market_top_300plus_industry_10_15',
+        'market_top_300plus_industry_20_25_30_35',
+        'market_top_300plus_industry_40',
+        'market_top_300plus_industry_45_50',
+        'market_top_300plus_industry_55',
 
-    sector_name_list = ['market_top_300plus',
-                        'market_top_300plus_industry_10_15',
-                        'market_top_300plus_industry_20_25_30_35',
-                        'market_top_300plus_industry_40',
-                        'market_top_300plus_industry_45_50',
-                        'market_top_300plus_industry_55',
+        'market_top_300to800plus',
+        'market_top_300to800plus_industry_10_15',
+        'market_top_300to800plus_industry_20_25_30_35',
+        'market_top_300to800plus_industry_40',
+        'market_top_300to800plus_industry_45_50',
+        'market_top_300to800plus_industry_55',
 
-                        'market_top_300to800plus',
-                        'market_top_300to800plus_industry_10_15',
-                        'market_top_300to800plus_industry_20_25_30_35',
-                        'market_top_300to800plus_industry_40',
-                        'market_top_300to800plus_industry_45_50',
-                        'market_top_300to800plus_industry_55',
-
-                        'market_top_800plus',
-                        'market_top_800plus_industry_10_15',
-                        'market_top_800plus_industry_20_25_30_35',
-                        'market_top_800plus_industry_40',
-                        'market_top_800plus_industry_45_50',
-                        'market_top_800plus_industry_55'
-                        ]
-
-    # sector_name_list = ['market_top_300to800plus']
-    # sector_name_list = ['market_top_800plus',
-    #                     'market_top_800plus_industry_10_15',
-    #                     'market_top_800plus_industry_20_25_30_35',
-    #                     'market_top_800plus_industry_40',
-    #                     'market_top_800plus_industry_45_50',
-    #                     'market_top_800plus_industry_55']
+        'market_top_800plus',
+        'market_top_800plus_industry_10_15',
+        'market_top_800plus_industry_20_25_30_35',
+        'market_top_800plus_industry_40',
+        'market_top_800plus_industry_45_50',
+        'market_top_800plus_industry_55',
+        
+        # 'market_top_300plus_ind1',
+        # 'market_top_300plus_ind2',
+        # 'market_top_300plus_ind3',
+        # 'market_top_300plus_ind4',
+        # 'market_top_300plus_ind5',
+        # 'market_top_300plus_ind6',
+        # 'market_top_300plus_ind7',
+        # 'market_top_300plus_ind8',
+        # 'market_top_300plus_ind9',
+        # 'market_top_300plus_ind10',
+        # 'market_top_300to800plus_ind1',
+        # 'market_top_300to800plus_ind2',
+        # 'market_top_300to800plus_ind3',
+        # 'market_top_300to800plus_ind4',
+        # 'market_top_300to800plus_ind5',
+        # 'market_top_300to800plus_ind6',
+        # 'market_top_300to800plus_ind7',
+        # 'market_top_300to800plus_ind8',
+        # 'market_top_300to800plus_ind9',
+        # 'market_top_300to800plus_ind10',
+    ]
 
     t1 = time.time()
     for sector_name in sector_name_list:

@@ -142,7 +142,6 @@ def out_sample_perf_c(pnl_df_out, way=1):
 
 def filter_all(cut_date, pos_df_daily, pct_n,
                if_return_pnl=False, if_only_long=False):
-
     pnl_df = (pos_df_daily * pct_n).sum(axis=1)
     pnl_df = pnl_df.replace(np.nan, 0)
     # pnl_df = pd.Series(pnl_df)
@@ -464,7 +463,7 @@ class FactorTestSector(mf.FactorTest):
                pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
 
 
-def main_fun(sector_name, hold_time):
+def main_fun(sector_name, hold_time, time_para_dict):
     root_path = '/mnt/mfs/DAT_EQT'
     if_save = True
     if_new_program = True
@@ -477,31 +476,7 @@ def main_fun(sector_name, hold_time):
 
     if_hedge = True
     if_only_long = False
-    time_para_dict = OrderedDict()
 
-    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
-                                     pd.to_datetime('20150401'), pd.to_datetime('20150701'),
-                                     pd.to_datetime('20151001'), pd.to_datetime('20160101')]
-
-    time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
-                                     pd.to_datetime('20160401'), pd.to_datetime('20160701'),
-                                     pd.to_datetime('20161001'), pd.to_datetime('20170101')]
-
-    time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
-                                     pd.to_datetime('20170901'), pd.to_datetime('20171201'),
-                                     pd.to_datetime('20180301'), pd.to_datetime('20180601')]
-
-    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
     if sector_name.startswith('market_top_300plus'):
         if_weight = 1
         ic_weight = 0
@@ -551,48 +526,75 @@ def main_fun(sector_name, hold_time):
                   'R_EBIT_sales_QTTM',
                   ]
 
-    tech_list = ['ADX_40_20_10',
-                 'ADX_100_20_10',
-                 'ADX_200_20_10',
-                 'AROON_40_80',
-                 'AROON_200_80',
-                 'CMO_40_0',
-                 'CMO_200_0',
-                 'MFI_40_70_30',
-                 'MFI_140_70_30',
-                 'ADOSC_20_60_0',
-                 'ADOSC_60_120_0',
-                 'ATR_40_0.2',
-                 'ATR_140_0.2',
-                 'RSI_40_30',
-                 'RSI_140_30',
-                 'CCI_p150d_limit_12',
-                 'MACD_40_160',
-                 'bias_turn_p60d',
-                 'vol_p50d',
-                 'vol_p100d',
-                 'vol_p200d',
-                 'evol_p30d',
-                 'evol_p90d',
-                 'moment_p30200d',
-                 'moment_p50300d',
-                 'turn_p30d_0.24',
-                 'turn_p150d_0.18',
-                 'TVOL_p30d_col_extre_0.2',
-                 'TVOL_p90d_col_extre_0.2',
-                 'TVOL_row_extre_0.2',
-                 'aadj_r_p20d_col_extre_0.2',
-                 'aadj_r_p345d_continue_ud_pct',
-                 'aadj_r_p345d_continue_ud',
-                 'volume_moment_p1040d',
-                 'volume_moment_p20120d',
-                 'return_p30d_0.2',
-                 'return_p90d_0.2'
-                 ]
+    tech_list = [
+        'ADX_40_20_10',
+        'ADX_100_20_10',
+        'ADX_200_20_10',
+        'AROON_40_80',
+        'AROON_200_80',
+        'CMO_40_0',
+        'CMO_200_0',
+        'MFI_40_70_30',
+        'MFI_140_70_30',
+        'ADOSC_20_60_0',
+        'ADOSC_60_120_0',
+        'ATR_40_0.2',
+        'ATR_140_0.2',
+        'RSI_40_30',
+        'RSI_140_30',
+        'CCI_p150d_limit_12',
+        'MACD_40_160',
+        'bias_turn_p60d',
+        'vol_p50d',
+        'vol_p100d',
+        'vol_p200d',
+        'evol_p30d',
+        'evol_p90d',
+        'moment_p30200d',
+        'moment_p50300d',
+        'turn_p30d_0.24',
+        'turn_p150d_0.18',
+        'TVOL_p30d_col_extre_0.2',
+        'TVOL_p90d_col_extre_0.2',
+        'TVOL_row_extre_0.2',
+        'aadj_r_p20d_col_extre_0.2',
+        'aadj_r_p345d_continue_ud_pct',
+        'aadj_r_p345d_continue_ud',
+        'volume_moment_p1040d',
+        'volume_moment_p20120d',
+        'return_p30d_0.2',
+        'return_p90d_0.2'
+    ]
 
     pool_num = 10
     main.test_index_3_(intra_list, ratio_list, tech_list, pool_num, suffix_name='10')
 
+
+time_para_dict = OrderedDict()
+
+time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+                                 pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+                                 pd.to_datetime('20151001'), pd.to_datetime('20160101')]
+
+time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+                                 pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+                                 pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+
+time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
+                                 pd.to_datetime('20170901'), pd.to_datetime('20171201'),
+                                 pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+
+time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+
+time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
 
 if __name__ == '__main__':
     sector_name_list = ['market_top_300plus',
@@ -620,8 +622,4 @@ if __name__ == '__main__':
     hold_time_list = [5, 20]
     for hold_time in hold_time_list:
         for sector_name in sector_name_list:
-            if hold_time == 5 and sector_name.startswith('market_top_300plus'):
-                pass
-            else:
-                main_fun(sector_name, hold_time)
-
+            main_fun(sector_name, hold_time, time_para_dict)

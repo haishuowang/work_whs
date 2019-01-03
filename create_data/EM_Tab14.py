@@ -1,4 +1,4 @@
-import funda_data.funda_data_deal as fdd
+import create_data.funda_data_deal as fdd
 import loc_lib.shared_paths.path as pt
 import loc_lib.shared_tools.back_test as bt
 import pandas as pd
@@ -66,11 +66,10 @@ class EM_Tab14_Deal(BaseDeal):
             all_target_df = all_target_df.add(CCI, fill_value=0)
         return all_target_df * sector_df
 
-
     def return_ratio_9_1(self, aadj_r, sector_df, q_values=0.1, n=60):
         q_1 = aadj_r.rolling(60).quantile(0.1)
         q_2 = aadj_r.rolling(60).quantile(0.2)
-        abs(q_2/q_1)
+        abs(q_2 / q_1)
 
 
 class TRAD_SK_DAILY_JC_Deal(EM_Tab14_Deal):
@@ -233,6 +232,9 @@ def TRAD_SK_DAILY_JC_fun(sector_df, root_path, save_root_path):
     TRAD_SK_DAILY_JC_deal.bias_turn_pnd_(n_list + [60])
     TRAD_SK_DAILY_JC_deal.MACD_(short_long_list + [(40, 160)])
     TRAD_SK_DAILY_JC_deal.CCI_(n_list + [150], limit_list)
+
+
+
 
 #
 # if __name__ == '__main__':

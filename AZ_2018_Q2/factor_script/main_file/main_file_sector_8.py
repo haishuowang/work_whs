@@ -139,8 +139,7 @@ def out_sample_perf_c(pnl_df_out, way=1):
     return out_condition, round(sharpe_out * way, 2)
 
 
-def filter_all(cut_date, pos_df_daily, pct_n,
-               if_return_pnl=False, if_only_long=False):
+def filter_all(cut_date, pos_df_daily, pct_n, if_return_pnl=False, if_only_long=False):
     pnl_df = (pos_df_daily * pct_n).sum(axis=1)
     pnl_df = pnl_df.replace(np.nan, 0)
     # pnl_df = pd.Series(pnl_df)
@@ -311,6 +310,8 @@ class FactorTestSector(mf.FactorTest):
         load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
         target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
             .reindex(index=self.xinx, columns=self.xnms)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
         return target_df
 
     def load_ratio_factor(self, file_name):
@@ -319,6 +320,8 @@ class FactorTestSector(mf.FactorTest):
             .reindex(index=self.xinx, columns=self.xnms)
 
         target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
         return target_df
 
     def part_test_index_3_(self, key, name_1, name_2, name_3, log_save_file, result_save_file, total_para_num):
@@ -409,7 +412,7 @@ class FactorTestSector(mf.FactorTest):
                pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
 
 
-def main_fun(sector_name, hold_time):
+def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
     root_path = '/mnt/mfs/DAT_EQT'
     if_save = True
     if_new_program = True
@@ -421,32 +424,8 @@ def main_fun(sector_name, hold_time):
     return_file = ''
 
     if_hedge = True
-    if_only_long = False
-    time_para_dict = OrderedDict()
+    # if_only_long = False
 
-    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
-                                     pd.to_datetime('20150401'), pd.to_datetime('20150701'),
-                                     pd.to_datetime('20151001'), pd.to_datetime('20160101')]
-
-    time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
-                                     pd.to_datetime('20160401'), pd.to_datetime('20160701'),
-                                     pd.to_datetime('20161001'), pd.to_datetime('20170101')]
-
-    time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
-                                     pd.to_datetime('20170901'), pd.to_datetime('20171201'),
-                                     pd.to_datetime('20180301'), pd.to_datetime('20180601')]
-
-    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                     pd.to_datetime('20180901'), pd.to_datetime('20180901')]
     if sector_name.startswith('market_top_300plus'):
         if_weight = 1
         ic_weight = 0
@@ -506,28 +485,49 @@ def main_fun(sector_name, hold_time):
     main.test_index_3_(tech_list, tech_list, tech_list, pool_num, suffix_name='8')
 
 
-if __name__ == '__main__':
-    # sector_name_list = ['market_top_300plus',
-    #                     'market_top_300plus_industry_10_15',
-    #                     'market_top_300plus_industry_20_25_30_35',
-    #                     'market_top_300plus_industry_40',
-    #                     'market_top_300plus_industry_45_50',
-    #                     'market_top_300plus_industry_55',
-    #
-    #                     'market_top_300to800plus',
-    #                     'market_top_300to800plus_industry_10_15',
-    #                     'market_top_300to800plus_industry_20_25_30_35',
-    #                     'market_top_300to800plus_industry_40',
-    #                     'market_top_300to800plus_industry_45_50',
-    #                     'market_top_300to800plus_industry_55']
+time_para_dict = OrderedDict()
 
-    sector_name_list = ['market_top_800plus',
-                        'market_top_800plus_industry_10_15',
-                        'market_top_800plus_industry_20_25_30_35',
-                        'market_top_800plus_industry_40',
-                        'market_top_800plus_industry_45_50',
-                        'market_top_800plus_industry_55']
+time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+                                 pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+                                 pd.to_datetime('20151001'), pd.to_datetime('20160101')]
+
+time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+                                 pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+                                 pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+
+time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
+                                 pd.to_datetime('20170901'), pd.to_datetime('20171201'),
+                                 pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+
+time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+
+time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
+
+if __name__ == '__main__':
+    sector_name_list = ['market_top_300plus',
+                        'market_top_300plus_industry_10_15',
+                        'market_top_300plus_industry_20_25_30_35',
+                        'market_top_300plus_industry_40',
+                        'market_top_300plus_industry_45_50',
+                        'market_top_300plus_industry_55',
+
+                        'market_top_300to800plus',
+                        'market_top_300to800plus_industry_10_15',
+                        'market_top_300to800plus_industry_20_25_30_35',
+                        'market_top_300to800plus_industry_40',
+                        'market_top_300to800plus_industry_45_50',
+                        'market_top_300to800plus_industry_55']
+
     hold_time_list = [5, 20]
-    for hold_time in hold_time_list:
-        for sector_name in sector_name_list:
-            main_fun(sector_name, hold_time)
+    for if_only_long in [True]:
+        for hold_time in hold_time_list:
+            for sector_name in sector_name_list:
+                main_fun(sector_name, hold_time, if_only_long, time_para_dict)

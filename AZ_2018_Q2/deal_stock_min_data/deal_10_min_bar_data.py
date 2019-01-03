@@ -1,7 +1,11 @@
-import pandas as pd
-import numpy as np
-import os
+# import pandas as pd
+# import numpy as np
+# import os
 import gc
+import sys
+sys.path.append('/mnt/mfs')
+
+from work_whs.loc_lib.pre_load import *
 
 
 def AZ_clear_columns(stock_list):
@@ -82,13 +86,14 @@ def deal_intra_data():
 
 
 def create_intra_data(split_time=20):
-    begin_str = '20180901'
+    begin_str = '20050101'
     # begin_str = '20180101'
-    end_str = '20181001'
+    end_str = '20181201'
 
     begin_year, begin_month, begin_day = begin_str[:4], begin_str[:6], begin_str
     end_year, end_month, end_day = end_str[:4], end_str[:6], end_str
     intraday_path = '/mnt/mfs/DAT_PUBLIC/intraday/eqt_1mbar'
+
     for i in range(int(240 / split_time)):
         exec('intra_vwap_tab_{}_df = pd.DataFrame()'.format(i + 1))
         exec('intra_close_tab_{}_df = pd.DataFrame()'.format(i + 1))
@@ -111,8 +116,10 @@ def create_intra_data(split_time=20):
                     tmp_close = close[i * split_time:(i + 1) * split_time]
                     exec('intra_close_tab_{0}_df = intra_close_tab_{0}_df.append(pd.DataFrame([tmp_close.iloc[-1]], '
                          'index=[pd.to_datetime(day)]))'.format(i + 1))
-
+                    # if sum(tmp_volume_sum == 0) != 0:
+                    #     print(1)
                     tmp_vwap = (tmp_close * tmp_volume).sum() / tmp_volume_sum
+                    tmp_vwap[tmp_volume_sum == 0] = tmp_close.iloc[0][tmp_volume_sum == 0]
                     exec('intra_vwap_tab_{0}_df = intra_vwap_tab_{0}_df.append(pd.DataFrame([tmp_vwap], '
                          'index=[pd.to_datetime(day)]))'.format(i + 1))
                     # print(tmp_close.iloc[-1].iloc[0], tmp_vwap.iloc[0])
@@ -124,32 +131,34 @@ def create_intra_data(split_time=20):
         exec('intra_vwap_tab_{0}_df.columns = AZ_clear_columns(intra_vwap_tab_{0}_df.columns)'.format(i + 1))
         exec('intra_close_tab_{0}_df.columns = AZ_clear_columns(intra_close_tab_{0}_df.columns)'.format(i + 1))
 
-        exec('intra_vwap_tab_{0}_df.to_pickle(os.path.join(intra_save_path, '
-             '\'intra_vwap_{1}_tab_{0}_2018_2018.pkl\'))'
+        exec('intra_vwap_tab_{0}_df.fillna(method=\'ffill\').to_pickle(os.path.join(intra_save_path, '
+             '\'intra_vwap_{1}_tab_{0}_20050101_20181201.pkl\'))'
              .format(i + 1, split_time))
-        exec('intra_close_tab_{0}_df.to_pickle(os.path.join(intra_save_path, '
-             '\'intra_close_{1}_tab_{0}_2018_2018.pkl\'))'
+        exec('intra_close_tab_{0}_df.fillna(method=\'ffill\').to_pickle(os.path.join(intra_save_path, '
+             '\'intra_close_{1}_tab_{0}_20050101_20181201.pkl\'))'
              .format(i + 1, split_time))
 
 
 def concat_data():
     for i in range(24):
         data_2005_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2005_2018.pkl'.format(i + 1))
+        data_2005_2018 = data_2005_2018[data_2005_2018.index < pd.to_datetime('20180101')]
         data_2018_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2018_2018.pkl'.format(i + 1))
-        data_20181001 = data_2005_2018.combine_first(data_2018_2018)
-        EQT_list = [x for x in data_20181001.columns if
-                    ((x[0] == '0' or x[0] == '3') and x[-2:] == 'SZ') or (x[0] == '6' and x[-2:] == 'SH')]
-        data_20181001_c = data_20181001[EQT_list]
-        data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181001.pkl'.format(i + 1))
 
-    for i in range(24):
-        data_2005_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/c_vwap_10_tab_{}_2005_2018.pkl'.format(i + 1))
-        data_2018_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2018_2018.pkl'.format(i + 1))
         data_20181001 = data_2005_2018.combine_first(data_2018_2018)
         EQT_list = [x for x in data_20181001.columns if
                     ((x[0] == '0' or x[0] == '3') and x[-2:] == 'SZ') or (x[0] == '6' and x[-2:] == 'SH')]
         data_20181001_c = data_20181001[EQT_list]
-        data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181001.pkl'.format(i + 1))
+        data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181101.pkl'.format(i + 1))
+
+    # for i in range(24):
+    #     data_2005_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/vwap_10_tab_{}_2005_2018.pkl'.format(i + 1))
+    #     data_2018_2018 = pd.read_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_2018_2018.pkl'.format(i + 1))
+    #     data_20181001 = data_2005_2018.combine_first(data_2018_2018)
+    #     EQT_list = [x for x in data_20181001.columns if
+    #                 ((x[0] == '0' or x[0] == '3') and x[-2:] == 'SZ') or (x[0] == '6' and x[-2:] == 'SH')]
+    #     data_20181001_c = data_20181001[EQT_list]
+    #     data_20181001_c.to_pickle('/mnt/mfs/DAT_PUBLIC/dat_whs/intra_vwap_10_tab_{}_20181001.pkl'.format(i + 1))
 
 
 def create_base_data():
@@ -161,5 +170,8 @@ if __name__ == '__main__':
     # use_date = '20180329'
     # intra_data = pd.read_csv(f'/mnt/mfs/DAT_PUBLIC/intraday/eqt_1mbar/'
     #                          f'{use_date[:4]}/{use_date[:6]}/{use_date}/Close.csv')
-    # create_intra_data(split_time=10)
-    concat_data()
+    # create_intra_data(split_time=60)
+    # send_email.send_email('1 hour vwap', ['whs@yingpei.com'], [], '1 hour vwap created')
+    create_intra_data(split_time=10)
+    send_email.send_email('10 min vwap', ['whs@yingpei.com'], [], '10 min vwap created')
+    # concat_data()

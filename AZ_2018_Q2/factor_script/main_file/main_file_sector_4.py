@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 import os
@@ -10,11 +11,12 @@ from datetime import datetime
 import sys
 
 sys.path.append('/mnt/mfs/work_whs')
+sys.path.append('/mnt/mfs')
 sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
 import loc_lib.shared_tools.back_test as bt
 from loc_lib.shared_tools import send_email
 # 读取数据的函数 以及
-from factor_script.main_file import main_file_return_hedge as mf
+from work_whs.AZ_2018_Q2.factor_script.main_file import main_file_return_hedge as mf
 
 
 # product 笛卡尔积　　（有放回抽样排列）
@@ -139,14 +141,11 @@ def out_sample_perf_c(pnl_df_out, way=1):
     return out_condition, round(sharpe_out * way, 2)
 
 
-def filter_all(cut_date, pos_df_daily, pct_n, if_return_pnl=False, if_only_long=False):
-    if if_only_long:
-        pnl_df = (pos_df_daily[pos_df_daily > 0] * pct_n).sum(axis=1)
-        pnl_df = pnl_df.replace(np.nan, 0)
-    else:
-        pnl_df = (pos_df_daily * pct_n).sum(axis=1)
-        pnl_df = pnl_df.replace(np.nan, 0)
-    # pnl_df = pd.Series(pnl_df)
+def filter_all(cut_date, pos_df_daily, pct_n,
+               if_return_pnl=False, if_only_long=False):
+    pnl_df = (pos_df_daily * pct_n).sum(axis=1)
+    pnl_df = pnl_df.replace(np.nan, 0)
+
     # 样本内表现
     return_in = pct_n[pct_n.index < cut_date]
 
@@ -263,8 +262,8 @@ def filter_time_para_fun(time_para_dict, pos_df_daily, adj_return, if_return_pnl
     return result_dict
 
 
-def create_fun_set_2():
-    fun_set = [add_fun, sub_fun, mul_fun]
+def create_fun_set_2(fun_set):
+
     mix_fun_set = []
     for fun_1, fun_2 in product(fun_set, repeat=2):
         exe_str_1 = """def {0}_{1}_fun(a, b, c):
@@ -310,32 +309,14 @@ class FactorTestSector(mf.FactorTest):
     def __init__(self, *args):
         super(FactorTestSector, self).__init__(*args)
 
-    # 获取sector data
-    # def load_sector_data(self):
-    #
-    #     market_top_n = bt.AZ_Load_csv(os.path.join('/mnt/mfs/dat_whs/data/sector_data', self.sector_name + '.csv'))
-    #     market_top_n = market_top_n[(market_top_n.index >= self.begin_date) & (market_top_n.index < self.end_date)]
-    #     market_top_n.dropna(how='all', axis='columns', inplace=True)
-    #     xnms = market_top_n.columns
-    #     xinx = market_top_n.index
-    #
-    #     new_stock_df = self.get_new_stock_info(xnms, xinx)
-    #     st_stock_df = self.get_st_stock_info(xnms, xinx)
-    #     sector_df = market_top_n * new_stock_df * st_stock_df
-    #     sector_df.replace(0, np.nan, inplace=True)
-    #     return sector_df
+    def load_tech_factor(self, file_name):
+        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+        target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
+        return target_df
 
-    # def load_change_factor(self, file_name):
-    #     load_path = '/mnt/mfs/DAT_EQT/EM_Funda/daily/'
-    #     raw_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
-    #         .reindex(index=self.xinx, columns=self.xnms)
-    #     QTTM_df = bt.AZ_Load_csv(os.path.join(load_path, '_'.join(file_name.split('_')[:-1]) + '_QTTM.csv')) \
-    #         .reindex(index=self.xinx, columns=self.xnms)
-    #     QTTM_df_ma = bt.AZ_Rolling_mean(QTTM_df.abs().replace(0, np.nan), 60)
-    #     tmp_df = raw_df / QTTM_df_ma
-    #     # target_df = bt.AZ_Row_zscore(tmp_df)
-    #     target_df = self.row_extre(tmp_df, self.sector_df, 0.2)
-    #     return target_df
 
     def load_vsMCap_factor(self, file_name):
         load_path = '/mnt/mfs/DAT_EQT/EM_Funda/daily/'
@@ -348,6 +329,8 @@ class FactorTestSector(mf.FactorTest):
         tmp_df = raw_df / mcap_df_ma
         diff_df = tmp_df.diff(1)
         target_df = self.row_extre(diff_df, self.sector_df, 0.3)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
         return target_df
 
     def load_ratio_factor(self, file_name):
@@ -356,13 +339,10 @@ class FactorTestSector(mf.FactorTest):
             .reindex(index=self.xinx, columns=self.xnms)
         # target_df = bt.AZ_Row_zscore(tmp_df)
         target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
         return target_df
 
-    def load_tech_factor(self, file_name):
-        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
-        target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
-            .reindex(index=self.xinx, columns=self.xnms)
-        return target_df
 
     @staticmethod
     def row_extre(raw_df, sector_df, percent):
@@ -430,7 +410,10 @@ class FactorTestSector(mf.FactorTest):
         # 加载花费数据时间
         load_delta = round(load_time_2 - load_time_1, 2)
         # 生成混合函数集
-        fun_mix_2_set = create_fun_set_2()
+        fun_set = [add_fun, sub_fun, mul_fun]
+        if self.if_only_long:
+            fun_set = [add_fun, mul_fun]
+        fun_mix_2_set = create_fun_set_2(fun_set)
         #################
         # 更换filter函数 #
         #################
@@ -438,12 +421,14 @@ class FactorTestSector(mf.FactorTest):
 
         for fun in fun_mix_2_set:
             mix_factor = fun(change_factor, ratio_factor, tech_factor)
+            if if_only_long:
+                mix_factor = mix_factor[mix_factor > 0]
             if len(mix_factor.abs().sum(axis=1).replace(0, np.nan).dropna()) / len(mix_factor) < 0.5:
                 continue
 
             daily_pos = self.deal_mix_factor(mix_factor).shift(2)
+            # print(daily_pos)
             # 返回样本内筛选结果
-
             result_dict = filter_time_para_fun(self.time_para_dict, daily_pos, self.return_choose, if_only_long=False)
             for time_key in result_dict.keys():
                 in_condition, *filter_result = result_dict[time_key]
@@ -474,6 +459,7 @@ class FactorTestSector(mf.FactorTest):
 
         para_ready_df, log_save_file, result_save_file, total_para_num = \
             self.save_load_control_(change_list, ratio_list, tech_list, suffix_name, old_file_name)
+        self.check_factor(tech_list, result_save_file)
         a_time = time.time()
         pool = Pool(pool_num)
         for key in list(para_ready_df.index):
@@ -498,39 +484,12 @@ class FactorTestSector(mf.FactorTest):
         daily_pos = self.deal_mix_factor(mix_factor).shift(2)
         in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
         fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = \
-            filter_all(self.cut_date, daily_pos, self.return_choose, if_return_pnl=True, if_only_long=False)
-        # result_dict = filter_all(self.cut_date, daily_pos, self.return_choose)
+            filter_all(self.cut_date, daily_pos, self.return_choose, if_return_pnl=True, if_only_long=self.if_only_long)
         return mix_factor, in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, \
                pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
 
 
-time_para_dict = OrderedDict()
-
-time_para_dict['time_para_1'] = [pd.to_datetime('20110101'), pd.to_datetime('20150101'),
-                                 pd.to_datetime('20150401'), pd.to_datetime('20150701'),
-                                 pd.to_datetime('20151001'), pd.to_datetime('20160101')]
-
-time_para_dict['time_para_2'] = [pd.to_datetime('20120101'), pd.to_datetime('20160101'),
-                                 pd.to_datetime('20160401'), pd.to_datetime('20160701'),
-                                 pd.to_datetime('20161001'), pd.to_datetime('20170101')]
-
-time_para_dict['time_para_3'] = [pd.to_datetime('20130601'), pd.to_datetime('20170601'),
-                                 pd.to_datetime('20170901'), pd.to_datetime('20171201'),
-                                 pd.to_datetime('20180301'), pd.to_datetime('20180601')]
-
-time_para_dict['time_para_4'] = [pd.to_datetime('20140601'), pd.to_datetime('20180601'),
-                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-time_para_dict['time_para_5'] = [pd.to_datetime('20140701'), pd.to_datetime('20180701'),
-                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-time_para_dict['time_para_6'] = [pd.to_datetime('20140801'), pd.to_datetime('20180801'),
-                                 pd.to_datetime('20180901'), pd.to_datetime('20180901'),
-                                 pd.to_datetime('20180901'), pd.to_datetime('20180901')]
-
-if __name__ == '__main__':
+def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
     root_path = '/mnt/mfs/DAT_EQT'
     if_save = True
     if_new_program = True
@@ -538,143 +497,156 @@ if __name__ == '__main__':
     begin_date = pd.to_datetime('20100101')
     cut_date = pd.to_datetime('20160401')
     end_date = pd.to_datetime('20180901')
+    lag = 2
+    return_file = ''
 
-    # sector_name_list = ['market_top_300',
-    #                     'market_top_300_industry_10_15',
-    #                     'market_top_300_industry_20_25_30_35',
-    #                     'market_top_300_industry_40',
-    #                     'market_top_300_industry_45_50',
-    #                     'market_top_300_industry_55']
+    if_hedge = True
+    # if_only_long = False
+    if sector_name.startswith('market_top_300plus'):
+        if_weight = 1
+        ic_weight = 0
 
-    sector_name_list = ['market_top_800plus_industry_10_15',
-                        'market_top_800plus_industry_20_25_30_35',
-                        'market_top_800plus_industry_40',
-                        'market_top_800plus_industry_45_50',
-                        'market_top_800plus_industry_55']
+    elif sector_name.startswith('market_top_300to800plus'):
+        if_weight = 0
+        ic_weight = 1
 
-    for sector_name in sector_name_list:
-        return_file = 'pct_p1d'
-        hold_time = 20
-        lag = 2
-        return_file = ''
+    else:
+        if_weight = 0.5
+        ic_weight = 0.5
 
-        if_hedge = True
-        if_only_long = False
+    main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
+                            sector_name, hold_time, lag, return_file, if_hedge, if_only_long,
+                            if_weight, ic_weight)
 
-        main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
-                                sector_name, hold_time, lag, return_file, if_hedge, if_only_long)
+    vsMCap_list = ['R_ACCOUNTPAY_QYOY',
+                   'R_ACCOUNTREC_QYOY',
+                   'R_ASSETDEVALUELOSS_s_QYOY',
+                   'R_Cashflow_s_YOY_First',
+                   'R_CFO_s_YOY_First',
+                   'R_CostSales_QYOY',
+                   'R_EBITDA2_QYOY',
+                   'R_ESTATEINVEST_QYOY',
+                   'R_FairVal_TotProfit_QYOY',
+                   'R_FINANCEEXP_s_QYOY',
+                   'R_GrossProfit_TTM_QYOY',
+                   'R_INVESTINCOME_s_QYOY',
+                   'R_NetAssets_s_YOY_First',
+                   'R_NetInc_s_QYOY',
+                   'R_NETPROFIT_s_QYOY',
+                   'R_OPCF_TTM_QYOY',
+                   'R_OperProfit_YOY_First',
+                   'R_SUMLIAB_QYOY',
+                   'R_WorkCapital_QYOY',
+                   'R_OTHERLASSET_QYOY',
+                   'R_NetIncRecur_QYOY'
+                   ]
 
-        # change_list = ['R_ACCOUNTPAY_QYOY',
-        #                'R_ACCOUNTREC_QYOY',
-        #                'R_ASSETDEVALUELOSS_s_QYOY',
-        #                'R_Cashflow_s_YOY_First',
-        #                'R_CFO_s_YOY_First',
-        #                'R_CostSales_QYOY',
-        #                'R_EBITDA2_QYOY',
-        #                'R_EPSDiluted_YOY_First',
-        #                'R_ESTATEINVEST_QYOY',
-        #                'R_FairVal_TotProfit_QYOY',
-        #                'R_FINANCEEXP_s_QYOY',
-        #                'R_GrossProfit_TTM_QYOY',
-        #                'R_GSCF_sales_QYOY',
-        #                'R_IntDebt_Mcap_QYOY',
-        #                'R_INVESTINCOME_s_QYOY',
-        #                'R_LTDebt_WorkCap_QYOY',
-        #                'R_LOANREC_s_QYOY',
-        #                'R_NetAssets_s_YOY_First',
-        #                'R_NetInc_s_QYOY',
-        #                'R_NETPROFIT_s_QYOY',
-        #                'R_OPCF_TTM_QYOY',
-        #                'R_OperCost_sales_QYOY',
-        #                'R_OperProfit_YOY_First',
-        #                'R_OPEX_sales_QYOY',
-        #                'R_ROE1_QYOY',
-        #                'R_SUMLIAB_QYOY',
-        #                'R_TangAssets_IntDebt_QYOY',
-        #                'R_WorkCapital_QYOY',
-        #                'R_OTHERLASSET_QYOY',
-        #                'R_NetIncRecur_QYOY.csv'
-        #                ]
+    ratio_list = ['R_DebtAssets_QTTM',
+                  'R_EBITDA_IntDebt_QTTM',
+                  'R_EBITDA_sales_TTM_First',
+                  'R_BusinessCycle_First',
+                  'R_DaysReceivable_First',
+                  'R_DebtEqt_First',
+                  'R_FairVal_TotProfit_TTM_First',
+                  'R_LTDebt_WorkCap_QTTM',
+                  'R_OPCF_TotDebt_QTTM',
+                  'R_OPEX_sales_TTM_First',
+                  'R_SalesGrossMGN_QTTM',
+                  'R_CurrentAssetsTurnover_QTTM',
+                  'R_TangAssets_TotLiab_QTTM',
+                  'R_NetROA_TTM_First',
+                  'R_ROE_s_First',
+                  'R_EBIT_sales_QTTM',
+                  ]
 
-        vsMCap_list = ['R_ACCOUNTPAY_QYOY',
-                       'R_ACCOUNTREC_QYOY',
-                       'R_ASSETDEVALUELOSS_s_QYOY',
-                       'R_Cashflow_s_YOY_First',
-                       'R_CFO_s_YOY_First',
-                       'R_CostSales_QYOY',
-                       'R_EBITDA2_QYOY',
-                       'R_ESTATEINVEST_QYOY',
-                       'R_FairVal_TotProfit_QYOY',
-                       'R_FINANCEEXP_s_QYOY',
-                       'R_GrossProfit_TTM_QYOY',
-                       'R_INVESTINCOME_s_QYOY',
-                       'R_NetAssets_s_YOY_First',
-                       'R_NetInc_s_QYOY',
-                       'R_NETPROFIT_s_QYOY',
-                       'R_OPCF_TTM_QYOY',
-                       'R_OperProfit_YOY_First',
-                       'R_SUMLIAB_QYOY',
-                       'R_WorkCapital_QYOY',
-                       'R_OTHERLASSET_QYOY',
-                       'R_NetIncRecur_QYOY'
-                       ]
+    tech_list = ['ADX_40_20_10',
+                 'ADX_100_20_10',
+                 'ADX_200_20_10',
+                 'AROON_40_80',
+                 'AROON_200_80',
+                 'CMO_40_0',
+                 'CMO_200_0',
+                 'MFI_40_70_30',
+                 'MFI_140_70_30',
+                 'ADOSC_20_60_0',
+                 'ADOSC_60_120_0',
+                 'ATR_40_0.2',
+                 'ATR_140_0.2',
+                 'RSI_40_30',
+                 'RSI_140_30',
+                 'CCI_p150d_limit_12',
+                 'MACD_40_160',
+                 'bias_turn_p60d',
+                 'vol_p50d',
+                 'vol_p100d',
+                 'vol_p200d',
+                 'evol_p30d',
+                 'evol_p90d',
+                 'moment_p30200d',
+                 'moment_p50300d',
+                 'turn_p30d_0.24',
+                 'turn_p150d_0.18',
+                 'TVOL_p30d_col_extre_0.2',
+                 'TVOL_p90d_col_extre_0.2',
+                 'TVOL_row_extre_0.2',
+                 'aadj_r_p20d_col_extre_0.2',
+                 'aadj_r_p345d_continue_ud_pct',
+                 'aadj_r_p345d_continue_ud',
+                 'volume_moment_p1040d',
+                 'volume_moment_p20120d',
+                 'return_p30d_0.2',
+                 'return_p90d_0.2'
+                 ]
+    pool_num = 20
+    main.test_index_3_(vsMCap_list, ratio_list, tech_list, pool_num, suffix_name='4')
 
-        ratio_list = ['R_DebtAssets_QTTM',
-                      'R_EBITDA_IntDebt_QTTM',
-                      'R_EBITDA_sales_TTM_First',
-                      'R_BusinessCycle_First',
-                      'R_DaysReceivable_First',
-                      'R_DebtEqt_First',
-                      'R_FairVal_TotProfit_TTM_First',
-                      'R_LTDebt_WorkCap_QTTM',
-                      'R_OPCF_TotDebt_QTTM',
-                      'R_OPEX_sales_TTM_First',
-                      'R_SalesGrossMGN_QTTM',
-                      'R_CurrentAssetsTurnover_QTTM',
-                      'R_TangAssets_TotLiab_QTTM',
-                      'R_NetROA_TTM_First',
-                      'R_ROE_s_First',
-                      'R_EBIT_sales_QTTM',
-                      ]
 
-        tech_list = ['ADX_40_20_10',
-                     'ADX_100_20_10',
-                     'ADX_200_20_10',
-                     'AROON_40_80',
-                     'AROON_200_80',
-                     'CMO_40_0',
-                     'CMO_200_0',
-                     'MFI_40_70_30',
-                     'MFI_140_70_30',
-                     'ADOSC_20_60_0',
-                     'ADOSC_60_120_0',
-                     'ATR_40_0.2',
-                     'ATR_140_0.2',
-                     'RSI_40_30',
-                     'RSI_140_30',
-                     'CCI_p150d_limit_12',
-                     'MACD_40_160',
-                     'bias_turn_p60d',
-                     'vol_p50d',
-                     'vol_p100d',
-                     'vol_p200d',
-                     'evol_p30d',
-                     'evol_p90d',
-                     'moment_p30200d',
-                     'moment_p50300d',
-                     'turn_p30d_0.24',
-                     'turn_p150d_0.18',
-                     'TVOL_p30d_col_extre_0.2',
-                     'TVOL_p90d_col_extre_0.2',
-                     'TVOL_row_extre_0.2',
-                     'aadj_r_p20d_col_extre_0.2',
-                     'aadj_r_p345d_continue_ud_pct',
-                     'aadj_r_p345d_continue_ud',
-                     'volume_moment_p1040d',
-                     'volume_moment_p20120d',
-                     'return_p30d_0.2',
-                     'return_p90d_0.2'
-                     ]
+time_para_dict = OrderedDict()
 
-        pool_num = 20
-        main.test_index_3_(vsMCap_list, ratio_list, tech_list, pool_num, suffix_name='4')
+time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+                                 pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+                                 pd.to_datetime('20151001'), pd.to_datetime('20160101')]
+
+time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+                                 pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+                                 pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+
+time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
+                                 pd.to_datetime('20170901'), pd.to_datetime('20171201'),
+                                 pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+time_para_dict['time_para_4'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101')]
+
+time_para_dict['time_para_5'] = [pd.to_datetime('20130901'), pd.to_datetime('20180901'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101')]
+
+time_para_dict['time_para_6'] = [pd.to_datetime('20131001'), pd.to_datetime('20181001'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101')]
+
+if __name__ == '__main__':
+    sector_name_list = ['market_top_300plus',
+                        'market_top_300plus_industry_10_15',
+                        'market_top_300plus_industry_20_25_30_35',
+                        'market_top_300plus_industry_40',
+                        'market_top_300plus_industry_45_50',
+                        'market_top_300plus_industry_55',
+
+                        'market_top_300to800plus',
+                        'market_top_300to800plus_industry_10_15',
+                        'market_top_300to800plus_industry_20_25_30_35',
+                        'market_top_300to800plus_industry_40',
+                        'market_top_300to800plus_industry_45_50',
+                        'market_top_300to800plus_industry_55',
+                        ]
+
+    hold_time_list = [5, 20]
+
+    for if_only_long in [True]:
+        for hold_time in hold_time_list:
+            for sector_name in sector_name_list:
+                main_fun(sector_name, hold_time, if_only_long, time_para_dict)
+

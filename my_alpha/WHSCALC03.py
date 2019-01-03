@@ -8,8 +8,8 @@ from collections import OrderedDict
 import talib as ta
 
 sys.path.append("/mnt/mfs/LIB_ROOT")
-# import funda_data as fd
-# from funda_data.funda_data_deal import SectorData
+# import create_data as fd
+# from create_data.funda_data_deal import SectorData
 import open_lib_c.shared_paths.path as pt
 from open_lib_c.shared_tools import send_email
 

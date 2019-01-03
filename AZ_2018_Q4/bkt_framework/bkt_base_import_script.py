@@ -1,4 +1,5 @@
 import sys
+from multiprocessing import Lock
 
 sys.path.append('/mnt/mfs')
 
@@ -17,6 +18,14 @@ def mul_fun(a, b):
 
     pos = pos_l.sub(pos_s)
     return pos
+
+
+def sub_fun(a, b):
+    return a.sub(b)
+
+
+def add_fun(a, b):
+    return a.add(b)
 
 
 def out_sample_perf_c(pnl_df_out, way=1):
@@ -315,7 +324,7 @@ class FactorTestBase:
         if not os.path.exists(target_path):
             os.mknod(target_path)
 
-    def save_load_control_(self, suffix_name, file_name, *args):
+    def save_load_control(self, suffix_name, file_name, *args):
         # 参数存储与加载的路径控制
         result_save_path = '/mnt/mfs/dat_whs/result_new'
         if self.if_new_program:
@@ -355,43 +364,10 @@ class FactorTestBase:
         return para_ready_df, log_save_file, result_save_file, total_para_num
 
 
-class MixFun:
-    @staticmethod
-    def load_daily_data(file_name, xinx, xnms, sector_df):
-        load_path = '/mnt/mfs/DAT_EQT/EM_Funda/daily/'
-        tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv'))
-        tmp_df = tmp_df.reindex(index=xinx, columns=xnms) * sector_df
-        target_df = bt.AZ_Row_zscore(tmp_df, cap=5)
-        return target_df
-
-    @staticmethod
-    def load_filter_data(filter_name, xinx, xnms):
-        load_path = '/mnt/mfs/dat_whs/data/new_factor_data/'
-        target_df = pd.read_pickle(os.path.join(load_path, filter_name + '.pkl')).reindex(index=xinx, columns=xnms)
-        return target_df
-
-    @staticmethod
-    def row_extre(raw_df, sector_df, percent):
-        raw_df = raw_df * sector_df
-        target_df = raw_df.rank(axis=1, pct=True)
-        target_df[target_df >= 1 - percent] = 1
-        target_df[target_df <= percent] = -1
-        target_df[(target_df > percent) & (target_df < 1 - percent)] = 0
-        return target_df
-
-    def load_mix_factor(self, name_1, xinx, xnms, sector_df, percent):
-        factor_1 = self.load_daily_data(name_1, xinx, xnms, sector_df)
-        # factor_2 = self.load_daily_data(name_2, xinx, xnms, sector_df)
-        score_df_1 = bt.AZ_Row_zscore(factor_1, cap=5)
-        # score_df_2 = bt.AZ_Row_zscore(factor_2, cap=5)
-        mix_df = score_df_1
-        target_df = self.row_extre(mix_df, sector_df, percent)
-        return target_df
-
-
-class FactorTest(FactorTestBase, MixFun):
-    def __init__(self, *args):
+class FactorTest(FactorTestBase):
+    def __init__(self, key_fun, *args):
         super(FactorTest, self).__init__(*args)
+        self.key_fun = key_fun
 
     @staticmethod
     def save_file_fun(target_file, write_list, if_save, lock):
@@ -401,141 +377,101 @@ class FactorTest(FactorTestBase, MixFun):
                 f.write('|'.join([str(x) for x in write_list]) + '\n')
                 f.close()
 
-    def part_test_fun(self, key, log_save_file, result_save_file, total_para_num, filter_name, *args):
+    def part_test_fun(self, key, log_save_file, result_save_file, total_para_num, filter_name, *factor_name_list):
         lock = Lock()
         start_time = time.time()
         load_time_1 = time.time()
         percent = 0.3
-        mix_factor = self.load_mix_factor(*args, xinx=self.xinx, xnms=self.xnms,
-                                          sector_df=self.sector_df, percent=percent)
-        # filter_factor = self.filter_name
-        filter_factor = mix_factor.copy()
-        filter_factor.iloc[:, :] = 1
+        mix_factor = self.key_fun.create_mix_factor(*factor_name_list, xinx=self.xinx, xnms=self.xnms,
+                                                    sector_df=self.sector_df, if_only_long=self.if_only_long,
+                                                    percent=percent)
+
+        filter_factor = self.key_fun.load_filter_data(filter_name, self.xinx, self.xnms,
+                                                      self.sector_df, self.if_only_long)
         load_time_2 = time.time()
         load_delta = round(load_time_2 - load_time_1, 2)
+        signal_df = mix_factor * filter_factor
 
-        signal_df = mul_fun(mix_factor, filter_factor)
-
-        pos_df = self.deal_mix_factor(signal_df)
-        result_dict = simu_time_para_fun(self.time_para_dict, pos_df, self.return_choose, if_return_pnl=False,
-                                         if_only_long=self.if_only_long)
+        pos_df = self.deal_mix_factor(signal_df).shift(2)
+        result_dict = simu_time_para_fun(self.time_para_dict, pos_df, self.return_choose,
+                                         if_return_pnl=False, if_only_long=self.if_only_long)
 
         for time_key in result_dict.keys():
             in_condition, *filter_result = result_dict[time_key]
             # result 存储
             if in_condition:
-                self.save_file_fun(result_save_file, [time_key, key, *args, self.sector_name, in_condition] +
-                                   filter_result, self.if_save, lock)
-            print([time_key, in_condition, *args] + filter_result)
+                self.save_file_fun(result_save_file,
+                                   [time_key, key, filter_name, *factor_name_list,
+                                    self.sector_name, in_condition] + filter_result,
+                                   self.if_save, lock)
+                print([time_key, in_condition, filter_name, *factor_name_list] + filter_result)
 
         end_time = time.time()
         run_delta = round(end_time - start_time, 2)
         # 参数存储
-        self.save_file_fun(log_save_file, [key, *args, self.sector_name, run_delta, load_delta], self.if_save, lock)
+        self.save_file_fun(log_save_file,
+                           [key, filter_name, *factor_name_list, self.sector_name, run_delta, load_delta],
+                           self.if_save, lock)
         print('{}%, {}, cost {} seconds, load_cost {} seconds'
-              .format(round(key / total_para_num * 100, 4), key, run_delta, load_delta), *args)
+              .format(round(key / total_para_num * 100, 4), key, run_delta, load_delta), *factor_name_list)
 
     def main_test_fun(self, *args, pool_num=20, suffix_name='', old_file_name=''):
         para_ready_df, log_save_file, result_save_file, total_para_num = \
-            self.save_load_control_(suffix_name, old_file_name, *args)
+            self.save_load_control(suffix_name, old_file_name, *args)
 
         pool = Pool(pool_num)
         for key in list(para_ready_df.index):
             # print(para_ready_df)
             args = para_ready_df.loc[key]
             args_list = (key, log_save_file, result_save_file, total_para_num, *args)
-            self.part_test_fun(*args_list)
-        #     pool.apply_async(self.part_test_fun, args=args_list)
-        # pool.close()
-        # pool.join()
+            # self.part_test_fun(*args_list)
+            pool.apply_async(self.part_test_fun, args=args_list)
+        pool.close()
+        pool.join()
         pass
 
+    def single_test(self, filter_name, *factor_name_list):
+        percent = 0.3
+        mix_factor = self.key_fun.create_mix_factor(*factor_name_list, xinx=self.xinx, xnms=self.xnms,
+                                                    sector_df=self.sector_df, if_only_long=self.if_only_long,
+                                                    percent=percent)
 
-def main_fun(sector_name, hold_time):
-    root_path = '/mnt/mfs/DAT_EQT'
-    if_save = False
-    if_new_program = True
+        filter_factor = self.key_fun.load_filter_data(filter_name, self.xinx, self.xnms,
+                                                      self.sector_df, self.if_only_long)
+        signal_df = mix_factor * filter_factor
+        pos_df = self.deal_mix_factor(signal_df).shift(2)
+        in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+        fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = simu_fun(self.cut_date, pos_df, self.return_choose,
+                                                                      if_return_pnl=True,
+                                                                      if_only_long=self.if_only_long)
+        return mix_factor, in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, \
+               pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
 
-    begin_date = pd.to_datetime('20100101')
-    cut_date = pd.to_datetime('20160401')
-    end_date = pd.to_datetime('20180901')
-    lag = 2
-    return_file = ''
+# time_para_dict = OrderedDict()
+#
+# time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+#                                  pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+#                                  pd.to_datetime('20151001'), pd.to_datetime('20160101')]
+#
+# time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+#                                  pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+#                                  pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+#
+# time_para_dict['time_para_3'] = [pd.to_datetime('20130101'), pd.to_datetime('20180101'),
+#                                  pd.to_datetime('20180401'), pd.to_datetime('20180701'),
+#                                  pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+#
+# time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
+#                                  pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+#                                  pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+#
+# time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+#                                  pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+#                                  pd.to_datetime('20181001'), pd.to_datetime('20181001')]
+#
+# time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
+#                                  pd.to_datetime('20181001'), pd.to_datetime('20181001'),
+#                                  pd.to_datetime('20181001'), pd.to_datetime('20181001')]
 
-    if_hedge = True
-    if_only_long = False
-    time_para_dict = OrderedDict()
-
-    time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
-                                     pd.to_datetime('20150401'), pd.to_datetime('20150701'),
-                                     pd.to_datetime('20151001'), pd.to_datetime('20160101')]
-
-    time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
-                                     pd.to_datetime('20160401'), pd.to_datetime('20160701'),
-                                     pd.to_datetime('20161001'), pd.to_datetime('20170101')]
-
-    time_para_dict['time_para_3'] = [pd.to_datetime('20130101'), pd.to_datetime('20180101'),
-                                     pd.to_datetime('20180401'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
-
-    time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
-                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
-                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
-
-    time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
-                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
-                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
-
-    time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('20180801'),
-                                     pd.to_datetime('20181001'), pd.to_datetime('20181001'),
-                                     pd.to_datetime('20181001'), pd.to_datetime('20181001')]
-
-    if sector_name.startswith('market_top_300plus'):
-        if_weight = 1
-        ic_weight = 0
-
-    elif sector_name.startswith('market_top_300to800plus'):
-        if_weight = 0
-        ic_weight = 1
-
-    else:
-        if_weight = 0.5
-        ic_weight = 0.5
-
-    main_model = FactorTest(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
-                            sector_name, hold_time, lag, return_file, if_hedge, if_only_long,
-                            if_weight, ic_weight)
-
-    ratio_list = ['R_DebtAssets_QTTM',
-                  'R_EBITDA_IntDebt_QTTM',
-                  'R_EBITDA_sales_TTM_First',
-                  'R_BusinessCycle_First',
-                  'R_DaysReceivable_First',
-                  'R_DebtEqt_First',
-                  'R_FairVal_TotProfit_TTM_First',
-                  'R_LTDebt_WorkCap_QTTM',
-                  'R_OPCF_TotDebt_QTTM',
-                  'R_OPEX_sales_TTM_First',
-                  'R_SalesGrossMGN_QTTM',
-                  'R_CurrentAssetsTurnover_QTTM',
-                  'R_TangAssets_TotLiab_QTTM',
-                  'R_NetROA_TTM_First',
-                  'R_ROE_s_First',
-                  'R_EBIT_sales_QTTM',
-                  ]
-
-    tech_list = ['aadj_r_p20d_col_extre_0.2',
-                 'aadj_r_p345d_continue_ud_pct',
-                 'aadj_r_p345d_continue_ud',
-                 'volume_moment_p1040d',
-                 'volume_moment_p20120d',
-                 'return_p30d_0.2',
-                 'return_p90d_0.2'
-                 ]
-
-    pool_num = 5
-    main_model.main_test_fun(tech_list, ratio_list, pool_num=pool_num, suffix_name='', old_file_name='')
-
-
-if __name__ == '__main__':
-    main_fun('market_top_300plus', 20)
+# if __name__ == '__main__':
+#     main_fun('market_top_300plus', 20, time_para_dict)

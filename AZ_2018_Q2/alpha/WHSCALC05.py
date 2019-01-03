@@ -8,8 +8,8 @@ from collections import OrderedDict
 import talib as ta
 
 sys.path.append("/mnt/mfs/LIB_ROOT")
-# import funda_data as fd
-# from funda_data.funda_data_deal import SectorData
+# import create_data as fd
+# from create_data.funda_data_deal import SectorData
 import open_lib.shared_paths.path as pt
 from open_lib.shared_tools import send_email
 
@@ -1774,7 +1774,8 @@ class PrecalcDataCreate:
 
 
 def main(config_name_dict):
-    config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs'
+    # config_path = '/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file'
+    config_path = '/mnt/mfs/dat_whs/alpha_data/'
     up_date_dict = OrderedDict()
     for config_name in config_name_dict.keys():
         # print(config_name)
@@ -1795,9 +1796,12 @@ def main(config_name_dict):
 if __name__ == '__main__':
     a = time.time()
 
-    config_name_dict = {'market_top_300to800plus_True_20181124_1156_hold_20__11':
-                            ['name1', 'name3'],
-                        }
+    config_name_dict = {
+        # 'market_top_300to800plus_True_20181124_1156_hold_20__11':
+        #     ['name1', 'name3'],
+        'market_top_800plus_True_20181202_1830_hold_20__7':
+            ['name1', 'name3'],
+    }
 
     main(config_name_dict)
     b = time.time()

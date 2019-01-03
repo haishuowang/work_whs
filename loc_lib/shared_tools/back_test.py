@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
-import dask.dataframe as dd
+# import dask.dataframe as dd
 import os
 import sys
+sys.path.append('/mnt/mfs')
 from work_whs.loc_lib.shared_tools import send_email
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -16,11 +17,8 @@ def AZ_Rolling_mean_multi(data, window, func, ncore=4):
     return result
 
 
-def AZ_Load_csv(target_path, index_time_type=True, sep='|'):
-    if index_time_type:
-        target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False, parse_dates=True)
-    else:
-        target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False)
+def AZ_Load_csv(target_path, parse_dates=True, sep='|'):
+    target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False, parse_dates=parse_dates)
     return target_df
 
 

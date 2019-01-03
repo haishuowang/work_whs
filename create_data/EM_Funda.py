@@ -1,4 +1,4 @@
-import funda_data.funda_data_deal as fdd
+import create_data.funda_data_deal as fdd
 import loc_lib.shared_paths.path as pt
 import loc_lib.shared_tools.back_test as bt
 import pandas as pd

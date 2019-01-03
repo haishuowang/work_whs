@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-import funda_data as fd
-from funda_data.funda_data_deal import SectorData
+import create_data as fd
+from create_data.funda_data_deal import SectorData
 import loc_lib.shared_paths.path as pt
 import loc_lib.shared_tools.back_test as bt
 import os

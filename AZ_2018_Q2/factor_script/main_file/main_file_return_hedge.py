@@ -172,8 +172,11 @@ class FactorTest:
     def pos_daily_fun(df, n=5):
         return df.rolling(window=n, min_periods=1).sum()
 
-    def check_factor(self, name_list, file_name):
-        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+    def check_factor(self, name_list, file_name, check_path=None):
+        if check_path is None:
+            load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
+        else:
+            load_path = check_path
         exist_factor = set([x[:-4] for x in os.listdir(load_path)])
         print()
         use_factor = set(name_list)

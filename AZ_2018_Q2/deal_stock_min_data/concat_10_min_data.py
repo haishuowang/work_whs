@@ -77,9 +77,9 @@ def concat_close_live_history():
     data_con_2.to_csv('/mnt/mfs/DAT_EQT/intraday/Close_10min_2018.csv', swep='|')
 
 
-# if __name__ == '__main__':
-#     # concat_vwap()
-#     # concat_close()
-#     concat_vwap_live_history()
-#     concat_close_live_history()
+if __name__ == '__main__':
+    concat_vwap()
+    concat_close()
+    # concat_vwap_live_history()
+    # concat_close_live_history()
 

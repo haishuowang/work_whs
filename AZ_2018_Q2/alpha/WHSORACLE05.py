@@ -825,11 +825,14 @@ class FactorTestSector(FactorTest):
 
 
 def config_test():
-    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/'
-                                f'market_top_300to800plus_industry_55_True_20181123_2257_hold_20__7.pkl')
+    # config_name = 'market_top_300to800plus_industry_55_True_20181202_1714_hold_20__7'
+    config_name = 'market_top_300plus_industry_10_15_True_20181204_1435_hold_5__11'
+
+    config_set = pd.read_pickle(f'/media/hdd1/DAT_PreCalc/PreCalc_whs/config_file/'
+                                f'{config_name}.pkl')
     config_data = config_set['factor_info']
     sector_name = config_set['sector_name']
-    alpha_name = 'WHSORAQCLE05'
+    alpha_name = 'WHSORACLE05'
     cut_date = '20180601'
     begin_date = pd.to_datetime('20140601')
     end_date = datetime.now()
@@ -872,9 +875,9 @@ def config_test():
     if ic_weight != 0:
         sum_pos_df_new['IC01'] = -ic_weight * sum_pos_df_new.sum(axis=1)
 
-    pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
-    # sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
+    sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 
 
