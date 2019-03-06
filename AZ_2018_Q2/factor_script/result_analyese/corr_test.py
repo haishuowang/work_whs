@@ -13,7 +13,7 @@ def get_all_pnl_corr(pnl_df, col_name):
 
 
 result_file_name_list = [
-    'market_top_300to800plus_True_20181228_1404_hold_5__16'
+    'market_top_300to800plus_industry_10_15_True_20190105_0357_hold_20__16'
 ]
 for result_file_name in result_file_name_list:
     pnl_df = pd.read_csv(f'/mnt/mfs/dat_whs/tmp_pnl_file/{result_file_name}.csv', index_col=0, parse_dates=True)

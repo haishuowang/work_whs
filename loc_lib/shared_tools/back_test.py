@@ -3,11 +3,17 @@ import pandas as pd
 # import dask.dataframe as dd
 import os
 import sys
+
 sys.path.append('/mnt/mfs')
 from work_whs.loc_lib.shared_tools import send_email
 import matplotlib.pyplot as plt
 from datetime import datetime
 import time
+
+
+def AZ_get_stock_name():
+    return_df = AZ_Load_csv('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_p.csv')
+    return list(return_df.columns)
 
 
 def AZ_Rolling_mean_multi(data, window, func, ncore=4):
@@ -107,6 +113,7 @@ def AZ_Pot(pos_df, asset_last):
     :param asset_last: 最后一天的收益
     :return:
     """
+    pos_df = pos_df.fillna(0)
     trade_times = pos_df.diff().abs().sum().sum()
     if trade_times == 0:
         return 0
@@ -197,6 +204,19 @@ def AZ_add_stock_suffix(stock_list):
     return list(map(lambda x: x + '.SH' if x.startswith('6') else x + '.SZ', stock_list))
 
 
+def AZ_cut_stock_suffix(stock_list, num=3, way=-1):
+    if way == 1:
+        return [x[num:] for x in stock_list]
+    elif way == -1:
+        return [x[:-num] for x in stock_list]
+    else:
+        print('ERROR')
+
+
+def AZ_clear_columns(stock_list):
+    return [x[2:] + '.' + x[:2] for x in stock_list]
+
+
 def AZ_Delete_file(target_path, except_list=None):
     if except_list is None:
         except_list = []
@@ -215,13 +235,21 @@ def AZ_turnover(pos_df):
     return diff_sum / float(pos_sum)
 
 
-def AZ_annual_return(pos_df, return_df):
-    temp_pnl = (pos_df * return_df).sum().sum()
-    temp_pos = pos_df.abs().sum().sum()
+def AZ_annual_return(pos_df, return_df, window=600):
+    temp_pnl = (pos_df * return_df).iloc[-window:].sum().sum()
+    temp_pos = pos_df.iloc[-window:].abs().sum().sum()
     if temp_pos == 0:
         return .0
     else:
         return temp_pnl * 250.0 / temp_pos
+
+
+def AZ_ls_margin(pos_df, return_df, window=600):
+    pos_long = pos_df[pos_df > 0]
+    pos_short = pos_df[pos_df < 0]
+    margin_l = AZ_annual_return(pos_long, return_df, window)
+    margin_s = AZ_annual_return(pos_short, return_df, window)
+    return margin_l, margin_s
 
 
 def AZ_fit_ratio(pos_df, return_df):
@@ -392,3 +420,104 @@ def AZ_Back_test(pos_df, return_df, usr_email=None, figsize=None, if_file=False,
             AZ_Delete_file(save_root_path, except_list=None)
         os.rmdir(save_root_path)
     return sharpe, pot, leve_ratio, total_asset
+
+
+def commit_check(pnl_df, mod='o'):
+    """
+    pnl_df
+    :param pnl_df:要求DataFrame格式,其中index为时间格式,columns为pnl的名称
+    :param mod: 'o':多空,'h':对冲
+    :return:result_df包含corr,sp5,sp2,lv5,lv2,其中0表示不满足,1表示满足,
+            info_df为具体数值
+    """
+    assert type(pnl_df) == pd.DataFrame
+    all_pnl_df = pd.read_csv('/mnt/mfs/AATST/corr_tst_pnls', sep='|', index_col=0, parse_dates=True)
+    all_pnl_df_c = pd.concat([all_pnl_df, pnl_df], axis=1)
+    all_pnl_df_c_ma3 = AZ_Rolling(all_pnl_df_c, 3).mean().iloc[-1250:]
+    matrix_corr_o = all_pnl_df_c_ma3.corr()[pnl_df.columns].drop(index=pnl_df.columns)
+
+    matrix_sp5 = pnl_df.iloc[-1250:].apply(AZ_Sharpe_y)
+    matrix_lv5 = pnl_df.iloc[-1250:].cumsum().apply(AZ_Leverage_ratio)
+
+    matrix_sp2 = pnl_df.iloc[-500:].apply(AZ_Sharpe_y)
+    matrix_lv2 = pnl_df.iloc[-500:].cumsum().apply(AZ_Leverage_ratio)
+
+    info_df = pd.concat([matrix_corr_o.max(), matrix_sp5, matrix_sp2, matrix_lv5, matrix_lv2], axis=1)
+    info_df.columns = ['corr', 'sp5', 'sp2', 'lv5', 'lv2']
+    info_df = info_df.T
+
+    if mod == 'h':
+        cond_matrix = pd.DataFrame([[0.49, 1.90, 1.66, 1.70, 1.70],
+                                    [0.59, 2.00, 1.75, 1.75, 1.75],
+                                    [0.69, 2.10, 1.80, 1.80, 1.80]])
+    else:
+        cond_matrix = pd.DataFrame([[0.49, 2.00, 1.75, 2.00, 2.00],
+                                    [0.59, 2.10, 1.85, 2.10, 2.10],
+                                    [0.69, 2.25, 1.95, 2.20, 2.20]])
+
+    def result_deal(x):
+        for i in range(len(cond_matrix)):
+            if x[0] <= cond_matrix.iloc[i, 0]:
+                corr, sp_5, sp_2, lv_5, lv_2 = cond_matrix.iloc[i]
+                res = x > [-1, sp_5, sp_2, lv_5, lv_2]
+                return res.astype(int)
+        return [0, 0, 0, 0, 0]
+
+    result_df = info_df.apply(result_deal)
+    print('*******info_df*******')
+    print(info_df)
+
+    print('*******result_df*******')
+    print(result_df)
+
+    return result_df, info_df
+
+
+def commit_check_beta(pnl_df, mod='o'):
+    """
+    pnl_df
+    :param pnl_df:要求DataFrame格式,其中index为时间格式,columns为pnl的名称
+    :param mod: 'o':多空,'h':对冲
+    :return:result_df包含corr,sp5,sp2,lv5,lv2,其中0表示不满足,1表示满足,
+            info_df为具体数值
+    """
+    assert type(pnl_df) == pd.DataFrame
+    all_pnl_df = pd.read_csv('/mnt/mfs/AATST/corr_tst_pnls', sep='|', index_col=0, parse_dates=True)
+    all_pnl_df_c = pd.concat([all_pnl_df, pnl_df], axis=1)
+    all_pnl_df_c_ma3 = AZ_Rolling(all_pnl_df_c, 3).mean().iloc[-1250:]
+
+    matrix_corr_o = all_pnl_df_c_ma3.corr()[pnl_df.columns].drop(index=pnl_df.columns)
+    matrix_sp5 = pnl_df.iloc[-1250:].apply(AZ_Sharpe_y)
+    matrix_lv5 = pnl_df.iloc[-1250:].cumsum().apply(AZ_Leverage_ratio)
+    matrix_sp2 = pnl_df.iloc[-500:].apply(AZ_Sharpe_y)
+    matrix_lv2 = pnl_df.iloc[-500:].cumsum().apply(AZ_Leverage_ratio)
+
+    info_df = pd.concat([matrix_corr_o.max(), matrix_sp5, matrix_sp2, matrix_lv5, matrix_lv2], axis=1)
+    info_df.columns = ['corr', 'sp5', 'sp2', 'lv5', 'lv2']
+    info_df = info_df.T
+
+    if mod == 'h':
+        cond_matrix = pd.DataFrame([[0.46, 1.90, 1.66, 1.70, 1.70],
+                                    [0.56, 2.00, 1.75, 1.75, 1.75],
+                                    [0.66, 2.10, 1.80, 1.80, 1.80]])
+    else:
+        cond_matrix = pd.DataFrame([[0.46, 2.00, 1.75, 2.00, 2.00],
+                                    [0.56, 2.10, 1.85, 2.10, 2.10],
+                                    [0.66, 2.25, 1.95, 2.20, 2.20]])
+
+    def result_deal(x):
+        for i in range(len(cond_matrix)):
+            if x[0] <= cond_matrix.iloc[i, 0]:
+                corr, sp_5, sp_2, lv_5, lv_2 = cond_matrix.iloc[i]
+                res = x > [-1, sp_5, sp_2, lv_5, lv_2]
+                return res.astype(int)
+        return [0, 0, 0, 0, 0]
+
+    result_df = info_df.apply(result_deal)
+    print('*******info_df*******')
+    print(info_df)
+
+    print('*******result_df*******')
+    print(result_df)
+
+    return result_df, info_df

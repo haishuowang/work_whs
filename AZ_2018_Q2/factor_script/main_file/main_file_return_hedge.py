@@ -205,10 +205,10 @@ class FactorTest:
 
     # 获取剔除新股的矩阵
     def get_new_stock_info(self, xnms, xinx):
-        new_stock_data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab01/CDSY_SECUCODE/LISTSTATE.csv'))
+        new_stock_data = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/CDSY_SECUCODE/LISTSTATE.csv')
         new_stock_data.fillna(method='ffill', inplace=True)
         # 获取交易日信息
-        return_df = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_14/aadj_r.csv')).astype(float)
+        return_df = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/DERIVED_14/aadj_r.csv').astype(float)
         trade_time = return_df.index
         new_stock_data = new_stock_data.reindex(index=trade_time).fillna(method='ffill')
         target_df = new_stock_data.shift(40).notnull().astype(int)
@@ -217,7 +217,7 @@ class FactorTest:
 
     # 获取剔除st股票的矩阵
     def get_st_stock_info(self, xnms, xinx):
-        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Tab01/CDSY_CHANGEINFO/CHANGEA.csv'))
+        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/CDSY_CHANGEINFO/CHANGEA.csv'))
         data = data.reindex(columns=xnms, index=xinx)
         data.fillna(method='ffill', inplace=True)
 
@@ -232,9 +232,16 @@ class FactorTest:
 
     # 获取sector data
     def load_sector_data(self):
-        market_top_n = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/DERIVED_10/' + self.sector_name + '.csv'))
+        if self.sector_name.startswith('index'):
+            index_name = self.sector_name.split('_')[-1]
+            market_top_n = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/IDEX_YS_WEIGHT_A/SECURITYNAME_{index_name}.csv')
+            market_top_n[market_top_n == market_top_n] = 1
+        else:
+            market_top_n = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/DERIVED_10/{self.sector_name}.csv')
+
         market_top_n = market_top_n.reindex(index=self.xinx)
         market_top_n.dropna(how='all', axis='columns', inplace=True)
+
         xnms = market_top_n.columns
         xinx = market_top_n.index
 
@@ -444,4 +451,3 @@ if __name__ == '__main__':
 
     main = FactorTest(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict, sector_name,
                       hold_time, lag, return_file, if_hedge, if_only_long)
-

@@ -8,8 +8,8 @@ from collections import OrderedDict
 import talib as ta
 
 sys.path.append("/mnt/mfs/LIB_ROOT")
-# import create_data as fd
-# from create_data.funda_data_deal import SectorData
+# import funda_data as fd
+# from funda_data.funda_data_deal import SectorData
 import open_lib.shared_paths.path as pt
 from open_lib.shared_tools import send_email
 
@@ -1734,7 +1734,7 @@ class PrecalcDataCreate:
             else:
                 create_data = create_data_fun(self.root_path, info_path, self.sector_df, self.xnms, self.xinx,
                                               self.target_date)
-            # create_data.to_pickle(file_save_path)
+            # funda_data.to_pickle(file_save_path)
 
             create_data.iloc[-5:].to_pickle(file_save_path)
 

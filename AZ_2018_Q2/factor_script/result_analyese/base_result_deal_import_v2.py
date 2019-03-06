@@ -22,6 +22,76 @@ import work_whs.loc_lib.shared_tools.back_test as bt
 from collections import Counter
 
 
+def load_index_data(index_name, xinx):
+    data = bt.AZ_Load_csv(os.path.join('/mnt/mfs/DAT_EQT', 'EM_Tab09/INDEX_TD_DAILYSYS/CHG.csv'))
+    target_df = data[index_name].reindex(index=xinx)
+    return target_df * 0.01
+
+
+def get_corr_matrix(cut_date=None):
+    pos_file_list = [x for x in os.listdir('/mnt/mfs/AAPOS') if x.startswith('WHS')]
+    return_df = bt.AZ_Load_csv('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_r.csv').astype(float)
+
+    index_df_1 = load_index_data('000300', return_df.index).fillna(0)
+    index_df_2 = load_index_data('000905', return_df.index).fillna(0)
+
+    sum_pnl_df = pd.DataFrame()
+    for pos_file_name in pos_file_list:
+        pos_df = bt.AZ_Load_csv('/mnt/mfs/AAPOS/{}'.format(pos_file_name))
+
+        cond_1 = 'IF01' in pos_df.columns
+        cond_2 = 'IC01' in pos_df.columns
+        if cond_1 and cond_2:
+            hedge_df = 0.5 * index_df_1 + 0.5 * index_df_2
+            return_df_c = return_df.sub(hedge_df, axis=0)
+        elif cond_1:
+            hedge_df = index_df_1
+            return_df_c = return_df.sub(hedge_df, axis=0)
+        elif cond_2:
+            hedge_df = index_df_2
+            return_df_c = return_df.sub(hedge_df, axis=0)
+        else:
+            print('alpha hedge error')
+            continue
+        pnl_df = (pos_df.shift(2) * return_df_c).sum(axis=1)
+        pnl_df.name = pos_file_name
+        sum_pnl_df = pd.concat([sum_pnl_df, pnl_df], axis=1)
+        # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), 'mix_factor')
+    if cut_date is not None:
+        sum_pnl_df = sum_pnl_df[sum_pnl_df.index > cut_date]
+    return sum_pnl_df
+
+
+def get_all_pnl_corr(pnl_df, col_name):
+    all_pnl_df = pd.read_csv('/mnt/mfs/AATST/corr_tst_pnls', sep='|', index_col=0, parse_dates=True)
+    all_pnl_df_c = pd.concat([all_pnl_df, pnl_df], axis=1)
+    a = all_pnl_df_c.iloc[-600:].corr()[col_name]
+    return a[a > 0.71]
+
+
+def corr_test_fun(pnl_df, alpha_name):
+    sum_pnl_df = get_corr_matrix(cut_date=None)
+    sum_pnl_df_c = pd.concat([sum_pnl_df, pnl_df], axis=1)
+    corr_self = sum_pnl_df_c.corr()[[alpha_name]]
+    other_corr = get_all_pnl_corr(pnl_df, alpha_name)
+    print(other_corr)
+    self_corr = corr_self[corr_self > 0.7].dropna(axis=0)
+    print(self_corr)
+    if len(self_corr) >= 2 or len(other_corr) >= 2:
+        print('FAIL!')
+        send_email.send_email('FAIL!\n' + corr_self.to_html(),
+                              ['whs@yingpei.com'],
+                              [],
+                              '[RESULT DEAL]' + alpha_name)
+    else:
+        print('SUCCESS!')
+        send_email.send_email('SUCCESS!\n' + corr_self.to_html(),
+                              ['whs@yingpei.com'],
+                              [],
+                              '[RESULT DEAL]' + alpha_name)
+    print('______________________________________')
+
+
 def AZ_Leverage_ratio(asset_df):
     """
     返回250天的return/(负的 一个月的return)
@@ -131,7 +201,7 @@ def create_fun_set_2_crt():
     mix_fun_set = dict()
     for fun_1 in [add_fun, sub_fun, mul_fun]:
         exe_str_1 = """def {0}_{1}_fun(a, b, c):
-                mix_1 = {0}_fun(a, b)
+                mix_1 = {0}_fun(a, b)abnorm_fin_factor
                 mix_2 = {1}_fun(mix_1, c)
                 return mix_2
             """.format(fun_1.__name__.split('_')[0], fun_2.__name__.split('_')[0])
@@ -321,7 +391,7 @@ def pos_sum_c(main_model, data, time_para, result_file_name, pot_in_num, leve_ra
     bt.AZ_Path_create(pnl_save_path)
 
     result_list = []
-    pool = Pool(10)
+    pool = Pool(20)
     for i in a_n.index:
         # bkt_fun(main_model, pnl_save_path, a_n, i,)
         result_list.append(pool.apply_async(bkt_fun, args=(main_model, pnl_save_path, a_n, i,)))
@@ -443,57 +513,11 @@ def config_test(main_model, config_name, result_file_name, cut_date):
     pnl_df.to_csv(f'/mnt/mfs/dat_whs/tmp_pnl_file/{result_file_name}.csv')
     send_list = [in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in,
                  fit_ratio, leve_ratio, sp_in, sharpe_q_out]
-    send_email.send_email(','.join([str(x) for x in send_list]), ['whs@yingpei.com'], [], result_file_name)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), result_file_name)
+    send_email.send_email(','.join([str(x) for x in send_list]), ['whs@yingpei.com'],
+                          [], '[RESULT DEAL]' + result_file_name)
+
+    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), '[RESULT DEAL]' + result_file_name)
     return sum_pos_df, pnl_df, sp
-
-
-def load_index_data(index_name, xinx):
-    data = bt.AZ_Load_csv(os.path.join('/mnt/mfs/DAT_EQT', 'EM_Tab09/INDEX_TD_DAILYSYS/CHG.csv'))
-    target_df = data[index_name].reindex(index=xinx)
-    return target_df * 0.01
-
-
-def get_corr_matrix(cut_date=None):
-    pos_file_list = [x for x in os.listdir('/mnt/mfs/AAPOS') if x.startswith('WHS')]
-    return_df = bt.AZ_Load_csv('/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_14/aadj_r.csv').astype(float)
-
-    index_df_1 = load_index_data('000300', return_df.index).fillna(0)
-    index_df_2 = load_index_data('000905', return_df.index).fillna(0)
-
-    sum_pnl_df = pd.DataFrame()
-    for pos_file_name in pos_file_list:
-        pos_df = bt.AZ_Load_csv('/mnt/mfs/AAPOS/{}'.format(pos_file_name))
-
-        cond_1 = 'IF01' in pos_df.columns
-        cond_2 = 'IC01' in pos_df.columns
-        if cond_1 and cond_2:
-            hedge_df = 0.5 * index_df_1 + 0.5 * index_df_2
-            return_df_c = return_df.sub(hedge_df, axis=0)
-        elif cond_1:
-            hedge_df = index_df_1
-            return_df_c = return_df.sub(hedge_df, axis=0)
-        elif cond_2:
-            hedge_df = index_df_2
-            return_df_c = return_df.sub(hedge_df, axis=0)
-        else:
-            print('alpha hedge error')
-            continue
-        pnl_df = (pos_df.shift(2) * return_df_c).sum(axis=1)
-        pnl_df.name = pos_file_name
-        sum_pnl_df = pd.concat([sum_pnl_df, pnl_df], axis=1)
-        # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), 'mix_factor')
-    if cut_date is not None:
-        sum_pnl_df = sum_pnl_df[sum_pnl_df.index > cut_date]
-    return sum_pnl_df
-
-
-def get_all_pnl_corr(pnl_df, col_name):
-    all_pnl_df = pd.read_csv('/mnt/mfs/AATST/corr_tst_pnls', sep='|', index_col=0, parse_dates=True)
-    all_pnl_df_c = pd.concat([all_pnl_df, pnl_df], axis=1)
-    a = all_pnl_df_c.iloc[-600:].corr()[col_name]
-    print(a[a > 0.6])
-    return a
 
 
 def find_sector_name(result_file_name):
@@ -554,7 +578,8 @@ def main(result_file_name, time_para_dict):
     config_name = result_file_name
     if_save = False
     if_new_program = True
-
+    print(result_file_name)
+    print(result_file_name.split('hold')[-1].split('_')[1])
     hold_time = int(result_file_name.split('hold')[-1].split('_')[1])
     # 加载对应脚本
 
@@ -680,6 +705,7 @@ def main(result_file_name, time_para_dict):
 
     config_create(main_model, sector_name, result_file_name, config_name, data, time_para, **survive_result,
                   n=5, use_factor_num=40)
+
     ###########################################################################
     # 测试config结果
     begin_date, cut_date, end_date, end_date, end_date, end_date = time_para_dict[time_para]
@@ -691,26 +717,7 @@ def main(result_file_name, time_para_dict):
     # 计算相关性
     # pnl_df_CRTSECJUN
     #
-    sum_pnl_df = get_corr_matrix(cut_date=None)
-    sum_pnl_df_c = pd.concat([sum_pnl_df, pnl_df], axis=1)
-
-    corr_self = sum_pnl_df_c.corr()[[result_file_name]]
-    print(corr_self)
-    print('______________________________________')
-    print(corr_self[corr_self > 0.7].dropna(axis=0))
-    if len(corr_self[corr_self > 0.7].dropna(axis=0)) >= 2:
-        print('FAIL!')
-        send_email.send_email('FAIL!\n' + pd.DataFrame(corr_self).to_html(),
-                              ['whs@yingpei.com'],
-                              [],
-                              result_file_name)
-    else:
-        print('SUCCESS!')
-        send_email.send_email('SUCCESS!\n' + pd.DataFrame(corr_self).to_html(),
-                              ['whs@yingpei.com'],
-                              [],
-                              result_file_name)
-    print('______________________________________')
+    corr_test_fun(pnl_df, result_file_name)
     return 0
 
 
@@ -746,34 +753,27 @@ if __name__ == '__main__':
     # begin_time = datetime(2018, 11, 19, 6, 11, 13)
     # end_time = datetime(2018, 11, 26, 6, 30, 13)
 
-    begin_time = datetime(2018, 12, 26, 00, 00, 00)
-    end_time = datetime(2019, 1, 1, 00, 00, 00)
+    # begin_time = datetime(2018, 12, 26, 00, 00, 00)
+    # end_time = datetime(2019, 1, 1, 00, 00, 00)
+
+    begin_time = datetime(2018, 2, 18, 00, 00, 00)
+    end_time = datetime(2019, 2, 20, 00, 00, 00)
 
     time_type = 'm'
-    endswith = None
+    endswith = '20'
     end_pass_list = ['']
 
     result_file_name_list = find_target_file(begin_time, end_time, time_type, endswith)
-    # result_file_name_list = ['market_top_300to800plus_True_20181228_1404_hold_5__16']
+    # result_file_name_list = ['market_top_300to800plus_industry_10_15_True_20190105_0357_hold_20__16']
     print(result_file_name_list)
     for result_file_name in result_file_name_list:
-        pass_result_list = ['market_top_300plus_True_20181204_0930_hold_5__11',
-                            'market_top_300plus_True_20181205_0955_hold_5__7_long',
-                            'market_top_300plus_True_20181206_2321_hold_20__7_long',
-                            'market_top_300plus_True_20181206_2349_hold_20__11',
-
-                            'market_top_300to800plus_True_20181203_1659_hold_20__13',
-                            'market_top_300plus_industry_45_50_True_20181204_2039_hold_5__11',
-                            'market_top_300plus_industry_20_25_30_35_True_20181207_0610_hold_20__11',
-                            'market_top_300plus_industry_20_25_30_35_True_20181204_1639_hold_5__11',
-                            'market_top_300plus_True_20181224_1822_hold_5__13',
-                            'market_top_300plus_True_20181221_1454_hold_5__15_long',
-                            'market_top_300to800plus_True_20181225_0352_hold_5__13',
-                            'market_top_300to800plus_industry_10_15_True_20181202_0107_hold_20__7',
-                            'market_top_300to800plus_industry_10_15_True_20181203_2013_hold_20__13',
-
-                            'market_top_300plus_True_20181227_0336_hold_20__17',
-                            ]
+        pass_result_list = [
+            'market_top_300plus_True_20190214_1445_hold_5__20',
+            'market_top_300plus_industry_10_15_True_20190214_1922_hold_5__20',
+            'market_top_300plus_industry_20_25_30_35_True_20190214_2009_hold_5__20',
+            'market_top_300plus_industry_45_50_True_20190214_2157_hold_5__20',
+            'market_top_300to800plus_True_20190214_2214_hold_5__20'
+        ]
         if result_file_name in pass_result_list:
             pass
         else:

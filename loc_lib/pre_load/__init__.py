@@ -38,10 +38,26 @@ def plot_send_result(pnl_df, sharpe_ratio, subject, text=''):
     send_email.send_email(text, to, filepath, subject)
 
 
+def plot_send_result_mul(pnl_df, subject, text=''):
+    assert type(pnl_df) == pd.DataFrame
+    figure_save_path = os.path.join('/mnt/mfs/dat_whs', 'tmp_figure')
+    plt.figure(figsize=[16, 8])
+    for col in pnl_df.colmns:
+        plt.plot(pnl_df[col].index, pnl_df[col].cumsum(), label=f'{col}, sharpe_ratio={bt.AZ_Sharpe_y(pnl_df[col])}')
+    plt.grid()
+    plt.legend()
+    plt.savefig(os.path.join(figure_save_path, '{}.png'.format(subject)))
+    plt.close()
+    to = ['whs@yingpei.com']
+    filepath = [os.path.join(figure_save_path, '{}.png'.format(subject))]
+    send_email.send_email(text, to, filepath, subject)
+
+
 def mysql_select(select_col_list, table_name, conn, key_col=None, cond=None, cpu_num=20, step=100):
     key_col_list = pd.read_sql(f'SELECT DISTINCT {key_col} '
                                f'FROM {table_name}', conn).values.ravel()
     select_col_str = ', '.join(select_col_list)
+
     # sql_str = f'SELECT {select_col_str} ' \
     #           f'FROM {table_name} ' \
     #           f'WHERE {cond}'

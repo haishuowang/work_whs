@@ -395,7 +395,7 @@ class FactorTestSector(mf.FactorTest):
 
         para_ready_df, log_save_file, result_save_file, total_para_num = \
             self.save_load_control_(list_1, list_2, list_3, suffix_name, old_file_name)
-        self.check_factor(list_3, result_save_file)
+        # self.check_factor(list_3, result_save_file)
         a_time = time.time()
         pool = Pool(pool_num)
         for key in list(para_ready_df.index):
@@ -570,19 +570,24 @@ time_para_dict['time_para_6'] = [pd.to_datetime('20130801'), pd.to_datetime('201
                                  pd.to_datetime('20181101'), pd.to_datetime('20181101')]
 
 if __name__ == '__main__':
-    sector_name_list = ['market_top_300plus',
-                        'market_top_300plus_industry_10_15',
-                        'market_top_300plus_industry_20_25_30_35',
-                        'market_top_300plus_industry_40',
-                        'market_top_300plus_industry_45_50',
-                        'market_top_300plus_industry_55',
+    # sector_name_list = ['market_top_300plus',
+    #                     'market_top_300plus_industry_10_15',
+    #                     'market_top_300plus_industry_20_25_30_35',
+    #                     'market_top_300plus_industry_40',
+    #                     'market_top_300plus_industry_45_50',
+    #                     'market_top_300plus_industry_55',
+    #
+    #                     'market_top_300to800plus',
+    #                     'market_top_300to800plus_industry_10_15',
+    #                     'market_top_300to800plus_industry_20_25_30_35',
+    #                     'market_top_300to800plus_industry_40',
+    #                     'market_top_300to800plus_industry_45_50',
+    #                     'market_top_300to800plus_industry_55']
 
-                        'market_top_300to800plus',
-                        'market_top_300to800plus_industry_10_15',
-                        'market_top_300to800plus_industry_20_25_30_35',
-                        'market_top_300to800plus_industry_40',
-                        'market_top_300to800plus_industry_45_50',
-                        'market_top_300to800plus_industry_55']
+    sector_name_list = [
+        'index_000300',
+        'index_000905',
+    ]
 
     hold_time_list = [5, 20]
     for if_only_long in [True]:

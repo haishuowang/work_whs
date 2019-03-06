@@ -50,6 +50,14 @@
           <option name="port" value="32514" />
         </fileTransfer>
       </webServer>
+      <webServer id="c0f715d6-bd82-484a-9ea0-7af3fb5bec69" name="sim007" url="http://192">
+        <fileTransfer host="192" port="22" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>

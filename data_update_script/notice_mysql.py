@@ -3,11 +3,6 @@ import sys
 sys.path.append('/mnt/mfs')
 from work_whs.loc_lib.pre_load import *
 
-mysql_name = 'crawl'
-usr_name = 'yp_labman_whs'
-pass_word = 'whs300742'
-
-
 def fill_index(raw_df, root_path, window):
     raw_df = raw_df[bt.AZ_split_stock(raw_df.columns)]
     return_df = pd.read_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_r.csv',
@@ -331,6 +326,11 @@ def main(mod):
     print('get all stock id')
 
 
+mysql_name = 'crawl'
+usr_name = 'yp_labman_whs'
+pass_word = 'whs300742'
+
+
 if __name__ == '__main__':
-    mod = 'bkt'
+    mod = 'pro'
     main(mod)

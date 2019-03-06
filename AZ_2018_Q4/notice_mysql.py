@@ -218,7 +218,9 @@ class ClassifyNews:
     def __init__(self, save_path):
         engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
         conn = engine.connect()
-        news_df = pd.read_sql('SELECT StockId, NewsDate, NewsTitle, Summary FROM crawl.StockNews_xueqiu', conn)
+        news_df = pd.read_sql('SELECT StockId, NewsDate, NewsTitle, Summary '
+                              'FROM crawl.StockNews_xueqiu '
+                              'WHERE BulletinType != lsgg', conn)
         news_df['mark'] = 1
         news_df['NewsDate'] = [date_deal_fun(x) for x in news_df['NewsDate']]
         self.news_df = news_df
@@ -318,14 +320,17 @@ def main(mod):
         'restricted_shares': ['限售股解禁', '解除限购'],
         'son_company': ['子公司'],
         'suspend': ['停牌'],
-        'shares': ['股权分置', '股票激励', '股权激励', '质押']
+        'shares': ['股权分置', '股票激励', '股权激励', '质押'],
+        'bonus_share': ['股票激励', '激励股票',
+                        '股权激励', '激励股权',
+                        ]
     })
 
     print('process begin')
     a = time.time()
-    get_lsgg_table(root_path, save_path)
-    get_bulletin_table(root_path, save_path)
-    get_news_table(root_path, save_path)
+    # get_lsgg_table(root_path, save_path)
+    # get_bulletin_table(root_path, save_path)
+    # get_news_table(root_path, save_path)
 
     classify_bullitin = ClassifyBulletin(save_path)
     for file_name in key_word_dict.keys():
@@ -352,7 +357,3 @@ def main(mod):
 if __name__ == '__main__':
     mod = 'bkt'
     main(mod)
-    # mod = 'pro'
-    # main(mod)
-    # mod = ''
-    # main(mod)

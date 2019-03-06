@@ -63,4 +63,4 @@ def send_email(text, to, filepath, subject):
 
 
 if __name__ == '__main__':
-    send_email('good idea', ['whs@yingpei.com'], ['/mnt/mfs/dat_whs/tmp_figure/WHSORAQCLE05.png'], 'Wonderfully')
+    send_email('test', ['whs@yingpei.com'], [], 'Wonderfully')

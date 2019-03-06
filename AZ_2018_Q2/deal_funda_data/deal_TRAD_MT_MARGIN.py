@@ -64,4 +64,4 @@ def create_data():
 
 if __name__ == '__main__':
     base_save_path = '/mnt/mfs/dat_whs/data/base_data'
-    # create_data()
+    # funda_data()
