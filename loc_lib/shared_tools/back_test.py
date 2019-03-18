@@ -84,10 +84,38 @@ def AZ_Rolling(df, n, min_periods=0):
     return df.rolling(window=n, min_periods=min_periods)
 
 
-def AZ_Rolling_mean(df, n, min_periods=0):
-    target = df.rolling(window=n, min_periods=min_periods).mean()
-    target.iloc[:n - 1] = np.nan
+def AZ_Rolling_mean(df, window, min_periods=0):
+    target = df.rolling(window=window, min_periods=min_periods).mean()
+    target.iloc[:window - 1] = np.nan
     return target
+
+
+def AZ_Rolling_min(df, window, min_periods=0):
+    return AZ_Rolling(df, window, min_periods).min()
+
+
+def AZ_Rolling_max(df, window, min_periods=0):
+    return AZ_Rolling(df, window, min_periods).max()
+
+
+def AZ_Rolling_sum(df, window, min_periods=0):
+    return AZ_Rolling(df, window, min_periods).sum()
+
+
+def AZ_Rolling_std(df, window, min_periods=0):
+    return AZ_Rolling(df, window, min_periods).std()
+
+
+def AZ_Rolling_corr(df1, df2, window, min_periods=0):
+    return AZ_Rolling(df1, window, min_periods).corr(df2)
+
+
+def AZ_Rolling_cov(df1, df2, window, min_periods=0):
+    return AZ_Rolling(df1, window, min_periods).cov(df2)
+
+
+def AZ_Rolling_apply(df, window, fun, min_periods=0):
+    return AZ_Rolling(df, window, min_periods).apply(fun)
 
 
 def AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250, min_periods=0, cut_point_list=None, output=False):

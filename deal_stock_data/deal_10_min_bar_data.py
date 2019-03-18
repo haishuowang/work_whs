@@ -345,7 +345,7 @@ def part_info_table(month_path, day, begin_time, end_time):
         low_d.name = day
 
         open = pd.read_csv(os.path.join(day_path, 'Open.csv'), index_col=0).astype(float)
-        open_d = open.loc[begin_time: end_time].min()
+        open_d = open.loc[begin_time: end_time].iloc[0]
         open_d.name = day
         print(day, 'deal')
         return turnover_d, volume_d, close_d, high_d, low_d, open_d
@@ -358,7 +358,7 @@ def part_info_table(month_path, day, begin_time, end_time):
 def get_info_table(begin_time, end_time):
     begin_str = '20100101'
     # begin_str = '20190218'
-    end_str = '20190225'
+    end_str = '20190313'
 
     begin_year, begin_month, begin_day = begin_str[:4], begin_str[:6], begin_str
     end_year, end_month, end_day = end_str[:4], end_str[:6], end_str
@@ -436,7 +436,7 @@ if __name__ == '__main__':
 
     # a = time.time()
     # begin_time, end_time = '09:40', '10:00'
-    vwap_df = get_vwap_table(begin_time, end_time)
+    # vwap_df = get_vwap_table(begin_time, end_time)
     #
     # begin_time, end_time = '14:00', '14:15'
     # vwap_df = get_vwap_table(begin_time, end_time)
@@ -473,5 +473,5 @@ if __name__ == '__main__':
     #     adj_data = adj_columns(data)
     #     adj_data.to_csv(f'/mnt/mfs/DAT_EQT/intraday/daily_0930_1415/{file_name}.csv', sep='|')
 
-    # begin_time, end_time = '09:30', '14:15'
-    # get_info_table(begin_time, end_time)
+    begin_time, end_time = '09:30', '14:15'
+    get_info_table(begin_time, end_time)

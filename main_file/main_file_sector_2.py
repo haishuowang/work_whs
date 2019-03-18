@@ -9,12 +9,9 @@ import random
 from datetime import datetime
 import sys
 
-sys.path.append('/mnt/mfs/work_whs')
-sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
-import loc_lib.shared_tools.back_test as bt
-from loc_lib.shared_tools import send_email
-# 读取数据的函数 以及
-from factor_script.main_file import main_file_return_hedge as mf
+sys.path.append('/mnt/mfs')
+from work_whs.loc_lib.pre_load import *
+from work_whs.main_file import main_file_return_hedge as mf
 
 
 # product 笛卡尔积　　（有放回抽样排列）

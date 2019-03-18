@@ -363,6 +363,14 @@ class FactorTestSector(mf.FactorTest):
             target_df = target_df[target_df > 0]
         return target_df
 
+    def load_tmp_factor(self, file_name):
+        factor_path = '/mnt/mfs/dat_whs/'
+        raw_df = pd.read_pickle(f'{factor_path}/{file_name}.pkl')
+        target_df = raw_df.reindex(index=self.xinx, columns=self.xnms)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
+        return target_df
+
     @staticmethod
     def row_extre(raw_df, sector_df, percent):
         raw_df = raw_df * sector_df
@@ -432,20 +440,21 @@ class FactorTestSector(mf.FactorTest):
         #################
 
         filter_name = filter_all.__name__
-        if len(factor_1.abs().sum(axis=1).replace(0, np.nan).dropna()) / len(factor_1) < 0.5:
-            return -1
+        # if len(factor_1.abs().sum(axis=1).replace(0, np.nan).dropna()) / len(factor_1) < 0.5:
+        #     return -1
 
         daily_pos = self.deal_mix_factor(factor_1).shift(2)
         # 返回样本内筛选结果
         *result_list, pnl_df = filter_all(self.cut_date, daily_pos, self.return_choose,
                                           if_return_pnl=True, if_only_long=self.if_only_long)
-        pnl_save_path = f'/mnt/mfs/dat_whs/data/single_factor_pnl/{self.sector_name}'
-        bt.AZ_Path_create(pnl_save_path)
-        pnl_df.to_csv(f'{pnl_save_path}/{name_1}|{self.sector_name}|{self.hold_time}|{if_only_long}')
-        if abs(bt.AZ_Sharpe_y(pnl_df)) > 0.7:
-            plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
-                             f'{name_1}|{self.sector_name}|{self.hold_time}|{self.if_only_long}',
-                             text='|'.join([str(x) for x in result_list]))
+        # pnl_save_path = f'/mnt/mfs/dat_whs/data/single_factor_pnl/{self.sector_name}'
+        # bt.AZ_Path_create(pnl_save_path)
+        # pnl_df.to_csv(f'{pnl_save_path}/{name_1}|{self.sector_name}|{self.hold_time}|{if_only_long}')
+        # if abs(bt.AZ_Sharpe_y(pnl_df)) > 0.:
+        print(pnl_df)
+        plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
+                         f'{name_1}|{self.sector_name}|{self.hold_time}|{self.if_only_long}',
+                         text='|'.join([str(x) for x in result_list]))
 
         in_condition, *filter_result = result_list
         # result 存储
@@ -476,9 +485,10 @@ class FactorTestSector(mf.FactorTest):
             self.save_load_control_single(factor_list, suffix_name, old_file_name)
         # self.check_factor(factor_list, result_save_file)
         a_time = time.time()
-        pool = Pool(pool_num)
+        # pool = Pool(pool_num)
         for key in list(para_ready_df.index):
             name_1 = para_ready_df.loc[key][0]
+            print(name_1)
             args_list = (key, name_1, log_save_file, result_save_file, total_para_num, my_factor_dict)
             self.part_test_index(*args_list)
         #     pool.apply_async(self.part_test_index, args=args_list)
@@ -596,10 +606,11 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
 
-    my_factor_dict = {'dividend_ratio': 'load_whs_factor'}
+    my_factor_dict = {'LICO_MO_MANRPHOLD': 'load_tmp_factor'}
     pool_num = 28
 
     main.test_index(my_factor_dict, pool_num, suffix_name='single_test')
+
     # main.single_test('RZRQYE_row_extre_0.2')
     print(1)
 
@@ -618,11 +629,11 @@ def main_test_fun(sector_name, hold_time, if_only_long, time_para_dict):
     if_hedge = True
     # if_only_long = False
 
-    if sector_name.startswith('market_top_300plus'):
+    if sector_name.startswith('market_top_300plus') and sector_name.startswith('index_000300'):
         if_weight = 1
         ic_weight = 0
 
-    elif sector_name.startswith('market_top_300to800plus'):
+    elif sector_name.startswith('market_top_300to800plus') and sector_name.startswith('index_000905'):
         if_weight = 0
         ic_weight = 1
 
@@ -632,6 +643,7 @@ def main_test_fun(sector_name, hold_time, if_only_long, time_para_dict):
 
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
+
     # main.single_test('aadj_r_p345d_continue_ud')
 
 
@@ -1238,6 +1250,8 @@ my_factor_dict.update(jerry_factor_dict)
 
 if __name__ == '__main__':
     sector_name_list = [
+        'index_000300',
+        'index_000905',
         'market_top_300plus',
         'market_top_300plus_industry_10_15',
         'market_top_300plus_industry_20_25_30_35',
