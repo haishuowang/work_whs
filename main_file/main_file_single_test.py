@@ -14,7 +14,7 @@ import sys
 sys.path.append('/mnt/mfs')
 from work_whs.loc_lib.pre_load import *
 # 读取数据的函数 以及
-from work_whs.AZ_2018_Q2.factor_script.main_file import main_file_return_hedge as mf
+from work_whs.main_file import main_file_return_hedge as mf
 
 
 # product 笛卡尔积　　（有放回抽样排列）
@@ -447,11 +447,13 @@ class FactorTestSector(mf.FactorTest):
         # 返回样本内筛选结果
         *result_list, pnl_df = filter_all(self.cut_date, daily_pos, self.return_choose,
                                           if_return_pnl=True, if_only_long=self.if_only_long)
-        # pnl_save_path = f'/mnt/mfs/dat_whs/data/single_factor_pnl/{self.sector_name}'
-        # bt.AZ_Path_create(pnl_save_path)
-        # pnl_df.to_csv(f'{pnl_save_path}/{name_1}|{self.sector_name}|{self.hold_time}|{if_only_long}')
-        # if abs(bt.AZ_Sharpe_y(pnl_df)) > 0.:
-        print(pnl_df)
+        pnl_save_path = f'/mnt/mfs/dat_whs/data/single_factor_pnl/{self.sector_name}'
+        # pnl_save_path = f'/media/hdd1/dat_whs/data/single_factor_pnl/{self.sector_name}'
+
+        bt.AZ_Path_create(pnl_save_path)
+        pnl_df.to_csv(f'{pnl_save_path}/{name_1}|{self.sector_name}|{self.hold_time}|{if_only_long}')
+
+        # if abs(bt.AZ_Sharpe_y(pnl_df)) > 2:
         plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
                          f'{name_1}|{self.sector_name}|{self.hold_time}|{self.if_only_long}',
                          text='|'.join([str(x) for x in result_list]))
@@ -479,7 +481,10 @@ class FactorTestSector(mf.FactorTest):
               .format(round(key / total_para_num * 100, 4), key, name_1, round(end_time - start_time, 2), load_delta))
 
     def test_index(self, my_factor_dict, pool_num=20, suffix_name='', old_file_name=''):
-        factor_list = list(my_factor_dict.keys())
+        # factor_list = list(my_factor_dict.keys())
+        factor_list = ['R_FairVal_TotProfit_QYOY', 'OPCF_and_mcap_intdebt_Y3YGR_Y5YGR_0.3', 'tab2_7_row_extre_0.3', \
+                      'PE_TTM_p20d_col_extre_0.2', 'volume_count_down_p10d', 'evol_p20d', 'REMWB.02', 'REMTK.26', \
+                      'R_NETPROFIT_s_QYOY_and_QTTM_0.3', 'REMFF.14', 'continue_ud_p200d']
         # print(factor_list)
         para_ready_df, log_save_file, result_save_file, total_para_num = \
             self.save_load_control_single(factor_list, suffix_name, old_file_name)
@@ -591,11 +596,11 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
     if_hedge = True
     # if_only_long = False
 
-    if sector_name.startswith('market_top_300plus'):
+    if sector_name.startswith('market_top_300plus') or sector_name.startswith('index_000300'):
         if_weight = 1
         ic_weight = 0
 
-    elif sector_name.startswith('market_top_300to800plus'):
+    elif sector_name.startswith('market_top_300to800plus') or sector_name.startswith('index_000905'):
         if_weight = 0
         ic_weight = 1
 
@@ -606,45 +611,12 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
 
-    my_factor_dict = {'LICO_MO_MANRPHOLD': 'load_tmp_factor'}
+    # my_factor_dict = {'LICO_MO_MANRPHOLD': 'load_tmp_factor'}
     pool_num = 28
 
     main.test_index(my_factor_dict, pool_num, suffix_name='single_test')
 
-    # main.single_test('RZRQYE_row_extre_0.2')
     print(1)
-
-
-def main_test_fun(sector_name, hold_time, if_only_long, time_para_dict):
-    root_path = '/mnt/mfs/DAT_EQT'
-    if_save = True
-    if_new_program = True
-
-    begin_date = pd.to_datetime('20130101')
-    cut_date = pd.to_datetime('20160401')
-    end_date = pd.to_datetime('20181201')
-    lag = 2
-    return_file = ''
-
-    if_hedge = True
-    # if_only_long = False
-
-    if sector_name.startswith('market_top_300plus') and sector_name.startswith('index_000300'):
-        if_weight = 1
-        ic_weight = 0
-
-    elif sector_name.startswith('market_top_300to800plus') and sector_name.startswith('index_000905'):
-        if_weight = 0
-        ic_weight = 1
-
-    else:
-        if_weight = 0.5
-        ic_weight = 0.5
-
-    main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
-                            sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
-
-    # main.single_test('aadj_r_p345d_continue_ud')
 
 
 my_factor_dict = dict({
@@ -696,77 +668,12 @@ my_factor_dict = dict({
     'RZRQYE_p10d_col_extre_0.2': 'load_tech_factor',
     'RZRQYE_p345d_continue_ud': 'load_tech_factor',
     'RZRQYE_row_extre_0.2': 'load_tech_factor',
-    'WILLR_200_40': 'load_tech_factor',
-    'WILLR_200_30': 'load_tech_factor',
-    'WILLR_200_20': 'load_tech_factor',
-    'WILLR_140_40': 'load_tech_factor',
-    'WILLR_140_30': 'load_tech_factor',
-    'WILLR_140_20': 'load_tech_factor',
-    'WILLR_100_40': 'load_tech_factor',
-    'WILLR_100_30': 'load_tech_factor',
-    'WILLR_100_20': 'load_tech_factor',
-    'WILLR_40_40': 'load_tech_factor',
-    'WILLR_40_30': 'load_tech_factor',
-    'WILLR_40_20': 'load_tech_factor',
-    'WILLR_20_40': 'load_tech_factor',
-    'WILLR_20_30': 'load_tech_factor',
-    'WILLR_20_20': 'load_tech_factor',
-    'WILLR_10_40': 'load_tech_factor',
-    'WILLR_10_30': 'load_tech_factor',
-    'WILLR_10_20': 'load_tech_factor',
-    'BBANDS_10_2': 'load_tech_factor',
-    'BBANDS_10_1.5': 'load_tech_factor',
-    'BBANDS_10_1': 'load_tech_factor',
-    'MACD_20_60_18': 'load_tech_factor',
-    'BBANDS_200_2': 'load_tech_factor',
-    'BBANDS_200_1.5': 'load_tech_factor',
-    'BBANDS_200_1': 'load_tech_factor',
-    'BBANDS_140_2': 'load_tech_factor',
-    'BBANDS_140_1.5': 'load_tech_factor',
-    'BBANDS_140_1': 'load_tech_factor',
-    'BBANDS_100_2': 'load_tech_factor',
-    'BBANDS_100_1.5': 'load_tech_factor',
-    'BBANDS_100_1': 'load_tech_factor',
-    'BBANDS_40_2': 'load_tech_factor',
-    'BBANDS_40_1.5': 'load_tech_factor',
-    'BBANDS_40_1': 'load_tech_factor',
-    'BBANDS_20_2': 'load_tech_factor',
-    'BBANDS_20_1.5': 'load_tech_factor',
-    'BBANDS_20_1': 'load_tech_factor',
     'MA_LINE_160_60': 'load_tech_factor',
     'MA_LINE_120_60': 'load_tech_factor',
     'MA_LINE_100_40': 'load_tech_factor',
     'MA_LINE_60_20': 'load_tech_factor',
     'MA_LINE_10_5': 'load_tech_factor',
     'MACD_12_26_9': 'load_tech_factor',
-    'intra_up_vwap_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_vol_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_div_dn_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_div_daily_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_vwap_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_vol_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_div_dn_15_bar_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_div_daily_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_vwap_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_vol_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_div_daily_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_15_bar_vwap_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_15_bar_vol_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_15_bar_div_daily_col_score_row_extre_0.3': 'load_tech_factor',
-    'intra_up_vwap_row_extre_0.3': 'load_tech_factor',
-    'intra_up_vol_row_extre_0.3': 'load_tech_factor',
-    'intra_up_div_dn_row_extre_0.3': 'load_tech_factor',
-    'intra_up_div_daily_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_vwap_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_vol_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_div_dn_15_bar_row_extre_0.3': 'load_tech_factor',
-    'intra_up_15_bar_div_daily_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_vwap_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_vol_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_div_daily_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_15_bar_vwap_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_15_bar_vol_row_extre_0.3': 'load_tech_factor',
-    'intra_dn_15_bar_div_daily_row_extre_0.3': 'load_tech_factor',
     'tab5_15_row_extre_0.3': 'load_tech_factor',
     'tab5_14_row_extre_0.3': 'load_tech_factor',
     'tab5_13_row_extre_0.3': 'load_tech_factor',
@@ -785,38 +692,6 @@ my_factor_dict = dict({
     'tab1_5_row_extre_0.3': 'load_tech_factor',
     'tab1_2_row_extre_0.3': 'load_tech_factor',
     'tab1_1_row_extre_0.3': 'load_tech_factor',
-    'RSI_200_30': 'load_tech_factor',
-    'RSI_140_30': 'load_tech_factor',
-    'RSI_100_30': 'load_tech_factor',
-    'RSI_40_30': 'load_tech_factor',
-    'RSI_200_10': 'load_tech_factor',
-    'RSI_140_10': 'load_tech_factor',
-    'RSI_100_10': 'load_tech_factor',
-    'RSI_40_10': 'load_tech_factor',
-    'ATR_200_0.2': 'load_tech_factor',
-    'ATR_140_0.2': 'load_tech_factor',
-    'ATR_100_0.2': 'load_tech_factor',
-    'ATR_40_0.2': 'load_tech_factor',
-    'ADOSC_60_160_0': 'load_tech_factor',
-    'ADOSC_60_120_0': 'load_tech_factor',
-    'ADOSC_40_100_0': 'load_tech_factor',
-    'ADOSC_20_60_0': 'load_tech_factor',
-    'MFI_200_70_30': 'load_tech_factor',
-    'MFI_140_70_30': 'load_tech_factor',
-    'MFI_100_70_30': 'load_tech_factor',
-    'MFI_40_70_30': 'load_tech_factor',
-    'CMO_200_0': 'load_tech_factor',
-    'CMO_140_0': 'load_tech_factor',
-    'CMO_100_0': 'load_tech_factor',
-    'CMO_40_0': 'load_tech_factor',
-    'AROON_200_80': 'load_tech_factor',
-    'AROON_140_80': 'load_tech_factor',
-    'AROON_100_80': 'load_tech_factor',
-    'AROON_40_80': 'load_tech_factor',
-    'ADX_200_20_10': 'load_tech_factor',
-    'ADX_140_20_10': 'load_tech_factor',
-    'ADX_100_20_10': 'load_tech_factor',
-    'ADX_40_20_10': 'load_tech_factor',
     'TotRev_and_mcap_intdebt_QYOY_Y3YGR_0.3': 'load_tech_factor',
     'TotRev_and_asset_QYOY_Y3YGR_0.3': 'load_tech_factor',
     'TotRev_and_mcap_QYOY_Y3YGR_0.3': 'load_tech_factor',
@@ -984,6 +859,35 @@ my_factor_dict = dict({
     'TVOL_p10d_col_extre_0.2': 'load_tech_factor',
     'TVOL_p345d_continue_ud': 'load_tech_factor',
     'TVOL_row_extre_0.2': 'load_tech_factor',
+    'MA_LINE_alpha_100_40_0.5_0.5': 'load_tech_factor',
+    'MA_LINE_alpha_100_40_0_1': 'load_tech_factor',
+    'MA_LINE_alpha_100_40_1_0': 'load_tech_factor',
+    'MA_LINE_alpha_10_5_0.5_0.5': 'load_tech_factor',
+    'MA_LINE_alpha_10_5_0_1': 'load_tech_factor',
+    'MA_LINE_alpha_10_5_1_0': 'load_tech_factor',
+    'MA_LINE_alpha_120_60_0.5_0.5': 'load_tech_factor',
+    'MA_LINE_alpha_120_60_0_1': 'load_tech_factor',
+    'MA_LINE_alpha_120_60_1_0': 'load_tech_factor',
+    'MA_LINE_alpha_160_60_0.5_0.5': 'load_tech_factor',
+    'MA_LINE_alpha_160_60_0_1': 'load_tech_factor',
+    'MA_LINE_alpha_160_60_1_0': 'load_tech_factor',
+    'MA_LINE_alpha_60_20_0.5_0.5': 'load_tech_factor',
+    'MA_LINE_alpha_60_20_0_1': 'load_tech_factor',
+    'MA_LINE_alpha_60_20_1_0': 'load_tech_factor',
+    'pnd_continue_pct_ud_alpha345_0.5_0.5': 'load_tech_factor',
+    'pnd_continue_pct_ud_alpha345_0_1': 'load_tech_factor',
+    'pnd_continue_pct_ud_alpha345_1_0': 'load_tech_factor',
+    'pnd_continue_ud_alpha345_0.5_0.5': 'load_tech_factor',
+    'pnd_continue_ud_alpha345_0_1': 'load_tech_factor',
+    'pnd_continue_ud_alpha345_1_0': 'load_tech_factor',
+    'MACD_20_60_18': 'load_tech_factor',
+    'MACD_alpha_12_26_9_0.5_0.5': 'load_tech_factor',
+    'MACD_alpha_12_26_9_0_1': 'load_tech_factor',
+    'MACD_alpha_12_26_9_1_0': 'load_tech_factor',
+    'MACD_alpha_20_60_18_0.5_0.5': 'load_tech_factor',
+    'MACD_alpha_20_60_18_0_1': 'load_tech_factor',
+    'MACD_alpha_20_60_18_1_0': 'load_tech_factor',
+    'TVOL_pd_continue_ud': 'load_tech_factor',
 
     'R_ACCOUNTPAY_QYOY': 'load_daily_factor',
     'R_ACCOUNTREC_QYOY': 'load_daily_factor',
@@ -1217,58 +1121,169 @@ my_factor_dict_2 = dict({
     'REMFF.02': 'load_remy_factor',
     'REMFF.01': 'load_remy_factor'
 })
-jerry_factor_dict = dict({
-    'LIQ_all_original.csv': 'load_jerry_factor',
-    'LIQ_all_pure.csv': 'load_jerry_factor',
-    'LIQ_mix.csv': 'load_jerry_factor',
-    'LIQ_p1_original.csv': 'load_jerry_factor',
-    'LIQ_p1_pure.csv': 'load_jerry_factor',
-    'LIQ_p2_original.csv': 'load_jerry_factor',
-    'LIQ_p2_pure.csv': 'load_jerry_factor',
-    'LIQ_p3_original.csv': 'load_jerry_factor',
-    'LIQ_p3_pure.csv': 'load_jerry_factor',
-    'LIQ_p4_original.csv': 'load_jerry_factor',
-    'LIQ_p4_pure.csv': 'load_jerry_factor',
-    'M0': 'load_jerry_factor',
-    'M1': 'load_jerry_factor',
-    'M1_p1': 'load_jerry_factor',
-    'M1_p2': 'load_jerry_factor',
-    'M1_p3': 'load_jerry_factor',
-    'M1_p4': 'load_jerry_factor',
-    'vr_afternoon_10min_20days': 'load_jerry_factor',
-    'vr_afternoon_last10min_20days.csv': 'load_jerry_factor',
-    'vr_original_20days.csv': 'load_jerry_factor',
-    'vr_original_45days.csv': 'load_jerry_factor',
-    'vr_original_75days.csv': 'load_jerry_factor',
-})
 
 my_factor_dict.update(my_factor_dict_2)
-my_factor_dict.update(jerry_factor_dict)
 
-# data = bt.AZ_Load_csv('/mnt/mfs/DAT_EQT/EM_Funda/dat_whs/dividend_ratio.csv')
+
+# my_factor_dict = dict({
+#     'CCI_p120d_limit_12': 'load_tech_factor',
+#     'CCI_p150d_limit_12': 'load_tech_factor',
+#     'CCI_p20d_limit_12': 'load_tech_factor',
+#     'CCI_p60d_limit_12': 'load_tech_factor',
+#     'MACD_10_30': 'load_tech_factor',
+#     'MACD_12_26_9': 'load_tech_factor',
+#     'MACD_20_100': 'load_tech_factor',
+#     'MACD_20_200': 'load_tech_factor',
+#     'MACD_20_60_18': 'load_tech_factor',
+#     'MACD_40_160': 'load_tech_factor',
+#     'MACD_40_200': 'load_tech_factor',
+#     'MACD_alpha_12_26_9_0.5_0.5': 'load_tech_factor',
+#     'MACD_alpha_12_26_9_0_1': 'load_tech_factor',
+#     'MACD_alpha_12_26_9_1_0': 'load_tech_factor',
+#     'MACD_alpha_20_60_18_0.5_0.5': 'load_tech_factor',
+#     'MACD_alpha_20_60_18_0_1': 'load_tech_factor',
+#     'MACD_alpha_20_60_18_1_0': 'load_tech_factor',
+#     'MA_LINE_100_40': 'load_tech_factor',
+#     'MA_LINE_10_5': 'load_tech_factor',
+#     'MA_LINE_120_60': 'load_tech_factor',
+#     'MA_LINE_160_60': 'load_tech_factor',
+#     'MA_LINE_60_20': 'load_tech_factor',
+#     'MA_LINE_alpha_100_40_0.5_0.5': 'load_tech_factor',
+#     'MA_LINE_alpha_100_40_0_1': 'load_tech_factor',
+#     'MA_LINE_alpha_100_40_1_0': 'load_tech_factor',
+#     'MA_LINE_alpha_10_5_0.5_0.5': 'load_tech_factor',
+#     'MA_LINE_alpha_10_5_0_1': 'load_tech_factor',
+#     'MA_LINE_alpha_10_5_1_0': 'load_tech_factor',
+#     'MA_LINE_alpha_120_60_0.5_0.5': 'load_tech_factor',
+#     'MA_LINE_alpha_120_60_0_1': 'load_tech_factor',
+#     'MA_LINE_alpha_120_60_1_0': 'load_tech_factor',
+#     'MA_LINE_alpha_160_60_0.5_0.5': 'load_tech_factor',
+#     'MA_LINE_alpha_160_60_0_1': 'load_tech_factor',
+#     'MA_LINE_alpha_160_60_1_0': 'load_tech_factor',
+#     'MA_LINE_alpha_60_20_0.5_0.5': 'load_tech_factor',
+#     'MA_LINE_alpha_60_20_0_1': 'load_tech_factor',
+#     'MA_LINE_alpha_60_20_1_0': 'load_tech_factor',
+#     'TVOL_p10d_col_extre_0.2': 'load_tech_factor',
+#     'TVOL_p120d_col_extre_0.2': 'load_tech_factor',
+#     'TVOL_p20d_col_extre_0.2': 'load_tech_factor',
+#     'TVOL_p30d_col_extre_0.2': 'load_tech_factor',
+#     'TVOL_p345d_continue_ud': 'load_tech_factor',
+#     'TVOL_p60d_col_extre_0.2': 'load_tech_factor',
+#     'TVOL_p90d_col_extre_0.2': 'load_tech_factor',
+#     'TVOL_pd_continue_ud': 'load_tech_factor',
+#     'TVOL_row_extre_0.2': 'load_tech_factor',
+#     'aadj_r_p10d_col_extre_0.2': 'load_tech_factor',
+#     'aadj_r_p120d_col_extre_0.2': 'load_tech_factor',
+#     'aadj_r_p20d_col_extre_0.2': 'load_tech_factor',
+#     'aadj_r_p345d_continue_ud': 'load_tech_factor',
+#     'aadj_r_p345d_continue_ud_pct': 'load_tech_factor',
+#     'aadj_r_p60d_col_extre_0.2': 'load_tech_factor',
+#     'aadj_r_row_extre_0.2': 'load_tech_factor',
+#     'bias_turn_p120d': 'load_tech_factor',
+#     'bias_turn_p20d': 'load_tech_factor',
+#     'bias_turn_p60d': 'load_tech_factor',
+#     'continue_ud_p100d': 'load_tech_factor',
+#     'continue_ud_p10d': 'load_tech_factor',
+#     'continue_ud_p120d': 'load_tech_factor',
+#     'continue_ud_p200d': 'load_tech_factor',
+#     'continue_ud_p20d': 'load_tech_factor',
+#     'continue_ud_p30d': 'load_tech_factor',
+#     'continue_ud_p50d': 'load_tech_factor',
+#     'continue_ud_p60d': 'load_tech_factor',
+#     'continue_ud_p90d': 'load_tech_factor',
+#     'evol_p100d': 'load_tech_factor',
+#     'evol_p10d': 'load_tech_factor',
+#     'evol_p120d': 'load_tech_factor',
+#     'evol_p200d': 'load_tech_factor',
+#     'evol_p20d': 'load_tech_factor',
+#     'evol_p30d': 'load_tech_factor',
+#     'evol_p50d': 'load_tech_factor',
+#     'evol_p60d': 'load_tech_factor',
+#     'evol_p90d': 'load_tech_factor',
+#     'log_price_0.2': 'load_tech_factor',
+#     'moment_p10100d': 'load_tech_factor',
+#     'moment_p1060d': 'load_tech_factor',
+#     'moment_p20100d': 'load_tech_factor',
+#     'moment_p20200d': 'load_tech_factor',
+#     'moment_p30200d': 'load_tech_factor',
+#     'moment_p40200d': 'load_tech_factor',
+#     'moment_p50300d': 'load_tech_factor',
+#     'moment_p510d': 'load_tech_factor',
+#     'p1d_jump_hl0.030.020.01': 'load_tech_factor',
+#     'pnd_continue_pct_ud_alpha345_0.5_0.5': 'load_tech_factor',
+#     'pnd_continue_pct_ud_alpha345_0_1': 'load_tech_factor',
+#     'pnd_continue_pct_ud_alpha345_1_0': 'load_tech_factor',
+#     'pnd_continue_ud_alpha345_0.5_0.5': 'load_tech_factor',
+#     'pnd_continue_ud_alpha345_0_1': 'load_tech_factor',
+#     'pnd_continue_ud_alpha345_1_0': 'load_tech_factor',
+#     'price_p10d_hl': 'load_tech_factor',
+#     'price_p120d_hl': 'load_tech_factor',
+#     'price_p20d_hl': 'load_tech_factor',
+#     'price_p60d_hl': 'load_tech_factor',
+#     'return_p120d_0.2': 'load_tech_factor',
+#     'return_p20d_0.2': 'load_tech_factor',
+#     'return_p30d_0.2': 'load_tech_factor',
+#     'return_p60d_0.2': 'load_tech_factor',
+#     'return_p90d_0.2': 'load_tech_factor',
+#     'turn_p120d_0.2': 'load_tech_factor',
+#     'turn_p150d_0.18': 'load_tech_factor',
+#     'turn_p20d_0.2': 'load_tech_factor',
+#     'turn_p30d_0.24': 'load_tech_factor',
+#     'turn_p60d_0.2': 'load_tech_factor',
+#     'vol_count_down_p100d': 'load_tech_factor',
+#     'vol_count_down_p10d': 'load_tech_factor',
+#     'vol_count_down_p120d': 'load_tech_factor',
+#     'vol_count_down_p200d': 'load_tech_factor',
+#     'vol_count_down_p20d': 'load_tech_factor',
+#     'vol_count_down_p30d': 'load_tech_factor',
+#     'vol_count_down_p50d': 'load_tech_factor',
+#     'vol_count_down_p60d': 'load_tech_factor',
+#     'vol_count_down_p90d': 'load_tech_factor',
+#     'vol_p100d': 'load_tech_factor',
+#     'vol_p10d': 'load_tech_factor',
+#     'vol_p120d': 'load_tech_factor',
+#     'vol_p200d': 'load_tech_factor',
+#     'vol_p20d': 'load_tech_factor',
+#     'vol_p30d': 'load_tech_factor',
+#     'vol_p50d': 'load_tech_factor',
+#     'vol_p60d': 'load_tech_factor',
+#     'vol_p90d': 'load_tech_factor',
+#     'volume_count_down_p10d': 'load_tech_factor',
+#     'volume_count_down_p120d': 'load_tech_factor',
+#     'volume_count_down_p20d': 'load_tech_factor',
+#     'volume_count_down_p60d': 'load_tech_factor',
+#     'volume_moment_p1040d': 'load_tech_factor',
+#     'volume_moment_p20120d': 'load_tech_factor',
+#     'volume_moment_p530d': 'load_tech_factor',
+#     'wgt_return_p120d_0.2': 'load_tech_factor',
+#     'wgt_return_p20d_0.2': 'load_tech_factor',
+#     'wgt_return_p60d_0.2': 'load_tech_factor',
+# })
 
 
 if __name__ == '__main__':
     sector_name_list = [
-        'index_000300',
-        'index_000905',
-        'market_top_300plus',
-        'market_top_300plus_industry_10_15',
-        'market_top_300plus_industry_20_25_30_35',
-        'market_top_300plus_industry_40',
-        'market_top_300plus_industry_45_50',
-        'market_top_300plus_industry_55',
+        # 'index_000300',
+        # 'index_000905',
+        # 'market_top_300plus',
+        # 'market_top_300plus_industry_10_15',
+        # 'market_top_300plus_industry_20_25_30_35',
+        # 'market_top_300plus_industry_40',
+        # 'market_top_300plus_industry_45_50',
+        # 'market_top_300plus_industry_55',
 
-        'market_top_300to800plus',
-        'market_top_300to800plus_industry_10_15',
+        # 'market_top_300to800plus',
+        # 'market_top_300to800plus_industry_10_15',
         'market_top_300to800plus_industry_20_25_30_35',
-        'market_top_300to800plus_industry_40',
-        'market_top_300to800plus_industry_45_50',
-        'market_top_300to800plus_industry_55',
+        # 'market_top_300to800plus_industry_40',
+        # 'market_top_300to800plus_industry_45_50',
+        # 'market_top_300to800plus_industry_55',
     ]
 
-    hold_time_list = [5, 20]
-    for if_only_long in [False, True]:
+    # market_top_300to800plus_industry_20_25_30_35 | 20 | False
+
+    hold_time_list = [20]
+    for if_only_long in [False]:
         for hold_time in hold_time_list:
             for sector_name in sector_name_list:
                 # sector_name, hold_time, if_only_long = ['market_top_300plus', 20, False]

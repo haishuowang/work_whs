@@ -3,7 +3,7 @@ import sys
 sys.path.append('/mnt/mfs')
 
 from work_whs.loc_lib.pre_load import *
-import work_whs.AZ_2018_Q2.factor_script.main_file.main_file_single_test as mfst
+import work_whs.main_file.main_file_single_test as mfst
 
 
 def mul_fun(a, b):
@@ -70,6 +70,7 @@ def get_result_data(root_path, file_name):
 
 def get_file_name(sector_name):
     tmp_file_list = os.listdir(f'/media/hdd1/dat_whs/data/single_factor_pnl/{sector_name}')
+    # tmp_file_list = os.listdir(f'/mnt/mfs/dat_whs/data/single_factor_pnl/{sector_name}')
     target_file_list = [x.split('|') for x in tmp_file_list if '|' in x]
     data = pd.DataFrame(target_file_list, columns=['factor_name', 'sector_name', 'hold_time', 'if_only_long'])
     return data
@@ -82,6 +83,9 @@ def get_pnl_table(part_df, sector_name):
         # print(file_name)
         pnl_df = pd.read_csv(f'/media/hdd1/dat_whs/data/single_factor_pnl/{sector_name}/{file_name}',
                              index_col=0, parse_dates=True)
+
+        # pnl_df = pd.read_csv(f'/mnt/mfs/dat_whs/data/single_factor_pnl/{sector_name}/{file_name}',
+        #                      index_col=0, parse_dates=True)
         pnl_df.columns = [file_name]
         all_pnl_df = pd.concat([all_pnl_df, pnl_df], axis=1)
     all_pnl_df = all_pnl_df.loc[pd.to_datetime('20130101'):]
@@ -685,6 +689,8 @@ jerry_factor_dict = dict({
 my_factor_dict.update(my_factor_dict_2)
 
 sector_name_list = [
+    'index_000300',
+    'index_000905',
     'market_top_300plus',
     'market_top_300plus_industry_10_15',
     'market_top_300plus_industry_20_25_30_35',
@@ -750,6 +756,13 @@ def plot_send_all(all_pnl_df):
 
 
 def select_fun(file_name, pnl_table_c, max_num=10):
+    """
+    挑选corr底的函数
+    :param file_name:
+    :param pnl_table_c:
+    :param max_num:
+    :return:
+    """
     i = 0
     target_pnl = pd.DataFrame(pnl_table_c[file_name])
     target_pnl.columns = ['target_pnl']
@@ -769,7 +782,6 @@ def select_fun(file_name, pnl_table_c, max_num=10):
         else:
             tmp_pnl = target_pnl.sub(select_pnl, axis=0)
         tmp_sp = bt.AZ_Sharpe_y(tmp_pnl).values[0]
-        print(tmp_sp)
 
         if tmp_sp > target_sp:
             target_pnl = tmp_pnl
@@ -785,11 +797,14 @@ def get_all_pnl_corr(pnl_df, col_name):
     all_pnl_df_c = pd.concat([all_pnl_df, pnl_df], axis=1)
     a = all_pnl_df_c.iloc[-600:].corr()[col_name]
     print(a[a > 0.5])
-    return a[a > 0.65]
+    return a[a > 0.62]
 
 
 def part_single_test(file_name, pnl_table, sharpe_mid, sharpe_df, sector_name, hold_time, if_only_long):
+    # 挑选数据
+    # try:
     select_list = select_fun(file_name, pnl_table[sharpe_mid.index], max_num=10)
+
     portfolio_index = [file_name] + list(select_list)
 
     buy_sell_way_df = sharpe_df[portfolio_index]
@@ -802,17 +817,21 @@ def part_single_test(file_name, pnl_table, sharpe_mid, sharpe_df, sector_name, h
     target_pnl = (select_pnl_df * buy_sell_way_df).sum(1)
     target_sharpe = bt.AZ_Sharpe_y(target_pnl)
     target_lvr = bt.AZ_Leverage_ratio(target_pnl.cumsum())
-    print(target_sharpe, target_lvr)
     # if target_sharpe > 2:
     pot_in, fit_ratio, leve_ratio, sp, pnl_df = \
         deal_fun(sector_name, hold_time, if_only_long, name_list, buy_sell_way_list)
     # plot_send_result(target_pnl, target_sharpe, file_name, '\n'.join(portfolio_index))
     # if sp > 2:
-    if pot_in > 50:
+    print(f'{select_list}\nbkt:{target_sharpe} {target_lvr} \n'
+          f'pro:{sp} {leve_ratio} {pot_in}')
+
+    # if pot_in > 50 and sp > 2.4:
+    if abs(pot_in) > 50 and abs(sp) > 2.2:
         pnl_df = pd.DataFrame(pnl_df, columns=['target_df'])
         result_df, info_df = bt.commit_check(pnl_df)
         check_int = result_df.prod().values[0]
         corr_matric = get_all_pnl_corr(pnl_df, 'target_df')
+        print(corr_matric)
         if len(corr_matric) < 2 and check_int == 1:
             print(name_list, buy_sell_way_list)
             print('|'.join([x.split('|')[0] for x in portfolio_index]))
@@ -823,6 +842,8 @@ def part_single_test(file_name, pnl_table, sharpe_mid, sharpe_df, sector_name, h
                              '|'.join([str(x) for x in [pot_in, fit_ratio, leve_ratio]]))
             print(target_sharpe)
             print(sp)
+    # except Exception as error:
+    #     print(error)
 
 
 def single_test():
@@ -846,7 +867,6 @@ def single_test():
 
             # sharpe_up = a[remy_list][a[remy_list].abs() > 0.8]
             sharpe_up = a[a.abs() > 0.8]
-            print(a[remy_list])
             print(sharpe_up)
             sharpe_mid = a[a.abs() > 0.7]
             for file_name in sharpe_up.index:
@@ -866,7 +886,7 @@ def mul_test():
 
             # print(part_df)
             pnl_table = get_pnl_table(part_df, sector_name)
-            drop_list = list(jerry_factor_dict.keys())
+            # drop_list = list(jerry_factor_dict.keys())
             pnl_table = pnl_table[[x for x in pnl_table.columns if 'intra' not in x]]
             # remy pnl
             # pnl_table_remy = pnl_table[[x for x in pnl_table.columns if x.split('|')[0] in drop_list]]

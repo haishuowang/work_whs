@@ -292,7 +292,7 @@ def part_vwap_table(month_path, day, begin_time, end_time):
 def get_vwap_table(begin_time, end_time):
     begin_str = '20100101'
     # begin_str = '20190218'
-    end_str = '20190219'
+    end_str = '20190319'
 
     begin_year, begin_month, begin_day = begin_str[:4], begin_str[:6], begin_str
     end_year, end_month, end_day = end_str[:4], end_str[:6], end_str
@@ -358,7 +358,7 @@ def part_info_table(month_path, day, begin_time, end_time):
 def get_info_table(begin_time, end_time):
     begin_str = '20100101'
     # begin_str = '20190218'
-    end_str = '20190313'
+    end_str = '20190320'
 
     begin_year, begin_month, begin_day = begin_str[:4], begin_str[:6], begin_str
     end_year, end_month, end_day = end_str[:4], end_str[:6], end_str
@@ -452,10 +452,11 @@ if __name__ == '__main__':
     # b = time.time()
     # print(b - a)
 
-    # for file_name in ['09:40_10:00', '14:00_14:15', '14:30_14:50']:
-    #     data = bt.AZ_Load_csv(f'/mnt/mfs/DAT_EQT/intraday/{file_name}.csv')
-    #     vwap_return = adj_vwap(data)
-    #     vwap_return.to_csv(f'/mnt/mfs/DAT_EQT/intraday/aadj_r{file_name}.csv', sep='|')
+    for file_name in ['09:40_10:00', '14:00_14:15', '14:30_14:50']:
+        data = bt.AZ_Load_csv(f'/mnt/mfs/DAT_EQT/intraday/{file_name}.csv')
+        vwap_return = adj_vwap(data)
+        file_name = file_name.replace(':', '')
+        vwap_return.to_csv(f'/mnt/mfs/DAT_EQT/intraday/vwap_return/aadj_r{file_name}.csv', sep='|')
 
     # file_name_list = ['close_09:30_14:15',
     #                   'high_09:30_14:15',
@@ -473,5 +474,5 @@ if __name__ == '__main__':
     #     adj_data = adj_columns(data)
     #     adj_data.to_csv(f'/mnt/mfs/DAT_EQT/intraday/daily_0930_1415/{file_name}.csv', sep='|')
 
-    begin_time, end_time = '09:30', '14:15'
-    get_info_table(begin_time, end_time)
+    # begin_time, end_time = '09:30', '14:15'
+    # get_info_table(begin_time, end_time)

@@ -3,6 +3,7 @@ import pandas as pd
 # import dask.dataframe as dd
 import os
 import sys
+from sklearn.cluster import KMeans
 
 sys.path.append('/mnt/mfs')
 from work_whs.loc_lib.shared_tools import send_email
@@ -217,7 +218,7 @@ def AZ_split_stock(stock_list):
     :return:
     """
     eqa = [x for x in stock_list if (x.startswith('0') or x.startswith('3')) and x.endswith('SZ')
-           or x.startswith('6') and x.endswith('SH')]
+           or x.startswith('6') and x.endswith('SH') or x in ['000001.SH', '000300.SH', '000905.SH', '000906.SH']]
     return eqa
 
 
@@ -448,6 +449,23 @@ def AZ_Back_test(pos_df, return_df, usr_email=None, figsize=None, if_file=False,
             AZ_Delete_file(save_root_path, except_list=None)
         os.rmdir(save_root_path)
     return sharpe, pot, leve_ratio, total_asset
+
+
+# def AZ_pnl_kmean(all_pnl_df, n, ratio):
+#     target_df = (all_pnl_df > 0).astype(int)
+#     kmeans = KMeans(n_clusters=n).fit(target_df.T)
+#     kmeans_result = kmeans.labels_
+#     columns_list = target_df.columns
+#     group_df = pd.DataFrame(kmeans_result, index=columns_list)
+#     target_df = pd.DataFrame()
+#
+#     for i in range(n):
+#         part_a_n = a_n[a_n['group_key'] == i].sort_values(by='sp_in')
+#         part_num = max(int(len(part_a_n) * ratio), 1)
+#
+#         part_target_df = part_a_n[['fun_name', 'name1', 'name2', 'name3', 'buy_sell']].iloc[:part_num]
+#         print(part_num)
+#         target_df = target_df.append(part_target_df)
 
 
 def commit_check(pnl_df, mod='o'):

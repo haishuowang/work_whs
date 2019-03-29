@@ -398,6 +398,7 @@ my_factor_dict = dict({
     'pnd_continue_ud_alpha345_1_0': 'load_tech_factor',
 })
 
+
 sector_name_list = [
     'index_000300',
     'index_000905',

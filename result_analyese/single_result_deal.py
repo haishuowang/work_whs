@@ -3,7 +3,7 @@ import sys
 sys.path.append('/mnt/mfs')
 
 from work_whs.loc_lib.pre_load import *
-import work_whs.AZ_2018_Q2.factor_script.main_file.main_file_single_test as mfst
+import work_whs.main_file.main_file_single_test as mfst
 
 
 def mul_fun(a, b):

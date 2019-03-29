@@ -3,7 +3,7 @@ import sys
 sys.path.append('/mnt/mfs')
 
 from work_whs.loc_lib.pre_load import *
-import work_whs.AZ_2018_Q2.factor_script.main_file.main_file_return_hedge as mfrh
+import work_whs.main_file.main_file_return_hedge as mfrh
 
 
 class FunSet:
@@ -48,7 +48,8 @@ class FunSet:
         return a.add(b)
 
     @staticmethod
-    def add_weight(a, b, wt1, wt2):
+    def add_weight(a, b, wt1_wt2_list):
+        wt1, wt2 = wt1_wt2_list
         return wt1 * a + wt2 * b
 
     @staticmethod
@@ -290,13 +291,38 @@ class FunSet:
         pos = h_diff + l_diff
         return pos
 
-    # @staticmethod
-    # def bbangs(a, n):
-    #     std_df = bt.AZ_Rolling(a, n).std()
-    #     ma_df = bt.AZ_Rolling(a, n).std()
-    #     up_df = ma_df + std_df
-    #     dn_df = ma_df - std_df
-    #     return None
+    def ma_diff(self, a, short_long_list):
+        """
+
+        :param a:
+        :param n1:
+        :param n2:
+        :return:
+        """
+        n1, n2 = short_long_list
+        ma_s = self.ma(a, n1)
+        ma_l = self.ma(a, n2)
+        return ma_l - ma_s
+
+    @staticmethod
+    def zscore_col(df, n, cap=None):
+        df_mean = bt.AZ_Rolling_mean(df, n, min_periods=0)
+        df_std = df.rolling(window=n, min_periods=0).std()
+        target = (df - df_mean) / df_std
+        if cap is not None:
+            target[target > cap] = cap
+            target[target < -cap] = -cap
+        return target
+
+    @staticmethod
+    def zscore_row(df, cap=None):
+        df_mean = df.mean(axis=1)
+        df_std = df.std(axis=1)
+        target = df.sub(df_mean, axis=0).div(df_std, axis=0)
+        if cap is not None:
+            target[target > cap] = cap
+            target[target < -cap] = -cap
+        return target.replace(np.nan, 0)
 
 
 def out_sample_perf_c(pnl_df_out, way=1):
@@ -400,32 +426,70 @@ class FactorTestSector(mfrh.FactorTest):
         # print(f'para_num:{len(para_ready_df)}')
         return para_ready_df, log_save_file, result_save_file, total_para_num
 
-    def single_test(self, factor_1, file_name, fun_path, save_fun_path):
+    def single_test(self, factor_1, file_name, fun_path, save_fun_path=None):
         factor_1 = factor_1 * self.sector_df
-        if len(factor_1.sum(1).replace(0, np.nan).dropna())/len(self.xinx) > 0.2:
-            daily_pos = self.deal_mix_factor(factor_1).shift(2)
+        if len(factor_1.sum(1).replace(0, np.nan).dropna()) / len(self.xinx) > 0.5:
+            daily_pos = self.deal_mix_factor(factor_1)
             in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
-            fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = filter_all(self.cut_date, daily_pos,
+            fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = filter_all(self.cut_date, daily_pos.shift(2),
                                                                             self.return_choose,
                                                                             if_return_pnl=True,
                                                                             if_only_long=self.if_only_long)
             result_list = [in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m,
                            sharpe_q_in_df_d, pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out]
-            print(fun_path, file_name, bt.AZ_Sharpe_y(pnl_df), pot_in)
-            if abs(bt.AZ_Sharpe_y(pnl_df)) > 1 and abs(pot_in) > 10:
-                bt.AZ_Path_create(save_fun_path)
+            print(self.sector_name, self.hold_time, self.if_only_long,
+                  fun_path, file_name, bt.AZ_Sharpe_y(pnl_df), pot_in)
+
+            if not self.if_only_long:
+                sp_in = abs(sp_in)
+                pot_in = abs(pot_in)
+
+            if sp_in > 1 and pot_in > 20:
+                if save_fun_path is not None:
+                    bt.AZ_Path_create(save_fun_path)
+                    pnl_list = [pnl_df, [sp_in, pot_in]]
+                    pd.to_pickle(pnl_list, f'{save_fun_path}/{file_name}.pkl')
                 plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
-                                 file_name,
+                                 '|'.join([self.sector_name, str(self.hold_time), str(self.if_only_long), file_name]),
                                  text='|'.join(['|'.join(fun_path), '|'.join([str(x) for x in result_list])]))
-                pd.to_pickle(pnl_df, f'{save_fun_path}/{file_name}.pkl')
+            return pnl_df, in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, \
+                   pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out
         else:
             print('single not enough')
+
+    def single_test_real(self, factor_1):
+        factor_1 = factor_1 * self.sector_df
+        if len(factor_1.sum(1).replace(0, np.nan).dropna()) / len(self.xinx) > 0.5:
+            daily_pos = self.deal_mix_factor(factor_1)
+            in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+            fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = filter_all(self.cut_date, daily_pos.shift(2),
+                                                                            self.return_choose,
+                                                                            if_return_pnl=True,
+                                                                            if_only_long=self.if_only_long)
+            result_list = [in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m,
+                           sharpe_q_in_df_d, pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out]
+            # print(fun_path, file_name, bt.AZ_Sharpe_y(pnl_df), pot_in)
+            # if abs(sp_in) > 1 and abs(pot_in) > 10:
+            #     if save_fun_path != None:
+            #         bt.AZ_Path_create(save_fun_path)
+            #         pd.to_pickle(pnl_df, f'{save_fun_path}/{file_name}.pkl')
+            #     plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
+            #                      file_name,
+            #                      text='|'.join(['|'.join(fun_path), '|'.join([str(x) for x in result_list])]))
+            # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), 'test', text='|'.join([str(x) for x in result_list]))
+            if bt.AZ_Sharpe_y(pnl_df) > 0:
+                return daily_pos, bt.AZ_Sharpe_y(pnl_df)
+            else:
+                return -daily_pos, bt.AZ_Sharpe_y(pnl_df)
+        else:
+            print('single not enough')
+            return None, None
         # return pnl_df, in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, \
         #        pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out
 
 
 class TechFactor(FunSet):
-    def __init__(self, root_path, bkt_model):
+    def __init__(self, root_path, bkt_model, save_root_path):
         self.bkt_model = bkt_model
         self.xinx = bkt_model.xinx
         self.xnms = bkt_model.xnms
@@ -441,13 +505,14 @@ class TechFactor(FunSet):
             .reindex(index=self.xinx, columns=self.xnms)
         # self.avg_price = bt.AZ_Load_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_.csv')
 
-        self.weight_list = [[0.2 * i, 1 - 0.2 * i] for i in range(1, 10)]
+        self.weight_list = [[0.2 * i, 1 - 0.2 * i] for i in range(1, 5)]
         self.window_list = [5, 17, 41]
+        self.short_long_list = [[2, 10], [5, 20], [5, 50]]
         self.shift_list = [1, 5, 11]
         self.order_list = [0.5, 2, 3]
-        self.pct_list = [0.3]
+        self.pct_list = [0.2]
 
-        self.fun_info_set = dict({
+        self.fun_info_set = OrderedDict({
             'div': ['+ratio', '*1', 0, 2, None, None],
             'diff': ['+diff', '*1', 0, 1, ['window_list'], None],
             'pct_change': ['+ratio', '*1', 0, 1, ['window_list'], None],
@@ -474,9 +539,11 @@ class TechFactor(FunSet):
             'mean': ['no', '*1', 0, 2, None, None],
             'abs_fun': ['no', '*1', 0, 1, None, None],
             'pnd_continue_ud': ['signal', '*1', 0, 1, None, None],
-            'pnd_hl': ['no', '*1', 0, 3, 'window_list', "set({p1['name'], p2['name'], p3['name']})=="
-                                                        "set({'high','low','close'})"]
-
+            'pnd_hl': ['no', '*1', 0, 3, ['window_list'], "set({p1['name'], p2['name'], p3['name']})=="
+                                                          "set({'high','low','close'})"],
+            'ma_diff': ['diff', '*1', 0, 1, ['short_long_list'], None],
+            'zscore_col': ['diff', '*1', 0, 1, ['window_list'], None],
+            'zscore_row': ['diff', '*1', 0, 1, None, None],
         })
         self.fun_info_df = pd.DataFrame.from_dict(self.fun_info_set).T
         self.fun_info_df.columns = ['t_type', 'mul', 'axis', 'data_num', 'para', 'detail']
@@ -492,85 +559,101 @@ class TechFactor(FunSet):
         self.move_tree = dict({
             'div': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun', 'compare',
                     'corr', 'corr_rank', 'ma', 'shift', 'order_moment', 'order_moment_am', 'row_extre',
-                    'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+                    'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row',
+                    'ma_diff'],
 
             'diff': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun', 'compare',
                      'corr', 'corr_rank', 'ma', 'shift', 'order_moment', 'order_moment_am', 'row_extre',
-                     'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+                     'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row',
+                     'ma_diff'],
 
             'pct_change': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun', 'compare',
                            'corr', 'corr_rank', 'ma', 'shift', 'order_moment', 'order_moment_am', 'row_extre',
-                           'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+                           'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row',
+                           'ma_diff'],
 
             'add': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun', 'compare',
                     'corr', 'corr_rank', 'ma', 'shift', 'order_moment', 'order_moment_am', 'row_extre',
-                    'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+                    'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row',
+                    'ma_diff'],
 
             'add_weight': ['div', 'diff', 'pct_change', 'add', 'add_weight', 'add_tri', 'mul', 'sub', 'std',
                            'max_fun', 'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
                            'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'abs_fun',
-                           'pnd_continue_ud', 'pnd_hl'],
+                           'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'add_tri': ['div', 'diff', 'pct_change', 'add', 'add_weight', 'add_tri', 'mul', 'sub', 'std',
                         'max_fun', 'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
                         'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'abs_fun',
-                        'pnd_continue_ud', 'pnd_hl'],
+                        'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'mul': ['div', 'diff', 'pct_change', 'add', 'add_weight', 'add_tri', 'mul', 'sub', 'std',
                     'max_fun', 'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
                     'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'abs_fun',
-                    'pnd_continue_ud', 'pnd_hl'],
+                    'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'sub': ['div', 'diff', 'pct_change', 'add', 'add_weight', 'add_tri', 'mul', 'sub', 'std',
                     'max_fun', 'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
                     'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'abs_fun',
-                    'pnd_continue_ud', 'pnd_hl'],
+                    'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'max_fun': ['div', 'diff', 'pct_change', 'add', 'add_weight', 'add_tri', 'mul', 'sub', 'std',
                         'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
                         'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'abs_fun',
-                        'pnd_continue_ud', 'pnd_hl'],
+                        'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'min_fun': ['div', 'diff', 'pct_change', 'add', 'add_weight', 'add_tri', 'mul', 'sub', 'std',
                         'max_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
                         'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'abs_fun',
-                        'pnd_continue_ud', 'pnd_hl'],
+                        'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'ma': ['div', 'diff', 'pct_change', 'add', 'add_weight', 'add_tri', 'mul', 'sub', 'std',
                    'max_fun', 'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
                    'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'abs_fun',
-                   'pnd_continue_ud', 'pnd_hl'],
+                   'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
-            'mean': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std',
-                     'max_fun', 'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment',
-                     'order_moment_am', 'row_extre', 'pnd_col_extre', 'mean', 'pnd_continue_ud', 'pnd_hl'],
+            'mean': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun', 'compare',
+                     'corr', 'corr_rank', 'ma', 'shift', 'order_moment', 'order_moment_am', 'row_extre',
+                     'pnd_col_extre', 'mean', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'abs_fun': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun',
                         'compare', 'corr', 'corr_rank', 'ma', 'shift', 'order_moment', 'order_moment_am', 'row_extre',
-                        'pnd_col_extre', 'mean', 'pnd_continue_ud', 'pnd_hl'],
+                        'pnd_col_extre', 'mean', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'std': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun', 'compare',
                     'corr', 'corr_rank', 'ma', 'shift', 'row_extre', 'pnd_col_extre', 'mean', 'pnd_continue_ud',
-                    'pnd_hl'],
+                    'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'shift': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun', 'compare',
-                      'corr', 'corr_rank'],
+                      'corr', 'corr_rank', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'corr': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun',
                      'min_fun', 'compare', 'ma', 'order_moment', 'order_moment_am', 'row_extre', 'pnd_col_extre',
-                     'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+                     'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'corr_rank': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun',
                           'min_fun', 'compare', 'ma', 'order_moment', 'order_moment_am', 'row_extre', 'pnd_col_extre',
-                          'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+                          'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
-            'order_moment': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std',
-                             'max_fun', 'min_fun', 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'row_extre',
-                             'pnd_col_extre', 'mean', 'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+            'order_moment': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun',
+                             'compare', 'corr', 'corr_rank', 'ma', 'shift', 'row_extre', 'pnd_col_extre', 'mean',
+                             'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
 
             'order_moment_am': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun',
                                 'compare', 'corr', 'corr_rank', 'ma', 'shift', 'row_extre', 'pnd_col_extre', 'mean',
-                                'abs_fun', 'pnd_continue_ud', 'pnd_hl'],
+                                'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row', 'ma_diff'],
+
+            'zscore_col': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun',
+                           'compare', 'corr', 'corr_rank', 'ma', 'shift', 'row_extre', 'pnd_col_extre', 'mean',
+                           'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'ma_diff'],
+
+            'zscore_row': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun',
+                           'compare', 'corr', 'corr_rank', 'ma', 'shift', 'row_extre', 'pnd_col_extre', 'mean',
+                           'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'ma_diff'],
+
+            'ma_diff': ['div', 'diff', 'pct_change', 'add', 'mul', 'sub', 'std', 'max_fun', 'min_fun',
+                        'compare', 'corr', 'corr_rank', 'ma', 'shift', 'row_extre', 'pnd_col_extre', 'mean',
+                        'abs_fun', 'pnd_continue_ud', 'pnd_hl', 'zscore_col', 'zscore_row'],
             # signal
             'compare': ['add', 'mul', 'sub', ],
             'pnd_continue_ud': ['add', 'mul', 'sub', 'ma', 'mean', 'abs_fun'],
@@ -580,8 +663,8 @@ class TechFactor(FunSet):
         })
         self.fun_path_list = self.move_path_fun()
         print(len(self.fun_path_list))
-        self.single_fun = ['pnd_continue_ud', 'pnd_col_extre', 'row_extre']
-        self.save_root_path = '/media/hdd2/dat_whs/data'
+        self.signal_fun = ['pnd_continue_ud', 'pnd_col_extre', 'row_extre']
+        self.save_root_path = save_root_path
 
     @staticmethod
     def if_use_fun_too_much(x, mark_list, n=2):
@@ -619,9 +702,9 @@ class TechFactor(FunSet):
             else:
                 pass
 
-            if t_type != 'signal' and n <= 2:
+            if t_type != 'signal' and n <= 3:
                 target_list.append(mark_list + [x])
-                print(mark_list + [x])
+                # print(mark_list + [x])
                 self.tmp_move_fun(list(set(fun_info_df_1.index) & set(self.move_tree[x])),
                                   mark_list + [x], fun_info_df_1, n + 1, target_list)
         if n == 0:
@@ -671,26 +754,75 @@ class TechFactor(FunSet):
                 target_df = self.fun_exe(fun_name, [target_df], para)
             yield target_df, all_para_list
 
+    @staticmethod
+    def str_to_num(tmp_str):
+        if '.' in tmp_str:
+            return float(tmp_str)
+        else:
+            return int(tmp_str)
+
+    def para_str_to_list(self, para_str):
+        if len(para_str) == 0:
+            return []
+        else:
+            return [self.str_to_num(x) for x in para_str.split('_')]
+
+    def fun_path_para_exe(self, fun_name_list, data_name, para_list):
+        data_df = getattr(self, data_name)
+        target_df = data_df.copy()
+        # print(para_list)
+        for fun_name, para in zip(*[fun_name_list, para_list]):
+            para = eval(f'{para}')
+            # para = para.replace('[', '').replace(']', '').replace(' ', '').replace('(', '').replace(')', '')
+            # para = [self.str_to_num(x) for x in para.split(',') if x != '']
+            # print(fun_name, para, type(para))
+            target_df = self.fun_exe(fun_name, [target_df], para)
+        return target_df
+
     def tmp_fpe_1(self, fun_path, data_price_list, data_other_list):
         for tmp_df, all_para_list in self.fun_path_exe(fun_path, data_price_list[0]):
             if tmp_df is not None:
-                for signal_fun in self.single_fun:
-                    for single_df, single_para in self.fun_para_exe(signal_fun, [tmp_df]):
-                        yield single_df, all_para_list, signal_fun, single_para, None, []
+                for signal_fun in self.signal_fun:
+                    for signal_df, signal_para in self.fun_para_exe(signal_fun, [tmp_df]):
+                        yield signal_df, all_para_list, signal_fun, signal_para, None, [], None, []
                 if len(data_other_list) != 0:
                     print('Volume')
                     for data_other_name in data_other_list:
                         data_other_df = getattr(self, data_other_name)
-                        for combine_fun in ['corr', 'corr_rank', 'div']:
-                            for target_df, combine_para in self.fun_para_exe(combine_fun, [tmp_df, data_other_df]):
-                                for signal_fun in self.single_fun:
-                                    for single_df, single_para in self.fun_para_exe(signal_fun, [target_df]):
-                                        yield single_df, all_para_list, signal_fun, single_para, \
-                                              combine_fun, combine_para
+                        for other_fun in ['pct_change', 'ma', 'pnd_continue_ud', 'pnd_hl']:
+                            for other_df, other_para in self.fun_para_exe(other_fun, [data_other_df]):
+                                for combine_fun in ['corr', 'corr_rank', 'div']:
+                                    for target_df, combine_para in self.fun_para_exe(combine_fun, [tmp_df, other_df]):
+                                        for signal_fun in self.signal_fun:
+                                            for signal_df, signal_para in self.fun_para_exe(signal_fun, [target_df]):
+                                                yield signal_df, all_para_list, signal_fun, signal_para, other_fun, \
+                                                      other_para, combine_fun, combine_para
                 else:
                     pass
             else:
                 pass
+
+    def bkt_fpe_1(self, data_price_list, data_other_list, fun_name_str, file_name_str):
+        # file_name_str = 'fun_path1617|[]|pnd_continue_ud||div||pnd_col_extre|17_0.3|1'
+        _, all_para_str, other_fun_str, other_para_str, combine_fun_str, combine_para_str, \
+        signal_fun_str, signal_para_str, _ = file_name_str.split('|')
+        fun_name_list = fun_name_str.split('|')
+        all_para_list = all_para_str.split('_')
+        tmp_df = self.fun_path_para_exe(fun_name_list, data_price_list[0], all_para_list)
+        print(all_para_str, other_fun_str, other_para_str, combine_fun_str, combine_para_str, \
+              signal_fun_str, signal_para_str)
+        if combine_fun_str == 'None':
+            signal_para_list = self.para_str_to_list(signal_para_str)
+            signal_df = self.fun_exe(signal_fun_str, [tmp_df], signal_para_list)
+        else:
+            other_para_list = self.para_str_to_list(other_para_str)
+            other_df = self.fun_exe(other_fun_str, [getattr(self, data_other_list[0])], other_para_list)
+            combine_para_list = self.para_str_to_list(combine_para_str)
+            target_df = self.fun_exe(combine_fun_str, [tmp_df, other_df], combine_para_list)
+            signal_para_list = self.para_str_to_list(signal_para_str)
+            signal_df = self.fun_exe(signal_fun_str, [target_df], signal_para_list)
+        daily_pos, sp = self.bkt_model.single_test_real(signal_df)
+        return daily_pos
 
     def tmp_fpe_2(self, fun_path, data_price_list, data_other_list):
         for tmp_df_1, all_para_list_1 in self.fun_path_exe(fun_path, data_price_list[0]):
@@ -698,54 +830,67 @@ class TechFactor(FunSet):
                 for concat_fun in ['div', 'sub', 'compare', 'mean']:
                     for tmp_df, concat_para in self.fun_para_exe(concat_fun, [tmp_df_1, tmp_df_2]):
                         if tmp_df is not None:
-                            for signal_fun in self.single_fun:
-                                for single_df, single_para in self.fun_para_exe(signal_fun, [tmp_df]):
-                                    yield single_df, all_para_list_1, all_para_list_2, concat_fun, concat_para, \
-                                          signal_fun, single_para, None, []
+                            for signal_fun in self.signal_fun:
+                                for signal_df, signal_para in self.fun_para_exe(signal_fun, [tmp_df]):
+                                    yield signal_df, all_para_list_1, all_para_list_2, concat_fun, concat_para, \
+                                          signal_fun, signal_para, None, [], None, []
                             if len(data_other_list) != 0:
                                 for data_other_name in data_other_list:
                                     data_other_df = getattr(self, data_other_name)
-                                    for combine_fun in ['corr', 'corr_rank', 'div']:
-                                        for target_df, combine_para in self.fun_para_exe(combine_fun,
-                                                                                         [tmp_df, data_other_df]):
-                                            for signal_fun in self.single_fun:
-                                                for single_df, single_para in self.fun_para_exe(signal_fun,
-                                                                                                [target_df]):
-                                                    yield single_df, all_para_list_1, all_para_list_2, concat_fun, \
-                                                          concat_para, signal_fun, single_para, \
-                                                          combine_fun, combine_para
-                            else:
-                                pass
+                                    for other_fun in ['pct_change', 'ma', 'pnd_continue_ud', 'pnd_hl']:
+                                        for other_df, other_para in self.fun_para_exe(other_fun, [data_other_df]):
+                                            for combine_fun in ['corr', 'corr_rank', 'div']:
+                                                for target_df, combine_para in self.fun_para_exe(combine_fun,
+                                                                                                 [tmp_df, other_df]):
+                                                    for signal_fun in self.signal_fun:
+                                                        for signal_df, signal_para in self.fun_para_exe(signal_fun,
+                                                                                                        [target_df]):
+                                                            yield signal_df, all_para_list_1, all_para_list_2, \
+                                                                  concat_fun, concat_para, \
+                                                                  signal_fun, signal_para, \
+                                                                  other_fun, other_para, \
+                                                                  combine_fun, combine_para
                         else:
                             pass
+                    else:
+                        pass
+
+    def bkt_fpe_2(self, data_price_list, data_other_list, fun_name, file_name):
+        pass
 
     @staticmethod
     def get_file_name(i, info_data, data_price_num):
         if data_price_num == 1:
-            all_para_list, signal_fun, single_para, combine_fun, combine_para = info_data
+            all_para_list, signal_fun, signal_para, other_fun, other_para, combine_fun, combine_para = info_data
             all_para_str = '_'.join([str(x) for x in all_para_list])
             signal_fun_str = str(signal_fun)
-            single_para_str = '_'.join([str(x) for x in single_para])
+            signal_para_str = '_'.join([str(x) for x in signal_para])
             combine_fun_str = str(combine_fun)
             combine_para_str = '_'.join([str(x) for x in combine_para])
-            tmp_list = [all_para_str, combine_fun_str, combine_para_str, signal_fun_str, single_para_str]
-            # file_name = '|'.join([f'fun_path{i}', '|'.join(tmp_list), str(data_price_num)])
+            other_fun_str = str(other_fun)
+            other_para_str = '_'.join([str(x) for x in other_para])
+            tmp_list = [all_para_str, other_fun_str, other_para_str, combine_fun_str, combine_para_str,
+                        signal_fun_str, signal_para_str]
 
         elif data_price_num == 2:
-            all_para_list_1, all_para_list_2, concat_fun, concat_para, signal_fun, \
-            single_para, combine_fun, combine_para = info_data
+            all_para_list_1, all_para_list_2, \
+            concat_fun, concat_para, \
+            signal_fun, signal_para, \
+            other_fun, other_para, \
+            combine_fun, combine_para = info_data
 
             all_para_str_1 = '_'.join([str(x) for x in all_para_list_1])
             all_para_str_2 = '_'.join([str(x) for x in all_para_list_2])
             concat_fun_str = str(concat_fun)
             concat_para_str = '_'.join([str(x) for x in concat_para])
             signal_fun_str = str(signal_fun)
-            single_para_str = '_'.join([str(x) for x in single_para])
+            signal_para_str = '_'.join([str(x) for x in signal_para])
             combine_fun_str = str(combine_fun)
             combine_para_str = '_'.join([str(x) for x in combine_para])
-            tmp_list = [all_para_str_1, all_para_str_2, concat_fun_str, concat_para_str,
-                        combine_fun_str, combine_para_str, signal_fun_str, single_para_str]
-            # file_name = '|'.join([f'fun_path{i}', '|'.join(tmp_list), str(data_price_num)])
+            other_fun_str = str(other_fun)
+            other_para_str = '_'.join([str(x) for x in other_para])
+            tmp_list = [all_para_str_1, all_para_str_2, concat_fun_str, concat_para_str, other_fun_str, other_para_str,
+                        combine_fun_str, combine_para_str, signal_fun_str, signal_para_str]
         else:
             return 'error'
 
@@ -753,13 +898,14 @@ class TechFactor(FunSet):
         return file_name
 
     def part_train_model(self, i, data_price_list, data_other_list):
-        fun_path_list_len = len(self.fun_path_list)
         try:
+            fun_path_list_len = len(self.fun_path_list)
             data_info_str = '|'.join(data_price_list + data_other_list)
             save_data_path = f'{self.save_root_path}/{data_info_str}'
             bt.AZ_Path_create(save_data_path)
             data_price_num = len(data_price_list)
             fun_path = self.fun_path_list[i]
+            print(fun_path)
             fun_path_str = '|'.join(fun_path)
             save_fun_path = f'{save_data_path}/{fun_path_str}'
             if data_price_num == 1:
@@ -776,58 +922,83 @@ class TechFactor(FunSet):
 
             elif data_price_num == 3:
                 pass
+
             elif data_price_num == 4:
                 pass
+
             else:
                 print('price data num error')
         except Exception as error:
             print(error)
 
     def train_model(self, data_price_list, data_other_list):
-        pool = Pool(20)
-        for i in range(len(self.fun_path_list))[:20]:
+        pool = Pool(28)
+        for i in range(len(self.fun_path_list)):
             args = (i, data_price_list, data_other_list)
-            # self.part_train_model(i, data_price_list, data_other_list)
+            # self.part_train_model(*args)
             pool.apply_async(self.part_train_model, args=args)
         pool.close()
         pool.join()
 
     def main_fun(self):
+        print('TEST_BEGIN')
         data_list = list(self.data_info_set.keys())
         data_list.remove('volume')
-        all_para_list = list(combinations(data_list, 1))
-
+        all_para_list = [('close',)]
         # all_para_list = list(combinations(data_list, 2))
 
         # all_para_list = list(combinations(data_list, 1)) + list(combinations(data_list, 2)) + \
         #                 list(combinations(data_list, 3)) + list(combinations(data_list, 4))
-
         for args in all_para_list:
+            # print(args)
             self.train_model(list(args), ['volume'])
 
+    def single_test_fun(self, data_name, fun_name, file_name):
+        data_price_list = data_name.split('|')[:-1]
+        data_other_list = data_name.split('|')[-1:]
+        if len(data_price_list) == 1:
+            signal_df = self.bkt_fpe_1(data_price_list, data_other_list, fun_name, file_name)
+        else:
+            signal_df = None
+        return signal_df
 
-def get_bkt_model(root_path):
-    sector_name = 'index_000905'
-    hold_time = 5
-    if_only_long = False
+    def mix_test_fun(self, portfolio_index):
+        target_pos = pd.DataFrame()
+        for select_name in portfolio_index:
+            data_name, fun_name, file_name = select_name.split('@')
+            # 生成signal
+            daily_pos = self.single_test_fun(data_name, fun_name, file_name)
+            target_pos = target_pos.add(daily_pos, fill_value=0)
+
+        pnl_df = (target_pos.shift(2) * self.bkt_model.return_choose).sum(axis=1)
+        sp = bt.AZ_Sharpe_y(pnl_df)
+        pot = bt.AZ_Pot(target_pos, pnl_df.cumsum().iloc[-1])
+        return pnl_df, sp, pot
+
+
+def get_bkt_model(root_path, sector_name, hold_time, if_only_long):
+    # sector_name = 'index_000905'
+    # hold_time = 5
+    # if_only_long = False
     time_para_dict = []
     # root_path = '/mnt/mfs/DAT_EQT'
     if_save = False
     if_new_program = True
 
     begin_date = pd.to_datetime('20130101')
-    cut_date = pd.to_datetime('20160401')
-    # end_date = pd.to_datetime('20190305')
+    cut_date = pd.to_datetime('20180101')
+    # end_date = pd.to_datetime('2010315')
     end_date = datetime.today()
     lag = 2
     return_file = ''
 
     if_hedge = True
-    if sector_name.startswith('market_top_300plus'):
+    if sector_name.startswith('market_top_300plus') or sector_name.startswith('index_000300'):
         if_weight = 1
         ic_weight = 0
 
-    elif sector_name.startswith('market_top_300to800plus'):
+    elif sector_name.startswith('market_top_300to800plus') or sector_name.startswith('index_000905') \
+            or sector_name.startswith('market_top_2000'):
         if_weight = 0
         ic_weight = 1
 
@@ -841,9 +1012,25 @@ def get_bkt_model(root_path):
     return bkt_model
 
 
+def get_tech_factor_fun(root_path, sector_name, hold_time, if_only_long):
+    # root_path = '/mnt/mfs/DAT_EQT'
+    # sector_name = 'index_000905'
+    # hold_time = 5
+    # if_only_long = False
+
+    save_root_path = f'/media/hdd2/dat_whs/data/{sector_name}|{hold_time}|{if_only_long}'
+    bkt_model = get_bkt_model(root_path, sector_name, hold_time, if_only_long)
+    tech_factor = TechFactor(root_path, bkt_model, save_root_path)
+    return tech_factor
+
+
 if __name__ == '__main__':
     root_path = '/mnt/mfs/DAT_EQT'
-    bkt_model = get_bkt_model(root_path)
-    tech_factor = TechFactor(root_path, bkt_model)
-    # tech_factor.train_modle(data_name_list)
-    tech_factor.main_fun()
+    sector_name_list = ['index_000300', 'index_000905']
+    if_only_long_list = [False, True]
+    hold_time_list = [1, 5, 10]
+    for sector_name in sector_name_list:
+        for if_only_long in if_only_long_list:
+            for hold_time in hold_time_list:
+                tech_factor = get_tech_factor_fun(root_path, sector_name, hold_time, if_only_long)
+                tech_factor.main_fun()

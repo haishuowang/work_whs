@@ -18,10 +18,10 @@ import re
 import sys
 
 sys.path.append("/mnt/mfs/LIB_ROOT")
-sys.path.append('/mnt/mfs/work_whs')
+sys.path.append('/mnt/mfs')
 import open_lib.shared_paths.path as pt
-from loc_lib.shared_tools import send_email
-import loc_lib.shared_tools.back_test as bt
+from work_whs.loc_lib.shared_tools import send_email
+import work_whs.loc_lib.shared_tools.back_test as bt
 from collections import Counter
 
 
