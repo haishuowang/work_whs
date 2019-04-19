@@ -6,11 +6,14 @@ from work_whs.loc_lib.pre_load import *
 import work_whs.AZ_2019_Q1.create_tech_factor as ctf
 
 
-def load_pickle(root_path, data_name, fun_name, file_name):
-    data_fun_file_path = f'{root_path}/{data_name}/{fun_name}/{file_name}'
-    pnl_df = pd.read_pickle(data_fun_file_path)
-    pnl_df.name = '@'.join([data_name, fun_name, file_name[:-4]])
-    return pnl_df
+def load_pickle(root_path, sector_hold_ls, data_name, fun_name, file_name):
+    data_fun_file_path = f'{root_path}/{sector_hold_ls}/{data_name}/{fun_name}/{file_name}'
+    info_list = pd.read_pickle(data_fun_file_path)
+    pnl_df = info_list[0]
+    perf_list = info_list[1]
+    pnl_df.name = '@'.join([sector_hold_ls, data_name, fun_name, file_name[:-4]])
+    perf_df = pd.Series(perf_list, name='@'.join([data_name, fun_name, file_name[:-4]]))
+    return pnl_df, perf_df
 
 
 def select_fun(file_name, pnl_table_c, max_num=10):
@@ -71,29 +74,35 @@ def part_single_test(col_name, pnl_table, sharpe_mid, sharpe_df, tech_factor):
     print(target_sharpe, target_lvr)
     pnl_df, sp, pot = tech_factor.mix_test_fun(portfolio_index)
     print(sp, pot)
-    if sp > 2.4:
-        plot_send_result(pnl_df, sp, col_name.split('@')[-1], '|'.join(['|'.join(select_list), str(sp), str(pot)]))
+    # if sp > 2.4:
+    # plot_send_result(pnl_df, sp, col_name.split('@')[-1], '|'.join(['|'.join(select_list), str(sp), str(pot)]))
+    plot_send_result(pnl_df, sp, col_name, '|'.join(['|'.join(select_list), str(sp), str(pot)]))
 
 
-def get_all_pnl_fun():
+def get_all_pnl_fun(sector_hold_ls, data_name):
     root_path = '/media/hdd2/dat_whs/data'
-    data_name = 'close|volume'
-    data_path = f'{root_path}/{data_name}'
+    # sector_hold_ls = 'index_000300|1|False'
+    # data_name = 'close|volume'
+    data_path = f'{root_path}/{sector_hold_ls}/{data_name}'
     result_list = []
     pool = Pool(20)
     fun_name_list = sorted(os.listdir(data_path))
     for fun_name in fun_name_list:
         file_name_list = sorted(os.listdir(f'{data_path}/{fun_name}'))
         for file_name in file_name_list:
-            args = (root_path, data_name, fun_name, file_name)
+            args = (root_path, sector_hold_ls, data_name, fun_name, file_name)
             # load_pickle(*args)
             result_list.append(pool.apply_async(load_pickle, args=args))
     pool.close()
     pool.join()
-    return pd.concat([res.get() for res in result_list], axis=1)
+    result_list = [res.get() for res in result_list]
+    all_pnl_df = pd.concat([res[0] for res in result_list], axis=1)
+    all_perf_list = pd.concat([res[1] for res in result_list], axis=1)
+    return all_pnl_df, all_perf_list
 
 
 def corr_filter_fun(all_pnl_df):
+    print(f'pnl总体数量：{len(all_pnl_df.columns)}')
     sharpe_df = all_pnl_df.apply(bt.AZ_Sharpe_y)
     sharpe_df_sort = sharpe_df.sort_values()
     sharpe_mid = sharpe_df_sort[sharpe_df_sort.abs() > 0.7]
@@ -107,44 +116,52 @@ def corr_filter_fun(all_pnl_df):
         if x in part_all_pnl_high_corr.columns:
             drop_list = list(part_all_pnl_high_corr[x].dropna().index)
             drop_list.remove(x)
-            print(drop_list)
+            # print(drop_list)
             part_all_pnl_high_corr = part_all_pnl_high_corr.drop(index=drop_list, columns=drop_list)
         else:
             pass
+    filter_col_list = part_all_pnl_high_corr.index
     b = time.time()
     print(b - a)
-    return part_all_pnl_high_corr.index
+    print(f'过滤后pnl数量：{len(filter_col_list)}')
+
+    return filter_col_list
 
 
 def main_fun():
     root_path = '/mnt/mfs/DAT_EQT'
-    sector_name = 'index_000905'
-    hold_time = 5
-    if_only_long = False
+    sector_hold_ls = 'index_000300|1|False'
+    data_name = 'close|volume'
+
+    sector_name, hold_time, if_only_long = sector_hold_ls.split('|')
+    hold_time = int(hold_time)
+    if if_only_long == 'True':
+        if_only_long = True
+    else:
+        if_only_long = False
+
     tech_factor = ctf.get_tech_factor_fun(root_path, sector_name, hold_time, if_only_long)
-    all_pnl_df = get_all_pnl_fun()
+    # 获取 pnl和performance
+    # all_pnl_df, all_perf_df = get_all_pnl_fun(sector_hold_ls, data_name)
+    #
+    #
+    # filter_col_list = corr_filter_fun(all_pnl_df)
+    # pd.to_pickle(filter_col_list, f'/mnt/mfs/dat_whs/{sector_hold_ls}|{data_name}|filter_col_list.pkl')
 
-    filter_col_list = corr_filter_fun(all_pnl_df)
-    pd.to_pickle(filter_col_list, '/mnt/mfs/dat_whs/filter_col_list.pkl')
-    filter_col_list = pd.read_pickle('/mnt/mfs/dat_whs/filter_col_list.pkl')
-    filter_pnl_df = all_pnl_df[filter_col_list]
-    pd.to_pickle(filter_pnl_df, '/mnt/mfs/dat_whs/filter_pnl_df.pkl')
-
+    # filter_col_list = pd.read_pickle(f'/mnt/mfs/dat_whs/{sector_hold_ls}|{data_name}|filter_col_list.pkl')
+    # filter_pnl_df = all_pnl_df[filter_col_list]
+    # pd.to_pickle(filter_pnl_df, f'/mnt/mfs/dat_whs/{sector_hold_ls}|{data_name}|filter_pnl_df.pkl')
+    filter_pnl_df = pd.read_pickle(f'/mnt/mfs/dat_whs/{sector_hold_ls}|{data_name}|filter_pnl_df.pkl')
     # filter_pnl_df = pd.read_pickle('/mnt/mfs/dat_whs/filter_pnl_df.pkl')
     sharpe_df = filter_pnl_df.apply(bt.AZ_Sharpe_y)
     sharpe_df_sort = sharpe_df.sort_values()
-
-    sector_name = 'index_000905'
-    hold_time = 5
-    if_only_long = False
 
     sharpe_up = sharpe_df_sort[sharpe_df_sort.abs() > 0.8]
     # print(sharpe_up)
     sharpe_mid = sharpe_df_sort[sharpe_df_sort.abs() > 0.7]
     pool = Pool(28)
     for col_name in sharpe_up.index:
-        args = (col_name, filter_pnl_df, sharpe_mid, sharpe_df,
-                sector_name, hold_time, if_only_long, tech_factor)
+        args = (col_name, filter_pnl_df, sharpe_mid, sharpe_df, tech_factor)
         # part_single_test(*args)
         pool.apply_async(part_single_test, args=args)
     pool.close()
@@ -163,6 +180,6 @@ def single_back_test():
 
 
 if __name__ == '__main__':
-    # main_fun()
+    main_fun()
     # single_back_test()
     pass

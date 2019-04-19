@@ -63,7 +63,7 @@ def AZ_MaxDrawdown(asset_df):
 
 def AZ_Col_zscore(df, n, cap=None, min_periods=1):
     df_mean = AZ_Rolling_mean(df, n, min_periods=min_periods)
-    df_std = df.rolling(window=n, min_periods=min_periods).std()
+    df_std = df.rolling(window=n, min_periods=min_periods).std().replace(0, np.nan)
     target = (df - df_mean) / df_std
     if cap is not None:
         target[target > cap] = cap
@@ -73,7 +73,7 @@ def AZ_Col_zscore(df, n, cap=None, min_periods=1):
 
 def AZ_Row_zscore(df, cap=None):
     df_mean = df.mean(axis=1)
-    df_std = df.std(axis=1)
+    df_std = df.std(axis=1).replace(0, np.nan)
     target = df.sub(df_mean, axis=0).div(df_std, axis=0)
     if cap is not None:
         target[target > cap] = cap
@@ -104,7 +104,7 @@ def AZ_Rolling_sum(df, window, min_periods=0):
 
 
 def AZ_Rolling_std(df, window, min_periods=0):
-    return AZ_Rolling(df, window, min_periods).std()
+    return AZ_Rolling(df, window, min_periods).std().replace(0, np.nan)
 
 
 def AZ_Rolling_corr(df1, df2, window, min_periods=0):
@@ -124,7 +124,7 @@ def AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250, min_periods=0, cut_poin
         cut_point_list = [0.05, 0.33, 0.5, 0.66, 0.95]
 
     pnl_df_mean = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods).mean()
-    pnl_df_std = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods).std()
+    pnl_df_std = pnl_df.rolling(int(roll_year * year_len), min_periods=min_periods).std().repalce(0, np.nan)
     rolling_sharpe = np.sqrt(year_len) * pnl_df_mean / pnl_df_std
 
     rolling_sharpe.iloc[:int(roll_year * year_len) - 1] = np.nan
@@ -218,7 +218,9 @@ def AZ_split_stock(stock_list):
     :return:
     """
     eqa = [x for x in stock_list if (x.startswith('0') or x.startswith('3')) and x.endswith('SZ')
-           or x.startswith('6') and x.endswith('SH') or x in ['000001.SH', '000300.SH', '000905.SH', '000906.SH']]
+           or x.startswith('6') and x.endswith('SH') or x in ['510050.SH', '510300.SH', '510500.SH',
+                                                              '000001.SH', '000300.SH', '000905.SH', '000906.SH',
+                                                              ]]
     return eqa
 
 
@@ -347,108 +349,6 @@ def AZ_holding_period_decay(pos_df, return_df, holding_period=[1, 3, 5, 7, 9, 11
         sharpList.append(AZ_Sharpe_y((sma_pos_df * return_df).sum(axis=1)))
         annual_return_list.append(AZ_annual_return(sma_pos_df, return_df))
     return sharpList, annual_return_list
-
-
-def AZ_Back_test(pos_df, return_df, usr_email=None, figsize=None, if_file=False, var_cal=False):
-    """
-    whs
-    :param pos_df: 仓位信息
-    :param return_df: 涨跌信息
-    :param usr_email: 发送图片的邮箱
-    :param figsize: figsize的大小
-    :param if_file: 是否发送 文件信息
-    :return: sharpe, pot, leve_ratio, total_asset
-    """
-    if figsize is None:
-        figsize = (24, 18)
-    pnl_df = (pos_df * return_df).sum(axis=1)
-
-    pnl_df = (pnl_df / (pos_df.sum(axis=1).replace(0.0, np.nan)))
-
-    asset_df = pnl_df.cumsum()
-    total_asset = asset_df.iloc[-1]
-
-    pot = AZ_Pot(pos_df, total_asset)
-    sharpe = AZ_Sharpe_y(pnl_df)
-    turnover = AZ_turnover(pos_df)
-    leve_ratio = AZ_Leverage_ratio(asset_df)
-    rolling_sharpe, cut_sharpe = AZ_Rolling_sharpe(pnl_df, roll_year=1, year_len=250, min_periods=1, output=True)
-    holding_period = [1, 3, 5, 7, 9, 11, 15, 20, 25, 30]
-    cut_point_list = [0.05, 0.33, 0.5, 0.66, 0.95]
-    sharpDecayList, annualReturnDecayList = AZ_holding_period_decay(pos_df, return_df, holding_period)
-    cut_fit = AZ_fit_ratio_rolling(pos_df, pnl_df)
-    if var_cal:
-        var_cut = AZ_VAR(pos_df, return_df, confidence_level=0.05)
-    if usr_email is not None:
-        now_time = datetime.now().strftime('%Y%m%d_%H%M_%S')
-        save_root_path = '/mnt/mfs/DAT_EQT/tmp/{}'.format(now_time)
-        AZ_Path_create(save_root_path)
-        figure_save_path = os.path.join(save_root_path, '{}.png'.format(now_time))
-        file_path_list = [figure_save_path]
-        if if_file:
-            pos_save_path = os.path.join(save_root_path, 'pos_{}.csv'.format(now_time))
-            return_save_path = os.path.join(save_root_path, 'return_{}.csv'.format(now_time))
-            asset_save_path = os.path.join(save_root_path, 'asset_{}.csv'.format(now_time))
-            pos_df.to_csv(pos_save_path)
-            return_df.to_csv(return_save_path)
-            pnl_df.to_csv(asset_save_path)
-            file_path_list = file_path_list + [pos_save_path, return_save_path, asset_save_path]
-
-        fig = plt.figure(figsize=figsize)
-        fig.suptitle('figure', fontsize=40)
-
-        ax1 = fig.add_subplot(3, 1, 1)
-        ax1.plot(pd.to_datetime(pnl_df.index.astype(str)), asset_df.values,
-                 label='sp={},\npot={},\nleve_ratio={}\ntotal_asset={}\nreturnover={}'
-                 .format(sharpe.round(4), pot, leve_ratio.round(4), total_asset.round(4), turnover.round(4)))
-        ax1.grid(1)
-        ax1.legend()
-
-        ax3 = fig.add_subplot(3, 1, 2)
-        ax3.plot(holding_period, sharpDecayList, '.-', label='Sharp Ratio')
-        ax3.legend(loc=2)
-        ax3.set_ylabel('Sharp Ratio')
-        ax4 = ax3.twinx()
-        ax4.plot(holding_period, annualReturnDecayList, '.-', color='r', label='Annual Return')
-        ax4.legend(loc=1)
-        ax4.set_ylabel('annual return')
-        ax4.set_xlabel('holding Period')
-
-        ax2 = fig.add_subplot(3, 1, 3)
-        ax2.set_xlabel('')
-        ax2.set_ylabel('')
-
-        col_label = [str(x) for x in cut_point_list]
-        if var_cal:
-            row_label = ['SharpRatio', 'Fit Ratio', 'Var Ratio']
-        else:
-            row_label = ['SharpRatio', 'Fit Ratio']
-        if var_cal:
-            table_value = [list(cut_sharpe), list(cut_fit), var_cut]
-        else:
-            table_value = [list(cut_sharpe), list(cut_fit)]  # , list(var_cut)]
-        the_table = ax2.table(cellText=table_value, rowLabels=row_label, colLabels=col_label, loc='center',
-                              colWidths=[0.1] * 5)
-        the_table.set_fontsize(15)
-        the_table.scale(2.0, 2.58)
-        ax2.spines['top'].set_visible(False)
-        ax2.spines['bottom'].set_visible(False)
-        ax2.spines['left'].set_visible(False)
-        ax2.spines['right'].set_visible(False)
-        ax2.set_xticks([])
-        ax2.set_yticks([])
-        plt.savefig(figure_save_path)
-
-        text = 'back test result'
-        to = [usr_email, ]
-        subject = ''
-        filepath = file_path_list
-        try:
-            send_email.send_email(text, to, filepath, subject)
-        finally:
-            AZ_Delete_file(save_root_path, except_list=None)
-        os.rmdir(save_root_path)
-    return sharpe, pot, leve_ratio, total_asset
 
 
 # def AZ_pnl_kmean(all_pnl_df, n, ratio):

@@ -1021,13 +1021,15 @@ def corr_test_fun(pnl_df, alpha_name):
 
 
 def config_test():
-    factor_str = 'R_FairVal_TotProfit_QYOY|OPCF_and_mcap_intdebt_Y3YGR_Y5YGR_0.3|tab2_7_row_extre_0.3' \
-                 '|PE_TTM_p20d_col_extre_0.2|volume_count_down_p10d|evol_p20d|REMWB.02|REMTK.26' \
-                 '|R_NETPROFIT_s_QYOY_and_QTTM_0.3|REMFF.14|continue_ud_p200d'
-    info_str = 'market_top_300to800plus_industry_20_25_30_35|20|False'
+    # 'vol_p10d', 'TVOL_p90d_col_extre_0.2', 'continue_ud_p120d', 'TVOL_row_extre_0.2', 'MA_LINE_alpha_160_60_0_1',
+    # 'turn_p60d_0.2', 'evol_p20d', 'vol_p120d', 'vol_p10d', 'continue_ud_p100d', 'continue_ud_p200d'
+
+    factor_str = 'vol_p10d|TVOL_p90d_col_extre_0.2|continue_ud_p120d|TVOL_row_extre_0.2|MA_LINE_alpha_160_60_0_1' \
+                 '|turn_p60d_0.2|evol_p20d|vol_p120d|vol_p10d|continue_ud_p100d|continue_ud_p200d'
+    info_str = 'market_top_300to800plus|20|False'
 
     factor_name_list = factor_str.split('|')
-    alpha_name = 'WHSORACLE05'
+    alpha_name = 'WHSTECHNM02'
     sector_name, hold_time, if_only_long = info_str.split('|')
     hold_time = int(hold_time)
     if if_only_long == 'True':
@@ -1040,6 +1042,7 @@ def config_test():
     end_date = datetime.now()
 
     root_path = '/media/hdd1/DAT_EQT'
+    # root_path = '/mnt/mfs/DAT_EQT'
     if_save = False
     if_new_program = True
 

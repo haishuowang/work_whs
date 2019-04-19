@@ -4,6 +4,7 @@ sys.path.append('/mnt/mfs')
 
 from work_whs.loc_lib.pre_load import *
 from work_whs.bkt_factor_create.base_fun_import import DiscreteClass, ContinueClass
+from multiprocessing import Lock
 from work_whs.bkt_factor_create.raw_data_path import base_data_dict
 
 
@@ -85,25 +86,9 @@ class DataDeal(SectorData, DiscreteClass, ContinueClass):
             save_file = f'{file_name}|{fun_name}|{para_str}'
         else:
             save_file = f'{file_name}|{fun_name}'
-        if save_file == 'R_NetAssets_s_YOY_First|col_zscore|120':
-            print(1)
+
         save_path = f'{self.save_sector_path}/{save_file}.pkl'
         target_df.to_pickle(save_path)
-        return target_df
-
-    def count_return_data(self, factor_name):
-        if len(factor_name.split('|')) == 3:
-            str_to_num = lambda x: float(x) if '.' in x else int(x)
-            file_name, fun_name, para_str = factor_name.split('|')
-            para = [str_to_num(x) for x in para_str.split('_')]
-        else:
-            file_name, fun_name = factor_name.split('|')
-            para = []
-
-        raw_df = self.load_raw_data(file_name)
-        fun = getattr(self, fun_name)
-        target_df = fun(raw_df, self.sector_df, *para)
-        # target_zscore_df = self.row_zscore(target_df, self.sector_df)
         return target_df
 
     def load_raw_data(self, file_name):
@@ -170,52 +155,32 @@ class DataDeal(SectorData, DiscreteClass, ContinueClass):
             fun_info_dict = info_dict[data_name]
             self.fun_info_dict_deal(data_name, raw_df, fun_info_dict)
 
+    def count_return_data(self, factor_name):
+        if len(factor_name.split('|')) == 3:
+            str_to_num = lambda x: float(x) if '.' in x else int(x)
+            file_name, fun_name, para_str = factor_name.split('|')
+            para = [str_to_num(x) for x in para_str.split('_')]
+        else:
+            file_name, fun_name = factor_name.split('|')
+            para = []
 
-def check_fun(data_1, data_2):
-    a = data_1.loc[pd.to_datetime('20140101'):pd.to_datetime('20190101')]
-    b = data_2.loc[pd.to_datetime('20140101'):pd.to_datetime('20190101')]
-    c = (a.replace(np.nan, 0) - b.replace(np.nan, 0)).abs().sum().sum()
-    d = (a.replace(np.nan, 0) - b.replace(np.nan, 0)).round(8).replace(0, np.nan) \
-        .dropna(how='all', axis=1).dropna(how='all', axis=0)
-    aa = a.reindex(index=d.index, columns=d.columns)
-    bb = b.reindex(index=d.index, columns=d.columns)
-    print(c)
-    return aa, bb, d, c
+        raw_df = self.load_raw_data(file_name)
+        fun = getattr(self, fun_name)
+        target_df = fun(raw_df, self.sector_df, *para)
+        # target_zscore_df = self.row_zscore(target_df, self.sector_df)
+        return target_df
 
+    def data_check(self):
+        factor_name = 'R_CurrentAssetsTurnover_QTTM|pnd_vol|120'
+        if len(factor_name.split('|')) == 3:
+            str_to_num = lambda x: float(x) if '.' in x else int(x)
+            file_name, fun_name, para_str = factor_name.split('|')
+            para = [str_to_num(x) for x in para_str.split('_')]
+        else:
+            file_name, fun_name = factor_name.split('|')
+            para = []
 
-if __name__ == '__main__':
-    begin_date = '20100101'
-    end_date = '20190411'
-    root_path = '/mnt/mfs/DAT_EQT'
-    sector_name_list = [
-        'index_000300',
-        'index_000905',
-        'market_top_300plus',
-        'market_top_300plus_industry_10_15',
-        'market_top_300plus_industry_20_25_30_35',
-        'market_top_300plus_industry_40',
-        'market_top_300plus_industry_45_50',
-        'market_top_300plus_industry_55',
+        raw_df = self.load_raw_data(file_name)
+        fun = getattr(self, fun_name)
+        target_df = fun(raw_df, self.sector_df, *para)
 
-        'market_top_300to800plus',
-        'market_top_300to800plus_industry_10_15',
-        'market_top_300to800plus_industry_20_25_30_35',
-        'market_top_300to800plus_industry_40',
-        'market_top_300to800plus_industry_45_50',
-        'market_top_300to800plus_industry_55',
-    ]
-
-    data_name_list = [
-        'R_NetAssets_s_YOY_First',
-    ]
-
-    # 'R_NetAssets_s_YOY_First|col_zscore|120'
-    a = time.time()
-    for sector_name in sector_name_list:
-        print('**********************************************************')
-        print(f'{sector_name}')
-        data_deal = DataDeal(begin_date, end_date, root_path, sector_name)
-        data_deal.common_fun(base_data_dict.keys())
-        # data_deal.common_fun(data_name_list)
-    b = time.time()
-    print(f'花费时间：{b-a}')

@@ -9,10 +9,10 @@ import random
 from datetime import datetime
 import sys
 
-# sys.path.append('/mnt/mfs/work_whs')
-# sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
-sys.path.append('/mnt/mfs')
-from work_whs.loc_lib.pre_load import *
+sys.path.append('/mnt/mfs/work_whs')
+sys.path.append('/mnt/mfs/work_whs/AZ_2018_Q2')
+import loc_lib.shared_tools.back_test as bt
+from loc_lib.shared_tools import send_email
 # 读取数据的函数 以及
 from work_whs.main_file import main_file_return_hedge as mf
 
@@ -142,7 +142,6 @@ def out_sample_perf_c(pnl_df_out, way=1):
 def filter_all(cut_date, pos_df_daily, pct_n, if_return_pnl=False, if_only_long=False):
     pnl_df = (pos_df_daily * pct_n).sum(axis=1)
     pnl_df = pnl_df.replace(np.nan, 0)
-
     # pnl_df = pd.Series(pnl_df)
     # 样本内表现
     return_in = pct_n[pct_n.index < cut_date]
@@ -307,34 +306,6 @@ class FactorTestSector(mf.FactorTest):
     def __init__(self, *args):
         super(FactorTestSector, self).__init__(*args)
 
-    def load_tech_factor(self, file_name):
-        load_path = os.path.join('/mnt/mfs/dat_whs/data/new_factor_data/' + self.sector_name)
-        target_df = pd.read_pickle(os.path.join(load_path, file_name + '.pkl')) \
-            .reindex(index=self.xinx, columns=self.xnms)
-        if self.if_only_long:
-            target_df = target_df[target_df > 0]
-        return target_df
-
-    def load_daily_factor(self, file_name):
-        load_path = '/mnt/mfs/DAT_EQT/EM_Funda/daily/'
-        tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
-            .reindex(index=self.xinx, columns=self.xnms)
-
-        target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
-        if self.if_only_long:
-            target_df = target_df[target_df > 0]
-        return target_df
-
-    def load_whs_factor(self, file_name):
-        load_path = '/mnt/mfs/DAT_EQT/EM_Funda/dat_whs/'
-        tmp_df = bt.AZ_Load_csv(os.path.join(load_path, file_name + '.csv')) \
-            .reindex(index=self.xinx, columns=self.xnms)
-
-        target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
-        if self.if_only_long:
-            target_df = target_df[target_df > 0]
-        return target_df
-
     def load_jerry_factor(self, file_name):
         factor_path = '/mnt/mfs/temp/dat_jerry/signal'
         raw_df = bt.AZ_Load_csv(f'{factor_path}/{file_name}')
@@ -344,185 +315,173 @@ class FactorTestSector(mf.FactorTest):
             target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
         else:
             target_df = tmp_df
-            pass
         if self.if_only_long:
             target_df = target_df[target_df > 0]
         return target_df
 
-    @staticmethod
-    def row_extre(raw_df, sector_df, percent):
-        raw_df = raw_df * sector_df
-        target_df = raw_df.rank(axis=1, pct=True)
-        target_df[target_df >= 1 - percent] = 1
-        target_df[target_df <= percent] = -1
-        target_df[(target_df > percent) & (target_df < 1 - percent)] = 0
+    def load_intra_factor(self, file_name):
+        factor_path = '/mnt/mfs/dat_whs/EM_Funda/dat_whs'
+        raw_df = bt.AZ_Load_csv(f'{factor_path}/{file_name}')
+        tmp_df = raw_df.reindex(index=self.xinx, columns=self.xnms)
+        target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
         return target_df
 
-    @staticmethod
-    def create_all_para_(change_list, ratio_list, tech_list):
-        target_list = list(product(change_list, ratio_list, tech_list))
-        return target_list
-
-    def save_load_control_single(self, factor_list, suffix_name, file_name):
-        # 参数存储与加载的路径控制
-        result_save_path = '/mnt/mfs/dat_whs/result'
-        if self.if_new_program:
-            now_time = datetime.now().strftime('%Y%m%d_%H%M')
-            if self.if_only_long:
-                file_name = '{}_{}_{}_hold_{}_{}_{}_long.txt' \
-                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
-            else:
-                file_name = '{}_{}_{}_hold_{}_{}_{}.txt' \
-                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
-
-            log_save_file = os.path.join(result_save_path, 'log', file_name)
-            result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
-            para_dict = dict()
-            para_ready_df = pd.DataFrame(factor_list)
-            total_para_num = len(para_ready_df)
-            if self.if_save:
-                self.create_log_save_path(log_save_file)
-                self.create_log_save_path(result_save_file)
-                self.create_log_save_path(para_save_file)
-                para_dict['para_ready_df'] = para_ready_df
-                para_dict['factor_list'] = factor_list
-                pd.to_pickle(para_dict, para_save_file)
-
-        else:
-            log_save_file = os.path.join(result_save_path, 'log', file_name)
-            result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
-            para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
-            para_all_df = pd.read_pickle(para_save_file)
-            total_para_num = len(para_all_df)
-            para_ready_df = para_all_df.loc[sorted(list(set(para_all_df.index) - set(para_tested_df.index)))]
-        print(file_name)
-        print(f'para_num:{len(para_ready_df)}')
-        return para_ready_df, log_save_file, result_save_file, total_para_num
-
-    def part_test_index(self, key, name_1, log_save_file, result_save_file, total_para_num):
+    def part_test_index_3_(self, key, name_1, name_2, name_3, log_save_file, result_save_file, total_para_num):
         lock = Lock()
         start_time = time.time()
         load_time_1 = time.time()
         # load因子,同时根据stock_universe筛选数据.
-        factor_1 = self.load_jerry_factor(name_1)
+        factor_1 = self.load_intra_factor(name_1)
+        factor_2 = self.load_intra_factor(name_2)
+        factor_3 = self.load_intra_factor(name_3)
+
         load_time_2 = time.time()
         # 加载花费数据时间
         load_delta = round(load_time_2 - load_time_1, 2)
+        # 生成混合函数集
+        fun_mix_2_set = create_fun_set_2()
         #################
         # 更换filter函数 #
         #################
+        filter_name = filter_time_para_fun.__name__
 
-        filter_name = filter_all.__name__
-        if len(factor_1.abs().sum(axis=1).replace(0, np.nan).dropna()) / len(factor_1) < 0.5:
-            return -1
+        for fun in fun_mix_2_set:
+            mix_factor = fun(factor_1, factor_2, factor_3)
+            if len(mix_factor.abs().sum(axis=1).replace(0, np.nan).dropna()) / len(mix_factor) < 0.5:
+                continue
 
-        daily_pos = self.deal_mix_factor(factor_1).shift(2)
-        # 返回样本内筛选结果
-        *result_list, pnl_df = filter_all(self.cut_date, daily_pos, self.return_choose,
-                                          if_return_pnl=True, if_only_long=self.if_only_long)
-        pnl_save_path = f'/mnt/mfs/dat_whs/data/single_factor_pnl/{self.sector_name}'
-        bt.AZ_Path_create(pnl_save_path)
-        pnl_df.to_csv(f'{pnl_save_path}/{name_1}|{self.sector_name}|{self.hold_time}|{if_only_long}')
-        if abs(bt.AZ_Sharpe_y(pnl_df)) > 1:
-            plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
-                             f'{name_1}|{self.sector_name}|{self.hold_time}|{self.if_only_long}',
-                             text='|'.join([str(x) for x in result_list]))
+            daily_pos = self.deal_mix_factor(mix_factor).shift(2)
+            # 返回样本内筛选结果
 
-        in_condition, *filter_result = result_list
-        # result 存储
-        if self.if_save:
-            with lock:
-                f = open(result_save_file, 'a')
-                write_list = [key, name_1, filter_name,
-                              self.sector_name, in_condition] + filter_result
-                f.write('|'.join([str(x) for x in write_list]) + '\n')
-        print([in_condition, name_1] + filter_result)
+            result_dict = filter_time_para_fun(self.time_para_dict, daily_pos, self.return_choose,
+                                               if_only_long=self.if_only_long)
+            for time_key in result_dict.keys():
+                in_condition, *filter_result = result_dict[time_key]
+                # result 存储
+                if in_condition:
+                    if self.if_save:
+                        with lock:
+                            f = open(result_save_file, 'a')
+                            write_list = [time_key, key, fun.__name__, name_1, name_2, name_3, filter_name,
+                                          self.sector_name, in_condition] + filter_result
+                            f.write('|'.join([str(x) for x in write_list]) + '\n')
+                    print([time_key, in_condition, fun.__name__, name_1, name_2, name_3] + filter_result)
         end_time = time.time()
         # 参数存储
         if self.if_save:
             with lock:
                 f = open(log_save_file, 'a')
-                write_list = [key, name_1, filter_name, self.sector_name,
+                write_list = [key, name_1, name_2, name_3, filter_name, self.sector_name,
                               round(end_time - start_time, 4),
                               load_delta]
                 f.write('|'.join([str(x) for x in write_list]) + '\n')
 
-        print('{}%, {}, cost {} seconds, load_cost {} seconds'
-              .format(round(key / total_para_num * 100, 4), key, name_1, round(end_time - start_time, 2), load_delta))
+        print('{}%, {}, {}, {}, {}, cost {} seconds, load_cost {} seconds'
+              .format(round(key / total_para_num * 100, 4), key, name_1, name_2, name_3,
+                      round(end_time - start_time, 2), load_delta))
 
-    def test_index(self, factor_list, pool_num=20, suffix_name='', old_file_name=''):
-
-        # print(factor_list)
+    def test_index_3_(self, list_1, list_2, list_3, pool_num=20, suffix_name='', old_file_name=''):
+        print(1)
         para_ready_df, log_save_file, result_save_file, total_para_num = \
-            self.save_load_control_single(factor_list, suffix_name, old_file_name)
+            self.save_load_control_(list_1, list_2, list_3, suffix_name, old_file_name)
+        print(2)
+        # self.check_factor(list_3, result_save_file)
 
         a_time = time.time()
         pool = Pool(pool_num)
         for key in list(para_ready_df.index):
-            name_1 = para_ready_df.loc[key][0]
-            args_list = (key, name_1, log_save_file, result_save_file, total_para_num)
-            # self.part_test_index(*args_list)
-            pool.apply_async(self.part_test_index, args=args_list)
+            name_1, name_2, name_3 = para_ready_df.loc[key]
+            args_list = (key, name_1, name_2, name_3, log_save_file, result_save_file, total_para_num)
+            # self.part_test_index_3_(*args_list)
+            pool.apply_async(self.part_test_index_3_, args=args_list)
         pool.close()
         pool.join()
 
         b_time = time.time()
         print('Success!Processing end, Cost {} seconds'.format(round(b_time - a_time, 2)))
 
-    def single_test(self, name_1):
-        factor_1 = self.load_jerry_factor(name_1)
-        daily_pos = self.deal_mix_factor(factor_1).shift(2)
-        in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
-        fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = filter_all(self.cut_date, daily_pos, self.return_choose,
-                                                                        if_return_pnl=True,
-                                                                        if_only_long=self.if_only_long)
-        result_list = [in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
-                       fit_ratio, leve_ratio, sp_in, sharpe_q_out]
-        plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
-                         f'{name_1}|{self.sector_name}|{self.hold_time}|{self.if_only_long}',
-                         text='|'.join([str(x) for x in result_list]))
+    def single_test(self, fun_name, name1, name2, name3):
+        fun_set = [add_fun, sub_fun, mul_fun]
+        fun_mix_2_set = create_fun_set_2_(fun_set)
+        fun = fun_mix_2_set[fun_name]
 
-        return in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
-               fit_ratio, leve_ratio, sp_in, sharpe_q_out
-
-    def single_test_c(self, name_list, buy_sell_way_list):
-        mix_factor = pd.DataFrame()
-        for i in range(len(name_list)):
-            tmp_name = name_list[i]
-            buy_sell_way = buy_sell_way_list[i]
-            tmp_factor = self.load_jerry_factor(tmp_name)
-            mix_factor = mix_factor.add(tmp_factor * buy_sell_way, fill_value=0)
+        factor_1 = self.load_jerry_factor(name1)
+        factor_2 = self.load_jerry_factor(name2)
+        factor_3 = self.load_jerry_factor(name3)
+        mix_factor = fun(factor_1, factor_2, factor_3)
         daily_pos = self.deal_mix_factor(mix_factor).shift(2)
         in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
         fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = \
             filter_all(self.cut_date, daily_pos, self.return_choose, if_return_pnl=True, if_only_long=False)
-        print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d,
-              pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out)
         return mix_factor, in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, \
                pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df
 
 
+def get_file_name(sector_name):
+    tmp_file_list = os.listdir(f'/media/hdd2/dat_whs/data/single_factor_pnl/{sector_name}')
+    target_file_list = [x.split('|') for x in tmp_file_list if '|' in x]
+    target_file_list = [x for x in target_file_list if x[0].startswith('REM')]
+    data = pd.DataFrame(target_file_list, columns=['factor_name', 'sector_name', 'hold_time', 'if_only_long'])
+    return data
+
+
+def get_pnl_table(part_df, sector_name):
+    file_name_df = part_df.apply(lambda x: '|'.join(x), axis=1)
+    all_pnl_df = pd.DataFrame()
+    for file_name in file_name_df:
+        # print(file_name)
+        pnl_df = pd.read_csv(f'/media/hdd2/dat_whs/data/single_factor_pnl/{sector_name}/{file_name}',
+                             index_col=0, parse_dates=True)
+        pnl_df.columns = [file_name]
+        all_pnl_df = pd.concat([all_pnl_df, pnl_df], axis=1)
+    all_pnl_df = all_pnl_df.loc[pd.to_datetime('20130101'):]
+    return all_pnl_df
+
+
+def corr_matrix(corr_df):
+    corr_df[(corr_df > 0.8) | (corr_df < -0.8)] = 1
+    corr_df[(corr_df < 0.8) & (corr_df > -0.8)] = 0
+    all_factor_set = set(corr_df.index)
+
+    while True:
+        corr_num_sort = corr_df.sum().sort_values()
+        # print(corr_num_sort)
+        b = corr_num_sort.iloc[-1]
+
+        factor_name = corr_num_sort.index[-1]
+        if b > 1:
+            corr_df = corr_df.drop(factor_name, axis=1).drop(factor_name, axis=0)
+            # print(corr_df)
+        else:
+            break
+    corr_num_sort = corr_df.sum().sort_values()
+    use_factor_set = set(corr_df.index)
+    print(len(corr_df.index))
+    # delete_set = all_factor_set - use_factor_set
+    return use_factor_set
+
+
 def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
     root_path = '/mnt/mfs/DAT_EQT'
-    if_save = False
+    if_save = True
     if_new_program = True
 
-    begin_date = pd.to_datetime('20130101')
+    begin_date = pd.to_datetime('20100101')
     cut_date = pd.to_datetime('20160401')
-    end_date = pd.to_datetime('20181201')
+    end_date = pd.to_datetime('20180901')
     lag = 2
     return_file = ''
 
     if_hedge = True
     # if_only_long = False
 
-    if sector_name.startswith('market_top_300plus'):
+    if sector_name.startswith('market_top_300plus') \
+            or sector_name.startswith('index_000300'):
         if_weight = 1
         ic_weight = 0
 
-    elif sector_name.startswith('market_top_300to800plus'):
+    elif sector_name.startswith('market_top_300to800plus') \
+            or sector_name.startswith('index_000905'):
         if_weight = 0
         ic_weight = 1
 
@@ -530,48 +489,46 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
         if_weight = 0.5
         ic_weight = 0.5
 
-    factor_path = '/mnt/mfs/temp/dat_jerry/signal'
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
+    pool_num = 20
+    suffix_name = os.path.basename(__file__).split('.')[0].split('_')[-1]
 
-    jerry_factor_list = os.listdir(factor_path)
-    pool_num = 28
-    main.test_index(jerry_factor_list, pool_num, suffix_name='single_test')
+    factor_list = os.listdir('/mnt/mfs/dat_whs/EM_Funda/dat_whs')
+
+    main.test_index_3_(factor_list, factor_list, factor_list, pool_num, suffix_name=suffix_name)
 
 
-# def main_test_fun(sector_name, hold_time, if_only_long, time_para_dict):
-#     root_path = '/mnt/mfs/DAT_EQT'
-#     if_save = True
-#     if_new_program = True
-#
-#     begin_date = pd.to_datetime('20130101')
-#     cut_date = pd.to_datetime('20160401')
-#     end_date = pd.to_datetime('20181201')
-#     lag = 2
-#     return_file = ''
-#
-#     if_hedge = True
-#     # if_only_long = False
-#
-#     if sector_name.startswith('market_top_300plus'):
-#         if_weight = 1
-#         ic_weight = 0
-#
-#     elif sector_name.startswith('market_top_300to800plus'):
-#         if_weight = 0
-#         ic_weight = 1
-#
-#     else:
-#         if_weight = 0.5
-#         ic_weight = 0.5
-#
-#     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
-#                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
-#     main.single_test('aadj_r_p345d_continue_ud')
+time_para_dict = OrderedDict()
 
+time_para_dict['time_para_1'] = [pd.to_datetime('20100101'), pd.to_datetime('20150101'),
+                                 pd.to_datetime('20150401'), pd.to_datetime('20150701'),
+                                 pd.to_datetime('20151001'), pd.to_datetime('20160101')]
+
+time_para_dict['time_para_2'] = [pd.to_datetime('20110101'), pd.to_datetime('20160101'),
+                                 pd.to_datetime('20160401'), pd.to_datetime('20160701'),
+                                 pd.to_datetime('20161001'), pd.to_datetime('20170101')]
+
+time_para_dict['time_para_3'] = [pd.to_datetime('20120601'), pd.to_datetime('20170601'),
+                                 pd.to_datetime('20170901'), pd.to_datetime('20171201'),
+                                 pd.to_datetime('20180301'), pd.to_datetime('20180601')]
+
+time_para_dict['time_para_4'] = [pd.to_datetime('20130601'), pd.to_datetime('20180601'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101')]
+
+time_para_dict['time_para_5'] = [pd.to_datetime('20130701'), pd.to_datetime('20180701'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101'),
+                                 pd.to_datetime('20181101'), pd.to_datetime('20181101')]
+
+time_para_dict['time_para_6'] = [pd.to_datetime('20130101'), pd.to_datetime('20180329'),
+                                 pd.to_datetime('20190329'), pd.to_datetime('20190329'),
+                                 pd.to_datetime('20190329'), pd.to_datetime('20190329')]
 
 if __name__ == '__main__':
     sector_name_list = [
+        'index_000300',
+        'index_000905',
         'market_top_300plus',
         'market_top_300plus_industry_10_15',
         'market_top_300plus_industry_20_25_30_35',
@@ -584,11 +541,11 @@ if __name__ == '__main__':
         'market_top_300to800plus_industry_20_25_30_35',
         'market_top_300to800plus_industry_40',
         'market_top_300to800plus_industry_45_50',
-        'market_top_300to800plus_industry_55',
+        'market_top_300to800plus_industry_55'
     ]
 
-    hold_time_list = [5, 20]
+    hold_time_list = [1, 5, 10]
     for if_only_long in [False, True]:
         for hold_time in hold_time_list:
             for sector_name in sector_name_list:
-                main_fun(sector_name, hold_time, if_only_long, time_para_dict=[])
+                main_fun(sector_name, hold_time, if_only_long, time_para_dict)

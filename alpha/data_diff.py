@@ -12,15 +12,14 @@ def data_test():
 
     # root_path_1 = '/media/hdd1/DAT_EQT/EM_Funda/DERIVED_F1'
     # root_path_2 = '/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_F1'
+    # RSI_alpha40_1_0_1 非常多 wgt_return_p120d_0.2 14971 RSI_10_30 非常多 ADOSC_60_120_0 12186 BBANDS_10_2 140385
+    # MA_LINE_alpha_160_60_0_1
+    root_path_1 = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_300to800plus'
+    root_path_2 = '/media/hdd1/DAT_PreCalc/PreCalc_whs/market_top_300to800plus'
 
-    root_path_1 = '/mnt/mfs/dat_whs/data/new_factor_data/market_top_300to800plus_industry_20_25_30_35'
-    root_path_2 = '/media/hdd1/DAT_PreCalc/PreCalc_whs/market_top_300to800plus_industry_20_25_30_35'
-    # price_p10d_hl 1 turn_p150d_0.18 0 moment_p510d 很多 aadj_r_p345d_continue_ud * volume_moment_p530d 0
-    #  continue_ud_p200d 3 TVOL_row_extre_0.2|evol_p10d|volume_count_down_p10d pass BBANDS_10_2 75738
-    factor_str = 'bias_turn_p120d'
+    factor_str = 'evol_p90d'
     file_name_list = factor_str.split('|')
-    # file_name_list = ['continue_ud_p20d', 'continue_ud_p100d', 'TVOL_p345d_continue_ud', 'BBANDS_10_1',
-    #                   'R_OTHERLASSET_QYOY_and_QTTM_0.3', 'tab2_9_row_extre_0.3']
+    # file_name_list = []
 
     begin_date = pd.to_datetime('20130101')
     end_date = pd.to_datetime('20190305')
@@ -56,7 +55,7 @@ def data_test():
             # break
             # pass
             return file_name, a, b, c
-    return None, None, None
+    return None, None, None, None
 
 
 def find_diff(file_path):

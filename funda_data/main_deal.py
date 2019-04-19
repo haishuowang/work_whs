@@ -26,9 +26,8 @@ def main_fun(sector_name):
 
         begin_date = pd.to_datetime('20100101')
         end_date = datetime.now()
-        save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data/{}'.format(sector_name)
-        # save_root_path = '/media/hdd2/dat_whs/data/new_factor_data/{}'.format(sector_name)
-        # save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data_v2'
+        # save_root_path = '/mnt/mfs/dat_whs/data/new_factor_data_test/{}'.format(sector_name)
+        save_root_path = '/media/hdd2/dat_whs/data/new_factor_data/{}'.format(sector_name)
         bt.AZ_Path_create(save_root_path)
         root_path = pt._BinFiles(mode)
 
@@ -39,24 +38,25 @@ def main_fun(sector_name):
         print('***************************table 14********************************')
         data_name_list = ['RZRQYE', 'RZMRE', 'RZYE', 'RQMCL', 'RQYE', 'RQYL', 'RQCHL', 'RZCHE']
         table_num, table_name = ('EM_Funda', 'TRAD_MT_MARGIN')
-        # EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path, if_replace=True)
+        EM_Tab14.common_fun(sector_df, root_path, table_num, table_name,
+        data_name_list, save_root_path, if_replace=True)
 
         table_num, table_name = ('EM_Funda', 'TRAD_SK_DAILY_JC')
         data_name_list = ['TVOL']
-        # EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
-        # EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path,
-        #                     n_list=[3, 4, 5], window_list=[30, 90])
+        EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
+        EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path,
+                            n_list=[3, 4, 5], window_list=[30, 90])
 
         table_num, table_name = ('EM_Funda', 'DERIVED_14')
         data_name_list = ['aadj_r']
-        # EM_Tab14.DERIVED_14_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
-        #
-        # EM_Tab14.base_data_fun(sector_df, root_path, save_root_path)
+        EM_Tab14.DERIVED_14_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
+
+        EM_Tab14.base_data_fun(sector_df, root_path, save_root_path)
 
         # add factor
-        # data_name_list = ['PE_TTM', 'PS_TTM', 'PBLast']
-        # table_num, table_name = ('EM_Funda', 'TRAD_SK_REVALUATION')
-        # EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
+        data_name_list = ['PE_TTM', 'PS_TTM', 'PBLast']
+        table_num, table_name = ('EM_Funda', 'TRAD_SK_REVALUATION')
+        EM_Tab14.common_fun(sector_df, root_path, table_num, table_name, data_name_list, save_root_path)
 
         EM_Tab14.TRAD_SK_DAILY_JC_fun(sector_df, root_path, save_root_path)
 
@@ -124,15 +124,15 @@ def main_fun(sector_name):
                           'R_TotRev_s_POP_First',
                           'R_TotRev_s_YOY_First']
 
-        # EM_Funda.common_fun(sector_df, root_path, data_name_list, save_root_path, if_replace=False, percent=0.2)
-        # EM_Funda.daily_fun(sector_df, root_path, save_root_path)
-        # EM_Funda.speciel_fun(sector_df, root_path, save_root_path)
-        # EM_Funda.remy_fun(sector_df, root_path, save_root_path)
+        EM_Funda.common_fun(sector_df, root_path, data_name_list, save_root_path, if_replace=False, percent=0.2)
+        EM_Funda.daily_fun(sector_df, root_path, save_root_path)
+        EM_Funda.speciel_fun(sector_df, root_path, save_root_path)
+        EM_Funda.remy_fun(sector_df, root_path, save_root_path)
         print('***************************tech factor********************************')
-        # Tech_Factor.main(sector_df, root_path, save_root_path)
-        # Tech_Factor.main_alpha(sector_df, root_path, save_root_path)
+        Tech_Factor.main(sector_df, root_path, save_root_path)
+        Tech_Factor.main_alpha(sector_df, root_path, save_root_path)
         print('***************************self factor********************************')
-        # EM_Funda_test.common_deal(sector_df, save_root_path)
+        EM_Funda_test.common_deal(sector_df, save_root_path)
         print('***************************intra factor********************************')
         # IntradayData.intra_fun(sector_df, save_root_path)
     except Exception as error:
@@ -142,41 +142,39 @@ def main_fun(sector_name):
 if __name__ == '__main__':
 
     sector_name_list = [
-        # 'index_000300',
-        # 'index_000905',
-        # 'market_top_300plus',
-        # 'market_top_300plus_industry_10_15',
-        # 'market_top_300plus_industry_20_25_30_35',
-        # 'market_top_300plus_industry_40',
-        # 'market_top_300plus_industry_45_50',
-        # 'market_top_300plus_industry_55',
-        #
-        # 'market_top_300to800plus',
-        # 'market_top_300to800plus_industry_10_15',
-        'market_top_300to800plus_industry_20_25_30_35',
-        # 'market_top_300to800plus_industry_40',
-        # 'market_top_300to800plus_industry_45_50',
-        # 'market_top_300to800plus_industry_55',
+        'index_000300',
+        'index_000905',
+        'market_top_300plus',
+        'market_top_300plus_industry_10_15',
+        'market_top_300plus_industry_20_25_30_35',
+        'market_top_300plus_industry_40',
+        'market_top_300plus_industry_45_50',
+        'market_top_300plus_industry_55',
 
-        # 'market_top_800plus',
-        # 'market_top_800plus_industry_10_15',
-        # 'market_top_800plus_industry_20_25_30_35',
-        # 'market_top_800plus_industry_40',
-        # 'market_top_800plus_industry_45_50',
-        # 'market_top_800plus_industry_55',
+        'market_top_300to800plus',
+        'market_top_300to800plus_industry_10_15',
+        'market_top_300to800plus_industry_20_25_30_35',
+        'market_top_300to800plus_industry_40',
+        'market_top_300to800plus_industry_45_50',
+        'market_top_300to800plus_industry_55',
+
+        'market_top_800plus',
+        'market_top_800plus_industry_10_15',
+        'market_top_800plus_industry_20_25_30_35',
+        'market_top_800plus_industry_40',
+        'market_top_800plus_industry_45_50',
+        'market_top_800plus_industry_55',
     ]
 
     t1 = time.time()
-    # pool = Pool(20)
+    pool = Pool(20)
     for sector_name in sector_name_list:
         print('_________________________________________________________________________________________')
         print(sector_name)
-        a = time.time()
-        main_fun(sector_name)
-        # pool.apply_async(main_fun, args=(sector_name,))
-        b = time.time()
+        # main_fun(sector_name)
+        pool.apply_async(main_fun, args=(sector_name,))
         print(f'{sector_name} Data Updated!, cost time {b-a}\'s!')
-    # pool.close()
-    # pool.join()
+    pool.close()
+    pool.join()
     t2 = time.time()
     print(f'totle cost time: {t2-t1}!')

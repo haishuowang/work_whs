@@ -73,19 +73,22 @@ def get_bar_num(save_root_path, cut_hour):
 
 
 def main(mod):
-    if mod == 'pro':
-        save_root_path = '/media/hdd1/DAT_EQT/EM_Funda/dat_whs'
-    else:
-        save_root_path = '/mnt/mfs/DAT_EQT/EM_Funda/dat_whs'
-    a1 = time.time()
-    get_bar_num(save_root_path, 7)
-    b1 = time.time()
-    print(b1 - a1)
+    try:
+        if mod == 'pro':
+            save_root_path = '/media/hdd1/DAT_EQT/EM_Funda/dat_whs'
+        else:
+            save_root_path = '/mnt/mfs/DAT_EQT/EM_Funda/dat_whs'
+        a1 = time.time()
+        get_bar_num(save_root_path, 7)
+        b1 = time.time()
+        print(b1 - a1)
 
-    a2 = time.time()
-    get_bar_num(save_root_path, 12)
-    b2 = time.time()
-    print(b2 - a2)
+        a2 = time.time()
+        get_bar_num(save_root_path, 12)
+        b2 = time.time()
+        print(b2 - a2)
+    except Exception as error:
+        send_email.send_email(error, ['whs@yingpei.com'], [], '[pro_update]error stock_bar_mysql')
 
 
 if __name__ == '__main__':

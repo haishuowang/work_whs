@@ -1021,13 +1021,15 @@ def corr_test_fun(pnl_df, alpha_name):
 
 
 def config_test():
-    factor_str = 'R_FairVal_TotProfit_QYOY|OPCF_and_mcap_intdebt_Y3YGR_Y5YGR_0.3|tab2_7_row_extre_0.3' \
-                 '|PE_TTM_p20d_col_extre_0.2|volume_count_down_p10d|evol_p20d|REMWB.02|REMTK.26' \
-                 '|R_NETPROFIT_s_QYOY_and_QTTM_0.3|REMFF.14|continue_ud_p200d'
-    info_str = 'market_top_300to800plus_industry_20_25_30_35|20|False'
+    # 'continue_ud_p100d', 'MA_LINE_alpha_120_60_1_0', 'OPCF_and_asset_Y3YGR_Y5YGR_0.3',
+    # 'aadj_r_p20d_col_extre_0.2', 'R_OTHERLASSET_QYOY_and_QTTM_0.3'
+    factor_str = 'continue_ud_p100d|REMFF.12|dividend|MA_LINE_alpha_120_60_1_0|OPCF_and_asset_Y3YGR_Y5YGR_0.3' \
+                 '|R_NetCashflowPS_s_First|aadj_r_p20d_col_extre_0.2|restricted_shares|R_NetAssets_s_YOY_First' \
+                 '|R_OTHERLASSET_QYOY_and_QTTM_0.3|suspend_news_summary'
+    info_str = 'market_top_300plus_industry_45_50|5|False'
 
     factor_name_list = factor_str.split('|')
-    alpha_name = 'WHSORACLE05'
+    alpha_name = 'WHSZIWHEN18'
     sector_name, hold_time, if_only_long = info_str.split('|')
     hold_time = int(hold_time)
     if if_only_long == 'True':
@@ -1074,11 +1076,11 @@ def config_test():
     if ic_weight != 0:
         sum_pos_df_new['IC01'] = -ic_weight * sum_pos_df_new.sum(axis=1)
 
-    pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
-    pnl_df.name = alpha_name
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
-    corr_test_fun(pnl_df, alpha_name)
-    bt.commit_check(pd.DataFrame(pnl_df))
+    # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
+    # pnl_df.name = alpha_name
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
+    # corr_test_fun(pnl_df, alpha_name)
+    # bt.commit_check(pd.DataFrame(pnl_df))
     sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 

@@ -18,8 +18,15 @@ def daily_deal_fun(day, day_path):
 
     close = pd.read_csv(os.path.join(day_path, 'Close.csv'), index_col=0).astype(float)
     close = close[AZ_filter_stock(close.columns)]
+
     open_ = pd.read_csv(os.path.join(day_path, 'Open.csv'), index_col=0).astype(float)
     open_ = open_[AZ_filter_stock(open_.columns)]
+
+    high = pd.read_csv(os.path.join(day_path, 'High.csv'), index_col=0).astype(float)
+    high = open_[AZ_filter_stock(high.columns)]
+
+    low = pd.read_csv(os.path.join(day_path, 'Low.csv'), index_col=0).astype(float)
+    low = open_[AZ_filter_stock(low.columns)]
 
     pct_chg = close.pct_change()
     part_up_mask = pct_chg > 0
@@ -64,10 +71,39 @@ def daily_deal_fun(day, day_path):
                           ((close < open_) * (close - open_) * volume).sum()
     part_money_flow2_df.name = day
 
-    part_pvol_df = close.std()
+    part_p_vol_df = close.std() / close.mean()
+    part_p_vol_df[part_p_vol_df > 1] = np.nan
+    part_p_vol_df.name = day
+
+    part_p_vol_last_15min_df = close.iloc[-15:].std() / close.iloc[-15:].mean()
+    part_p_vol_last_15min_df.name = day
+
+    part_r_vol_df = pct_chg.std()
+    part_r_vol_df.name = day
+
+    part_r_vol_last_15min_df = pct_chg.iloc[-15:].std()
+    part_r_vol_last_15min_df.name = day
+
+    part_last_15_min_ud_df = pct_chg.iloc[-15:].sum()
+    part_last_15_min_ud_df.name = day
+
+    part_today_sharpe_df = pct_chg.apply(bt.AZ_Sharpe_y)
+    part_today_sharpe_df.name = day
+
+    part_hl_pct_df = ((high - low) / close).sum()
+    part_hl_pct_df.name = day
+
+    part_last_15min_volume_pct_df = volume.iloc[-15:].sum() / volume.sum()
+    part_last_15min_volume_pct_df.name = day
+
+    part_oc_15min_volume_div_df = volume.iloc[:15].sum()/volume.iloc[-15:].sum()
+    part_oc_15min_volume_div_df.name = day
+
     return part_up_vol_df, part_dn_vol_df, part_up_15_bar_vol_df, part_dn_15_bar_vol_df, part_daily_vwap, \
            part_up_15_bar_vwap_df, part_dn_15_bar_vwap_df, part_up_vwap_df, part_dn_vwap_df, part_money_flow1_df, \
-           part_money_flow2_df
+           part_money_flow2_df, part_p_vol_df, part_p_vol_last_15min_df, part_r_vol_df, part_r_vol_last_15min_df, \
+           part_last_15_min_ud_df, part_today_sharpe_df, part_hl_pct_df, \
+           part_last_15min_volume_pct_df, part_oc_15min_volume_div_df
 
 
 def save_fun(data, target_path):
@@ -115,6 +151,16 @@ def create_intra_data():
     money_flow1_df = pd.concat([x.get()[9] for x in result_list], axis=1, sort=True)
     money_flow2_df = pd.concat([x.get()[10] for x in result_list], axis=1, sort=True)
 
+    p_vol_df = pd.concat([x.get()[11] for x in result_list], axis=1, sort=True)
+    p_vol_last_15min_df = pd.concat([x.get()[12] for x in result_list], axis=1, sort=True)
+    r_vol_df = pd.concat([x.get()[13] for x in result_list], axis=1, sort=True)
+    r_vol_last_15min_df = pd.concat([x.get()[14] for x in result_list], axis=1, sort=True)
+    last_15_min_ud_df = pd.concat([x.get()[15] for x in result_list], axis=1, sort=True)
+    today_sharpe_df = pd.concat([x.get()[16] for x in result_list], axis=1, sort=True)
+    hl_pct_df = pd.concat([x.get()[17] for x in result_list], axis=1, sort=True)
+    last_15min_volume_pct_df = pd.concat([x.get()[18] for x in result_list], axis=1, sort=True)
+    oc_15min_volume_div_df = pd.concat([x.get()[19] for x in result_list], axis=1, sort=True)
+
     up_div_dn = up_vwap_df / dn_vwap_df
     up_div_daily = up_vwap_df / daily_vwap
     dn_div_daily = dn_vwap_df / daily_vwap
@@ -147,6 +193,19 @@ def create_intra_data():
 
     save_fun(money_flow1_df.T, f'{index_save_path}/intra_money_flow1.csv')
     save_fun(money_flow2_df.T, f'{index_save_path}/intra_money_flow2.csv')
+
+    save_fun(p_vol_df.T, f'{index_save_path}/intra_p_vol.csv')
+    save_fun(p_vol_last_15min_df.T, f'{index_save_path}/intra_p_vol_last_15min.csv')
+
+    save_fun(r_vol_df.T, f'{index_save_path}/intra_r_vol.csv')
+    save_fun(r_vol_last_15min_df.T, f'{index_save_path}/intra_r_vol_last_15min.csv')
+    save_fun(last_15_min_ud_df.T, f'{index_save_path}/intra_last_15_min_ud.csv')
+
+    save_fun(today_sharpe_df.T, f'{index_save_path}/intra_today_sharpe.csv')
+    save_fun(hl_pct_df.T, f'{index_save_path}/intra_hl_pct.csv')
+
+    save_fun(last_15min_volume_pct_df.T, f'{index_save_path}/intra_last_15min_volume_pct.csv')
+    save_fun(oc_15min_volume_div_df.T, f'{index_save_path}/intra_oc_15min_volume_div.csv')
 
 
 def intra_data_deal():
@@ -186,4 +245,3 @@ if __name__ == '__main__':
     create_intra_data()
     # intra_data_deal()
 
-    # esg_data_deal()

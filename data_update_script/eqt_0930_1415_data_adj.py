@@ -51,7 +51,7 @@ def adj_price(price_df):
 def save_fun(file_name):
     save_path = f'/mnt/mfs/DAT_EQT/intraday/daily_0930_1415/{file_name}.csv'
     data = bt.AZ_Load_csv(save_path)
-    data.to_csv(f'/mnt/mfs/DAT_EQT/intraday/daily_0930_1415/{file_name}.csv', sep='|')
+    # data.to_csv(f'/mnt/mfs/DAT_EQT/intraday/daily_0930_1415/{file_name}.csv', sep='|')
     data_adj = adj_price(data)
     data_adj.to_csv(f'/mnt/mfs/DAT_EQT/intraday/daily_0930_1415/adj_{file_name}.csv', sep='|')
 
@@ -59,11 +59,11 @@ def save_fun(file_name):
 def main_fun():
     end_time = datetime.now()
     begin_time = datetime(end_time.year, end_time.month, end_time.day)
-    a = find_target_file(begin_time, end_time, 'm', endswith=None)
-    print(a)
     file_name_list = ['turnover', 'close', 'high', 'low', 'open']
     target_name_list = ['adj_turnover', 'adj_close', 'adj_high', 'adj_low', 'adj_open']
     while True:
+        a = find_target_file(begin_time, end_time, 'm', endswith=None)
+        print(a)
         if len(list(set(file_name_list) - set(a))) == 0:
             if len(list(set(target_name_list) - set(a))) != 0:
                 for i in range(len(file_name_list)):
@@ -76,6 +76,8 @@ def main_fun():
                 break
         else:
             print('raw data not update')
+            print(datetime.now())
+            time.sleep(5)
             pass
 
 

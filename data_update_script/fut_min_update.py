@@ -56,5 +56,5 @@ def fut_min_daily_update(today):
 
 if __name__ == '__main__':
     today = datetime.now().strftime('%Y%m%d')
-    today = '20190313'
+    # today = '20190322'
     fut_min_daily_update(today)

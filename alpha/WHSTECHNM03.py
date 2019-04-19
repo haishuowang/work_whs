@@ -931,21 +931,17 @@ class FactorTestSector(FactorTest):
         mix_factor = pd.DataFrame()
         for i in range(len(name_list)):
             tmp_name = name_list[i]
-            # result_list = self.single_test(tmp_name)
-            # print(tmp_name, result_list)
-            # print(1)
-
             buy_sell_way = self.single_test(tmp_name)
             tmp_factor = getattr(self, my_factor_dict[tmp_name])(tmp_name)
             part_daily_pos = self.deal_mix_factor(tmp_factor)
             mix_factor = mix_factor.add(part_daily_pos * buy_sell_way, fill_value=0)
 
-        daily_pos = mix_factor / len(name_list)
-        in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
-        fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = \
-            filter_all(self.cut_date, daily_pos.shift(2), self.return_choose, if_return_pnl=True, if_only_long=False)
-        print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d,
-              pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out)
+        # daily_pos = mix_factor / len(name_list)
+        # in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
+        # fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = \
+        #     filter_all(self.cut_date, daily_pos.shift(2), self.return_choose, if_return_pnl=True, if_only_long=False)
+        # print(in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d,
+        #       pot_in, fit_ratio, leve_ratio, sp_in, sharpe_q_out)
         return mix_factor
 
 
@@ -1021,13 +1017,15 @@ def corr_test_fun(pnl_df, alpha_name):
 
 
 def config_test():
-    factor_str = 'R_FairVal_TotProfit_QYOY|OPCF_and_mcap_intdebt_Y3YGR_Y5YGR_0.3|tab2_7_row_extre_0.3' \
-                 '|PE_TTM_p20d_col_extre_0.2|volume_count_down_p10d|evol_p20d|REMWB.02|REMTK.26' \
-                 '|R_NETPROFIT_s_QYOY_and_QTTM_0.3|REMFF.14|continue_ud_p200d'
-    info_str = 'market_top_300to800plus_industry_20_25_30_35|20|False'
+    # 'vol_count_down_p20d', 'evol_p100d', 'evol_p90d', 'evol_p60d', 'evol_p50d', 'evol_p30d', 'evol_p20d',
+    # 'MA_LINE_alpha_120_60_0_1', 'evol_p10d', 'MA_LINE_160_60', 'price_p60d_hl'
+
+    factor_str = 'vol_count_down_p20d|evol_p100d|evol_p90d|evol_p60d|evol_p50d|evol_p30d|evol_p20d' \
+                 '|MA_LINE_alpha_120_60_0_1|evol_p10d|MA_LINE_160_60|price_p60d_hl'
+    info_str = 'market_top_300to800plus_industry_45_50|5|True'
 
     factor_name_list = factor_str.split('|')
-    alpha_name = 'WHSORACLE05'
+    alpha_name = 'WHSTECHNM03'
     sector_name, hold_time, if_only_long = info_str.split('|')
     hold_time = int(hold_time)
     if if_only_long == 'True':
@@ -1064,8 +1062,6 @@ def config_test():
 
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
-    # mix_factor = main.single_test_c(factor_name_list)
-    # sum_pos_df_new = main.deal_mix_factor(mix_factor)
 
     sum_pos_df_new = main.single_test_real(factor_name_list)
 
@@ -1074,11 +1070,11 @@ def config_test():
     if ic_weight != 0:
         sum_pos_df_new['IC01'] = -ic_weight * sum_pos_df_new.sum(axis=1)
 
-    pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
-    pnl_df.name = alpha_name
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
-    corr_test_fun(pnl_df, alpha_name)
-    bt.commit_check(pd.DataFrame(pnl_df))
+    # pnl_df = (sum_pos_df_new.shift(2) * main.return_choose).sum(axis=1)
+    # pnl_df.name = alpha_name
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name)
+    # corr_test_fun(pnl_df, alpha_name)
+    # bt.commit_check(pd.DataFrame(pnl_df))
     sum_pos_df_new.round(10).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
     return sum_pos_df_new
 

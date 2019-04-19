@@ -1021,13 +1021,13 @@ def corr_test_fun(pnl_df, alpha_name):
 
 
 def config_test():
-    factor_str = 'R_FairVal_TotProfit_QYOY|OPCF_and_mcap_intdebt_Y3YGR_Y5YGR_0.3|tab2_7_row_extre_0.3' \
-                 '|PE_TTM_p20d_col_extre_0.2|volume_count_down_p10d|evol_p20d|REMWB.02|REMTK.26' \
-                 '|R_NETPROFIT_s_QYOY_and_QTTM_0.3|REMFF.14|continue_ud_p200d'
-    info_str = 'market_top_300to800plus_industry_20_25_30_35|20|False'
+    factor_str = 'MA_LINE_alpha_60_20_0_1|continue_ud_p200d|moment_p510d|aadj_r_p20d_col_extre_0.2' \
+                 '|aadj_r_row_extre_0.2|price_p20d_hl|wgt_return_p120d_0.2|evol_p60d|evol_p90d' \
+                 '|evol_p120d|continue_ud_p30d'
+    info_str = 'market_top_300to800plus_industry_45_50|20|False'
 
     factor_name_list = factor_str.split('|')
-    alpha_name = 'WHSORACLE05'
+    alpha_name = 'WHSTECHNM04'
     sector_name, hold_time, if_only_long = info_str.split('|')
     hold_time = int(hold_time)
     if if_only_long == 'True':
@@ -1040,6 +1040,7 @@ def config_test():
     end_date = datetime.now()
 
     root_path = '/media/hdd1/DAT_EQT'
+    # root_path = '/mnt/mfs/DAT_EQT'
     if_save = False
     if_new_program = True
 

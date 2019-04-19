@@ -121,7 +121,7 @@ def save_fun(df, save_path, sep='|'):
     print(1)
     print(save_path)
     df.to_csv(save_path, sep=sep)
-    test_save_path = '/mnt/mfs/dat_whs/EM_Funda/{}'.format(datetime.now().strftime('%Y%m%d'))
+    test_save_path = '/mnt/mfs/dat_whs/tmp/{}'.format(datetime.now().strftime('%Y%m%d'))
     bt.AZ_Path_create(test_save_path)
     df.to_csv(os.path.join(test_save_path, os.path.split(save_path)[-1]))
 
@@ -350,7 +350,6 @@ class LICO_MO_MANHOLDRPAY_deal:
                 log_exe_pay = np.log(exe_pay)
             return log_exe_pay
 
-        # self.raw_df = pd.read_pickle('/mnt/mfs/dat_whs/EM_Funda/LICO_MO_MANHOLDRPAY.pkl')
         data_ds = self.raw_df[[f_1(x) for x in self.raw_df['POSTCODE']]]
 
         raw_df = data_ds.groupby(['NOTICEDATE', 'COMPANYCODE'])['ANUALWAGE'].apply(fun).unstack()

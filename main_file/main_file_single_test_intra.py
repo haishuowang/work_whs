@@ -335,8 +335,37 @@ class FactorTestSector(mf.FactorTest):
             target_df = target_df[target_df > 0]
         return target_df
 
-    def load_jerry_factor(self, file_name):
-        factor_path = '/mnt/mfs/temp/dat_jerry/signal'
+    # def load_remy_factor(self, file_name):
+    #     load_path = '/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_F1'
+    #     raw_df = bt.AZ_Load_csv(f'{load_path}/{file_name}')
+    #     a = list(set(raw_df.iloc[-1, :100].dropna().values))
+    #     tmp_df = raw_df.reindex(index=self.xinx, columns=self.xnms)
+    #     if len(a) > 5:
+    #         target_df = self.row_extre(tmp_df, self.sector_df, 0.3)
+    #     else:
+    #         target_df = tmp_df
+    #         pass
+    #     if self.if_only_long:
+    #         target_df = target_df[target_df > 0]
+    #     return target_df
+
+    def load_remy_factor(self, file_name):
+        load_path = os.path.join('/media/hdd2/dat_whs/data/new_factor_data/' + self.sector_name)
+        target_df = pd.read_pickle(os.path.join(load_path, file_name)) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        if self.if_only_long:
+            target_df = target_df[target_df > 0]
+        return target_df
+
+    def load_remy_factor_2(self, file_name, sector_name):
+        if sector_name.startswith('market_top_300plus'):
+            factor_path = '/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_F3/T300P'
+
+        elif sector_name.startswith('market_top_300to800plus'):
+            factor_path = '/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_F3/T500P'
+
+        else:
+            factor_path = '/mnt/mfs/DAT_EQT/EM_Funda/DERIVED_F3/T500P'
         raw_df = bt.AZ_Load_csv(f'{factor_path}/{file_name}')
         a = list(set(raw_df.iloc[-1, :100].dropna().values))
         tmp_df = raw_df.reindex(index=self.xinx, columns=self.xnms)
@@ -347,6 +376,13 @@ class FactorTestSector(mf.FactorTest):
             pass
         if self.if_only_long:
             target_df = target_df[target_df > 0]
+        return target_df
+
+    def load_intra_factor(self, file_name):
+        factor_path = '/mnt/mfs/dat_whs/EM_Funda/dat_whs'
+        raw_df = bt.AZ_Load_csv(f'{factor_path}/{file_name}')
+        tmp_df = raw_df.reindex(index=self.xinx, columns=self.xnms)
+        target_df = self.row_extre(tmp_df, self.sector_df, 0.2)
         return target_df
 
     @staticmethod
@@ -406,7 +442,7 @@ class FactorTestSector(mf.FactorTest):
         start_time = time.time()
         load_time_1 = time.time()
         # load因子,同时根据stock_universe筛选数据.
-        factor_1 = self.load_jerry_factor(name_1)
+        factor_1 = self.load_intra_factor(name_1)
         load_time_2 = time.time()
         # 加载花费数据时间
         load_delta = round(load_time_2 - load_time_1, 2)
@@ -422,10 +458,10 @@ class FactorTestSector(mf.FactorTest):
         # 返回样本内筛选结果
         *result_list, pnl_df = filter_all(self.cut_date, daily_pos, self.return_choose,
                                           if_return_pnl=True, if_only_long=self.if_only_long)
-        pnl_save_path = f'/mnt/mfs/dat_whs/data/single_factor_pnl/{self.sector_name}'
+        pnl_save_path = f'/media/hdd2/dat_whs/data/single_factor_pnl_intra/{self.sector_name}'
         bt.AZ_Path_create(pnl_save_path)
         pnl_df.to_csv(f'{pnl_save_path}/{name_1}|{self.sector_name}|{self.hold_time}|{if_only_long}')
-        if abs(bt.AZ_Sharpe_y(pnl_df)) > 1:
+        if abs(bt.AZ_Sharpe_y(pnl_df)) > 0.7:
             plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
                              f'{name_1}|{self.sector_name}|{self.hold_time}|{self.if_only_long}',
                              text='|'.join([str(x) for x in result_list]))
@@ -452,11 +488,11 @@ class FactorTestSector(mf.FactorTest):
         print('{}%, {}, cost {} seconds, load_cost {} seconds'
               .format(round(key / total_para_num * 100, 4), key, name_1, round(end_time - start_time, 2), load_delta))
 
-    def test_index(self, factor_list, pool_num=20, suffix_name='', old_file_name=''):
+    def test_index(self, remy_factor_list, pool_num=20, suffix_name='', old_file_name=''):
 
         # print(factor_list)
         para_ready_df, log_save_file, result_save_file, total_para_num = \
-            self.save_load_control_single(factor_list, suffix_name, old_file_name)
+            self.save_load_control_single(remy_factor_list, suffix_name, old_file_name)
 
         a_time = time.time()
         pool = Pool(pool_num)
@@ -472,7 +508,7 @@ class FactorTestSector(mf.FactorTest):
         print('Success!Processing end, Cost {} seconds'.format(round(b_time - a_time, 2)))
 
     def single_test(self, name_1):
-        factor_1 = self.load_jerry_factor(name_1)
+        factor_1 = self.load_remy_factor(name_1)
         daily_pos = self.deal_mix_factor(factor_1).shift(2)
         in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
         fit_ratio, leve_ratio, sp_in, sharpe_q_out, pnl_df = filter_all(self.cut_date, daily_pos, self.return_choose,
@@ -492,7 +528,7 @@ class FactorTestSector(mf.FactorTest):
         for i in range(len(name_list)):
             tmp_name = name_list[i]
             buy_sell_way = buy_sell_way_list[i]
-            tmp_factor = self.load_jerry_factor(tmp_name)
+            tmp_factor = self.load_intra_factor(tmp_name)
             mix_factor = mix_factor.add(tmp_factor * buy_sell_way, fill_value=0)
         daily_pos = self.deal_mix_factor(mix_factor).shift(2)
         in_condition, out_condition, ic, sharpe_q_in_df_u, sharpe_q_in_df_m, sharpe_q_in_df_d, pot_in, \
@@ -510,8 +546,8 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
     if_new_program = True
 
     begin_date = pd.to_datetime('20130101')
-    cut_date = pd.to_datetime('20160401')
-    end_date = pd.to_datetime('20181201')
+    cut_date = pd.to_datetime('20180101')
+    end_date = pd.to_datetime('20190401')
     lag = 2
     return_file = ''
 
@@ -530,13 +566,14 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
         if_weight = 0.5
         ic_weight = 0.5
 
-    factor_path = '/mnt/mfs/temp/dat_jerry/signal'
     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
 
-    jerry_factor_list = os.listdir(factor_path)
+    factor_list = os.listdir('/mnt/mfs/dat_whs/EM_Funda/dat_whs')
+    # from random import sample
+    # remy_factor_list = sample(remy_factor_list, 400)
     pool_num = 28
-    main.test_index(jerry_factor_list, pool_num, suffix_name='single_test')
+    main.test_index(factor_list, pool_num, suffix_name='single_test')
 
 
 # def main_test_fun(sector_name, hold_time, if_only_long, time_para_dict):
@@ -545,8 +582,8 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
 #     if_new_program = True
 #
 #     begin_date = pd.to_datetime('20130101')
-#     cut_date = pd.to_datetime('20160401')
-#     end_date = pd.to_datetime('20181201')
+#     cut_date = pd.to_datetime('20180101')
+#     end_date = pd.to_datetime('20190401')
 #     lag = 2
 #     return_file = ''
 #
@@ -567,7 +604,7 @@ def main_fun(sector_name, hold_time, if_only_long, time_para_dict):
 #
 #     main = FactorTestSector(root_path, if_save, if_new_program, begin_date, cut_date, end_date, time_para_dict,
 #                             sector_name, hold_time, lag, return_file, if_hedge, if_only_long, if_weight, ic_weight)
-#     main.single_test('aadj_r_p345d_continue_ud')
+#     # main.single_test('aadj_r_p345d_continue_ud')
 
 
 if __name__ == '__main__':
@@ -587,8 +624,10 @@ if __name__ == '__main__':
         'market_top_300to800plus_industry_55',
     ]
 
-    hold_time_list = [5, 20]
+    hold_time_list = [1, 5, 20]
     for if_only_long in [False, True]:
         for hold_time in hold_time_list:
             for sector_name in sector_name_list:
+                # sector_name, hold_time, if_only_long = ['market_top_300plus', 20, False]
                 main_fun(sector_name, hold_time, if_only_long, time_para_dict=[])
+                # main_test_fun(sector_name, hold_time, if_only_long, time_para_dict=[])

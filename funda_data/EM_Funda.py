@@ -70,11 +70,11 @@ class Daily_Deal(EM_Funda_Deal):
         self.MCAP_path = root_path.EM_Funda.LICO_YS_STOCKVALUE / 'AmarketCapExStri.csv'
         self.MCAP = bt.AZ_Load_csv(self.MCAP_path).reindex(columns=xnms, index=xinx)
 
-        self.R_EBITDA_QYOY_path = self.load_path / 'R_IntDebt_Y3YGR.csv'
-        self.R_EBITDA_QYOY = bt.AZ_Load_csv(self.R_IntDebt_Y3YGR_path).reindex(columns=xnms, index=xinx)
+        self.R_EBITDA_QYOY_path = self.load_path / 'R_EBITDA_QYOY.csv'
+        self.R_EBITDA_QYOY = bt.AZ_Load_csv(self.R_EBITDA_QYOY_path).reindex(columns=xnms, index=xinx)
 
-        self.R_EBIT2_Y3YGR_path = self.load_path / 'R_IntDebt_Y3YGR.csv'
-        self.R_EBIT2_Y3YGR = bt.AZ_Load_csv(self.R_IntDebt_Y3YGR_path).reindex(columns=xnms, index=xinx)
+        self.R_EBIT2_Y3YGR_path = self.load_path / 'R_EBIT2_Y3YGR.csv'
+        self.R_EBIT2_Y3YGR = bt.AZ_Load_csv(self.R_EBIT2_Y3YGR_path).reindex(columns=xnms, index=xinx)
 
         self.R_SalesGrossMGN_QYOY_path = self.load_path / 'R_SalesGrossMGN_QYOY.csv'
         self.R_SalesGrossMGN_QYOY = bt.AZ_Load_csv(self.R_SalesGrossMGN_QYOY_path).reindex(columns=xnms, index=xinx)
@@ -98,8 +98,8 @@ class Daily_Deal(EM_Funda_Deal):
                      #  (self.R_SUMASSET_First, self.R_SUMASSET_First_path, 'R_SUMASSET_First')],
                      # [(self.R_EBITDA_QTTM, self.R_EBITDA_QTTM_path, 'R_EBITDA_QTTM'),
                      #  (self.MCAP, self.MCAP_path, 'MCAP')],
-                     # [(self.R_EBITDA_QYOY, self.R_EBITDA_QYOY_path, 'R_EBITDA_QYOY'),
-                     #  (self.MCAP, self.MCAP_path, 'MCAP')],
+                     [(self.R_EBITDA_QYOY, self.R_EBITDA_QYOY_path, 'R_EBITDA_QYOY'),
+                      (self.MCAP, self.MCAP_path, 'MCAP')],
                      [(self.R_EBIT2_Y3YGR, self.R_EBIT2_Y3YGR_path, 'R_EBIT2_Y3YGR'),
                       (self.MCAP, self.MCAP_path, 'MCAP')],
                      [(self.R_SalesGrossMGN_QYOY, self.R_SalesGrossMGN_QYOY_path, 'R_SalesGrossMGN_QYOY'),

@@ -41,9 +41,11 @@ def plot_send_result(pnl_df, sharpe_ratio, subject, text=''):
 def plot_send_result_mul(pnl_df, subject, text=''):
     assert type(pnl_df) == pd.DataFrame
     figure_save_path = os.path.join('/mnt/mfs/dat_whs', 'tmp_figure')
-    plt.figure(figsize=[16, 8])
-    for col in pnl_df.colmns:
-        plt.plot(pnl_df[col].index, pnl_df[col].cumsum(), label=f'{col}, sharpe_ratio={bt.AZ_Sharpe_y(pnl_df[col])}')
+    pnl_num = len(pnl_df.columns)
+    plt.figure(figsize=[16, 8*pnl_num])
+    for i, col in enumerate(pnl_df.columns):
+        ax = plt.subplot(pnl_num, 1, i+1)
+        ax.plot(pnl_df[col].index, pnl_df[col].cumsum(), label=f'{col}, sharpe_ratio={bt.AZ_Sharpe_y(pnl_df[col])}')
     plt.grid()
     plt.legend()
     plt.savefig(os.path.join(figure_save_path, '{}.png'.format(subject)))
