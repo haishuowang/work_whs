@@ -1048,13 +1048,13 @@ class CorrCheck:
 
 
 def main_fun():
-    str_1 = 'index_000905|20|False|0.1'
-    exe_str = 'bar_num_7_df|row_zscore_-1.0@add_fun@lsgg_num_df_20|col_zscore|120_-1.0@add_fun@' \
-              'R_SUMASSET_First|pnd_vol|5_1.0@add_fun@R_TotAssets_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'R_OperProfit_s_YOY_First|col_zscore|60_1.0@add_fun@R_OPCF_TTM_QTTM|col_zscore|60_1.0@add_fun@' \
-              'R_CFO_TotRev_s_First|col_zscore|60_-1.0@add_fun@R_NetAssets_s_POP_First|pnd_vol|5_1.0@add_fun@' \
-              'R_TangAssets_QTTM|pnd_vol|60_-1.0@add_fun@R_OTHERCINCOME_QTTM|pnd_vol|20_-1.0@add_fun@' \
-              'R_Revenue_s_POP_First|pnd_vol|20_-1.0'
+    str_1 = 'market_top_300to800plus|20|False|0.1'
+    exe_str = 'bar_num_12_df|col_zscore|120_-1.0@add_fun@R_NetIncRecur_s_First|row_zscore_1.0@add_fun@' \
+              'R_NetAssets_s_POP_First|row_zscore_1.0@add_fun@bulletin_num_df_5|col_zscore|60_-1.0@add_fun@' \
+              'RZYE|row_zscore_-1.0@add_fun@PE_TTM|col_zscore|20_-1.0@add_fun@' \
+              'R_TotAssets_s_YOY_First|col_zscore|60_1.0@add_fun@R_EMPLOYEEPAY_QTTM|pnd_vol|20_1.0@add_fun@' \
+              'R_OPCF_TotDebt_QTTM|pnd_vol|60_1.0@add_fun@R_AssetDepSales_QTTM|pnd_vol|120_-1.0@add_fun@' \
+              'funds|pnd_vol|120_1.0'
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
 
