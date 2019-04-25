@@ -3,6 +3,8 @@ import numpy as np
 import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/mnt/mfs/LIB_ROOT")
 from open_lib.shared_tools import send_email
 from itertools import combinations
 from datetime import datetime
@@ -1026,13 +1028,13 @@ def main_fun():
         if_only_long = True
 
     root_path = '/media/hdd1/DAT_EQT'
-    root_path = '/mnt/mfs/DAT_EQT'
+    # root_path = '/mnt/mfs/DAT_EQT'
     if_save = True
     if_new_program = True
 
     begin_date = pd.to_datetime('20130101')
-    end_date = pd.to_datetime('20190411')
-    # end_date = datetime.now()
+    # end_date = pd.to_datetime('20190411')
+    end_date = datetime.now()
     cut_date = pd.to_datetime('20180101')
     lag = 2
     return_file = ''
@@ -1044,9 +1046,9 @@ def main_fun():
     info_df, pnl_df, pos_df = factor_test.get_mix_pnl_df(data_deal, exe_str, cut_date, percent)
     pnl_df.name = alpha_name
 
-    CorrCheck().corr_test_fun(pnl_df, alpha_name)
+    # CorrCheck().corr_test_fun(pnl_df, alpha_name)
     # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
-    bt.commit_check(pd.DataFrame(pnl_df))
+    # bt.commit_check(pd.DataFrame(pnl_df))
     # print(info_df)
     # pos 存储
     if factor_test.if_weight != 0:

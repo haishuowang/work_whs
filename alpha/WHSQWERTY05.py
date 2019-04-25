@@ -3,6 +3,8 @@ import numpy as np
 import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/mnt/mfs/LIB_ROOT")
 from open_lib.shared_tools import send_email
 from itertools import combinations
 from datetime import datetime
@@ -1006,12 +1008,6 @@ def main_fun():
     alpha_name = os.path.basename(__file__).split('.')[0]
 
     str_1 = 'market_top_300plus_industry_20_25_30_35|20|False|0.1'
-    exe_str = 'TURNRATE|pnd_count_down|120_1.0@add_fun@bar_num_7_df|col_zscore|60_-1.0@add_fun@' \
-              'R_SalesGrossMGN_s_First|col_zscore|120_1.0@add_fun@R_SalesGrossMGN_First|col_zscore|120_1.0@add_fun@' \
-              'lsgg_num_df_20|col_zscore|120_-1.0@add_fun@TVALCNY|col_zscore|60_-1.0@add_fun@' \
-              'R_DebtAssets_QTTM|col_zscore|120_1.0@add_fun@R_NetIncRecur_s_First|col_zscore|120_1.0@add_fun@' \
-              'R_INVENTORY_QTTM|row_zscore_1.0@add_fun@aadj_p|pnd_count_down|20_1.0@add_fun@' \
-              'R_NetInc_s_First|pnd_count_down|60_-1.0'
 
     exe_str = 'stock_tab2_7|row_zscore_-1.0@add_fun@TURNRATE|pnd_count_down|60_1.0@add_fun@' \
               'R_NetROA1_First|col_zscore|120_1.0@add_fun@bulletin_num_df_20|row_zscore_-1.0@add_fun@' \
@@ -1035,8 +1031,8 @@ def main_fun():
     if_new_program = True
 
     begin_date = pd.to_datetime('20130101')
-    end_date = pd.to_datetime('20190411')
-    # end_date = datetime.now()
+    # end_date = pd.to_datetime('20190411')
+    end_date = datetime.now()
     cut_date = pd.to_datetime('20180101')
     lag = 2
     return_file = ''
@@ -1048,9 +1044,9 @@ def main_fun():
     info_df, pnl_df, pos_df = factor_test.get_mix_pnl_df(data_deal, exe_str, cut_date, percent)
     pnl_df.name = alpha_name
 
-    CorrCheck().corr_test_fun(pnl_df, alpha_name)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
-    bt.commit_check(pd.DataFrame(pnl_df))
+    # CorrCheck().corr_test_fun(pnl_df, alpha_name)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    # bt.commit_check(pd.DataFrame(pnl_df))
     # print(info_df)
     # pos 存储
     if factor_test.if_weight != 0:

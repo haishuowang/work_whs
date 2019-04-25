@@ -220,8 +220,10 @@ class bt:
         return round((np.sqrt(250) * pnl_df.mean()) / pnl_df.std(), 4)
 
     def AZ_Col_zscore(self, df, n, cap=None, min_periods=1):
-        df_mean = self.AZ_Rolling_mean(df, n, min_periods=min_periods)
-        df_std = df.rolling(window=n, min_periods=min_periods).std().replace(0, np.nan)
+        # df_mean = self.AZ_Rolling_mean(df, n, min_periods=min_periods).round(4)
+        # df_std = df.rolling(window=n, min_periods=min_periods).std().round(4).replace(0, np.nan)
+        df_mean = self.AZ_Rolling_mean(df, n, min_periods=min_periods).round(4)
+        df_std = df.rolling(window=n, min_periods=min_periods).std().round(4).replace(0, np.nan)
         target = (df - df_mean) / df_std
         if cap is not None:
             target[target > cap] = cap
@@ -407,7 +409,7 @@ class ContinueClass:
         return bt.AZ_Rolling_mean(raw_df, 100)
 
     @staticmethod
-    def col_zscore(raw_df, sector_df, n, cap=5, min_periods=1):
+    def col_zscore(raw_df, sector_df, n, cap=5, min_periods=0):
         return bt.AZ_Col_zscore(raw_df, n, cap, min_periods)
 
     @staticmethod
@@ -416,32 +418,32 @@ class ContinueClass:
 
     @staticmethod
     def pnd_vol(raw_df, sector_df, n):
-        vol_df = bt.AZ_Rolling(raw_df, n).std().replace(0, np.nan) * (250 ** 0.5)
+        vol_df = bt.AZ_Rolling(raw_df, n).std().round(4) * (250 ** 0.5)
         return vol_df * sector_df
 
-    @staticmethod
-    def pnd_count_down(raw_df, sector_df, n):
-        raw_df = raw_df.replace(0, np.nan)
-        raw_df_mean = bt.AZ_Rolling_mean(raw_df, n) * sector_df
-        raw_df_count_down = 1 / (raw_df_mean.round(6).replace(0, np.nan))
-        return raw_df_count_down
+    # @staticmethod
+    # def pnd_count_down(raw_df, sector_df, n):
+    #     raw_df = raw_df.replace(0, np.nan)
+    #     raw_df_mean = bt.AZ_Rolling_mean(raw_df, n) * sector_df
+    #     raw_df_count_down = 1 / (raw_df_mean.round(4).replace(0, np.nan))
+    #     return raw_df_count_down
 
     # return fun
     @staticmethod
     def pnd_return_volatility(adj_r, n):
-        vol_df = bt.AZ_Rolling(adj_r, n).std().replace(0, np.nan) * (250 ** 0.5)
+        vol_df = bt.AZ_Rolling(adj_r, n).std() * (250 ** 0.5)
         vol_df[vol_df < 0.08] = 0.08
         return vol_df
 
     @staticmethod
     def pnd_return_volatility_count_down(adj_r, sector_df, n):
-        vol_df = bt.AZ_Rolling(adj_r, n).std().replace(0, np.nan) * (250 ** 0.5) * sector_df
+        vol_df = bt.AZ_Rolling(adj_r, n).std() * (250 ** 0.5) * sector_df
         vol_df[vol_df < 0.08] = 0.08
         return 1 / vol_df.replace(0, np.nan)
 
     @staticmethod
     def pnd_return_evol(adj_r, sector_df, n):
-        vol_df = bt.AZ_Rolling(adj_r, n).std().replace(0, np.nan) * (250 ** 0.5)
+        vol_df = bt.AZ_Rolling(adj_r, n).std() * (250 ** 0.5)
         vol_df[vol_df < 0.08] = 0.08
         evol_df = bt.AZ_Rolling(vol_df, 30).apply(lambda x: 1 if x[-1] > 2 * x.mean() else 0)
         return evol_df * sector_df
@@ -509,7 +511,7 @@ class SectorData:
         if sector_name.startswith('index'):
             index_name = sector_name.split('_')[-1]
             market_top_n = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/IDEX_YS_WEIGHT_A/SECURITYNAME_{index_name}.csv')
-            market_top_n = market_top_n.mask(market_top_n == market_top_n, other=1)
+            market_top_n = market_top_n.where(market_top_n != market_top_n, other=1)
         else:
             market_top_n = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/DERIVED_10/{sector_name}.csv')
 
@@ -544,13 +546,14 @@ class DataDeal(SectorData, DiscreteClass, ContinueClass):
         data_path = base_data_dict[file_name]
         if len(data_path) != 0:
             raw_df = bt.AZ_Load_csv(f'{self.root_path}/{data_path}') \
-                .reindex(index=self.xinx, columns=self.xnms).round(8)
+                .reindex(index=self.xinx, columns=self.xnms).round(4)
         else:
             raw_df = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/daily/{file_name}.csv') \
-                .reindex(index=self.xinx, columns=self.xnms).round(8)
+                .reindex(index=self.xinx, columns=self.xnms).round(4)
+
         return raw_df
 
-    def count_return_data(self, factor_name):
+    def count_return_data(self, factor_name, z_score=True):
         if len(factor_name.split('|')) == 3:
             str_to_num = lambda x: float(x) if '.' in x else int(x)
             file_name, fun_name, para_str = factor_name.split('|')
@@ -562,7 +565,14 @@ class DataDeal(SectorData, DiscreteClass, ContinueClass):
         raw_df = self.load_raw_data(file_name)
         fun = getattr(self, fun_name)
         target_df = fun(raw_df, self.sector_df, *para)
-        return target_df
+        if z_score:
+            if 'zscore' in factor_name:
+                target_zscore_df = target_df
+            else:
+                target_zscore_df = self.row_zscore(target_df, self.sector_df)
+            return target_zscore_df
+        else:
+            return target_df
 
 
 def plot_send_result(pnl_df, sharpe_ratio, subject, text=''):
@@ -595,11 +605,11 @@ class TrainFunSet:
 
     @staticmethod
     def sub_fun(a, b):
-        return a.sub(b, fill_value=0)
+        return a.sub(b)
 
     @staticmethod
     def add_fun(a, b):
-        return a.add(b, fill_value=0)
+        return a.add(b)
 
 
 class FactorTestBase:
@@ -816,13 +826,26 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
     def __init__(self, *args):
         super(FactorTest, self).__init__(*args)
 
+    def load_raw_data(self, file_name):
+        data_path = base_data_dict[file_name]
+        if len(data_path) != 0:
+            raw_df = bt.AZ_Load_csv(f'{self.root_path}/{data_path}') \
+                .reindex(index=self.xinx, columns=self.xnms).round(4)
+        else:
+            raw_df = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/daily/{file_name}.csv') \
+                .reindex(index=self.xinx, columns=self.xnms).round(4)
+        return raw_df
+
     def load_raw_factor(self, file_name):
         raw_df = pd.read_pickle(f'/mnt/mfs/dat_whs/data/factor_data/{self.sector_name}/{file_name}.pkl')
         raw_df = raw_df.reindex(index=self.xinx)
         return raw_df
 
-    def load_zscore_factor(self, file_name):
-        raw_zscore_df = self.row_zscore(self.load_raw_factor(file_name), self.sector_df)
+    def load_zscore_factor(self, file_name, sector_df_r):
+        if 'zscore' in file_name:
+            raw_zscore_df = self.load_raw_factor(file_name)
+        else:
+            raw_zscore_df = self.row_zscore(self.load_raw_factor(file_name), sector_df_r)
         return raw_zscore_df
 
     @staticmethod
@@ -918,7 +941,7 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
             exe_list = exe_str.split('@')
             way_str_1 = exe_list[0].split('_')[-1]
             name_1 = '_'.join(exe_list[0].split('_')[:-1])
-            factor_1 = data_deal.count_return_data(name_1) * float(way_str_1)
+            factor_1 = data_deal.count_return_data(name_1, z_score=False) * float(way_str_1)
             for i in range(int((len(exe_list) - 1) / 2)):
                 fun_str = exe_list[2 * i + 1]
                 way_str_2 = exe_list[2 * i + 2].split('_')[-1]
@@ -926,6 +949,7 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
                 factor_2 = data_deal.count_return_data(name_2) * float(way_str_2)
                 factor_1 = getattr(self, fun_str)(factor_1, factor_2)
             return factor_1
+
         mix_factor = tmp_fun()
         info_df, pnl_df, pos_df = self.back_test(mix_factor, cut_date, percent, return_pos=True)
         pnl_df.name = exe_str
@@ -978,7 +1002,19 @@ class CorrCheck:
         all_pnl_df = pd.read_csv('/mnt/mfs/AATST/corr_tst_pnls', sep='|', index_col=0, parse_dates=True)
         all_pnl_df_c = pd.concat([all_pnl_df, pnl_df], axis=1)
         a = all_pnl_df_c.iloc[-600:].corr()[col_name]
-        return a[a > 0.71]
+        return a[a > 0.6]
+
+    def get_all_pnl_df(self, root_path):
+        file_name_list = os.listdir(root_path)
+        if len(file_name_list) == 0:
+            return pd.DataFrame()
+        else:
+            result_list = []
+            for file_name in file_name_list:
+                pnl_df = pd.read_pickle(f'{root_path}/{file_name}')
+                result_list.append(pnl_df)
+            all_pnl_df = pd.concat(result_list, axis=1)
+            return all_pnl_df
 
     def corr_test_fun(self, pnl_df, alpha_name):
         sum_pnl_df = self.get_corr_matrix(cut_date=None)
@@ -986,8 +1022,8 @@ class CorrCheck:
         corr_self = sum_pnl_df_c.corr()[[alpha_name]]
         other_corr = self.get_all_pnl_corr(pnl_df, alpha_name)
         print(other_corr)
-        self_corr = corr_self[corr_self > 0.7].dropna(axis=0)
-        print(corr_self)
+        self_corr = corr_self[corr_self > 0.6].dropna(axis=0)
+        print(corr_self.sort_values(by=alpha_name)[-5:])
         if len(self_corr) >= 2 or len(other_corr) >= 2:
             print('FAIL!')
             send_email.send_email('FAIL!\n' + self_corr.to_html(),
@@ -1003,21 +1039,23 @@ class CorrCheck:
         print('______________________________________')
         return 0
 
+    def corr_self_check(self, pnl_df):
+        assert type(pnl_df) == pd.Series
+        root_path = '/mnt/mfs/dat_whs/result_new/tmp_pnl'
+        all_pnl_df = self.get_all_pnl_df(root_path)
+        corr_sr = all_pnl_df.corrwith(pnl_df, axis=0)
+        return corr_sr
+
 
 def main_fun():
+    str_1 = 'market_top_300plus|5|False|0.1'
+    exe_str = 'stock_tab2_9|pnd_vol|120_1.0@add_fun@RZMRE|pnd_vol|120_-1.0@add_fun@' \
+              'bar_num_7_df|pnd_vol|5_-1.0@add_fun@R_NetAssets_s_YOY_First|col_zscore|60_1.0@add_fun@' \
+              'R_NetIncRecur_QTTM|col_zscore|60_1.0@add_fun@R_FairValChgPnL_s_First|row_zscore_1.0@add_fun@' \
+              'R_RevenuePS_s_First|row_zscore_1.0@add_fun@RZCHE|pnd_vol|60_-1.0@add_fun@' \
+              'R_SalesCost_s_First|pnd_vol|120_-1.0@add_fun@R_MgtExp_sales_s_First|row_zscore_1.0'
     alpha_name = os.path.basename(__file__).split('.')[0]
-    sector_name, hold_time_str, if_only_long, percent_str = 'index_000300|20|False|0.1'.split('|')
-    exe_str = 'R_AssetDepSales_QTTM|pnd_count_down|20_1.0@add_fun@' \
-              'R_NetAssets_s_YOY_First|col_zscore|120_1.0@add_fun@' \
-              'PE_TTM|col_zscore|20_-1.0@add_fun@' \
-              'R_TotRev_s_POP_First|col_zscore|120_1.0@add_fun@' \
-              'bulletin_num_df_60|pnd_count_down|20_1.0@add_fun@' \
-              'R_MgtExp_sales_s_First|col_zscore|5_1.0@add_fun@' \
-              'R_OperProfit_s_POP_First|row_zscore_1.0@add_fun@' \
-              'lsgg_num_df_60|col_zscore|60_-1.0@add_fun@' \
-              'R_EMPLOYEEPAY_QTTM|col_zscore|5_1.0@add_fun@' \
-              'lsgg_num_df_60|row_zscore_-1.0@add_fun@' \
-              'R_SUMLIAB_Y3YGR|pnd_count_down|60_1.0'
+    sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
 
     hold_time = int(hold_time_str)
 
@@ -1028,6 +1066,7 @@ def main_fun():
         if_only_long = True
 
     root_path = '/media/hdd1/DAT_EQT'
+    # root_path = '/mnt/mfs/DAT_EQT'
     if_save = True
     if_new_program = True
 
@@ -1042,12 +1081,15 @@ def main_fun():
     factor_test = FactorTest(root_path, if_save, if_new_program, begin_date, end_date, sector_name, hold_time,
                              lag, return_file, if_hedge, if_only_long)
     data_deal = DataDeal(begin_date, end_date, root_path, sector_name)
+    # 生成回测脚本
     info_df, pnl_df, pos_df = factor_test.get_mix_pnl_df(data_deal, exe_str, cut_date, percent)
     pnl_df.name = alpha_name
-    # # commit_check
-    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+
+    # 相关性测试
+    # corr_sr = CorrCheck().corr_self_check(pnl_df)
+    # print(corr_sr)
     # bt.commit_check(pd.DataFrame(pnl_df))
-    # pos 存储
+
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:

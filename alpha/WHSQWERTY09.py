@@ -3,6 +3,8 @@ import numpy as np
 import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/mnt/mfs/LIB_ROOT")
 from open_lib.shared_tools import send_email
 from itertools import combinations
 from datetime import datetime
