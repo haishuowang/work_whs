@@ -1049,13 +1049,13 @@ class CorrCheck:
 
 def main_fun():
     str_1 = 'market_top_300plus|10|False|0.1'
-    exe_str = 'bar_num_7_df|col_zscore|60_-1.0@add_fun@bar_num_7_df|row_zscore_-1.0@add_fun@' \
-              'R_TotAssets_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'R_NonOperProft_TotProfit_s_First|pnd_vol|120_-1.0@add_fun@' \
-              'R_INCOMETAX_QTTM|col_zscore|120_1.0@add_fun@R_OperCost_sales_s_First|row_zscore_-1.0@add_fun@' \
-              'R_SalesGrossMGN_s_First|col_zscore|60_1.0@add_fun@R_LTDebt_WorkCap_QTTM|pnd_vol|60_-1.0@add_fun@' \
-              'R_INCOMETAX_QTTM|pnd_vol|120_1.0@add_fun@R_SUMASSET_First|pnd_vol|120_1.0@add_fun@' \
-              'R_CFO_s_YOY_First|pnd_vol|20_-1.0'
+    exe_str = 'R_RevenuePS_s_First|col_zscore|120_1.0@add_fun@TURNRATE|row_zscore_-1.0@add_fun@' \
+              'aadj_p|row_zscore_-1.0@add_fun@R_NetROA1_First|col_zscore|120_1.0@add_fun@' \
+              'lsgg_num_df_60|col_zscore|120_-1.0@add_fun@R_CurrentLiabInt0_QTTM|col_zscore|60_1.0@add_fun@' \
+              'R_OperProfit_s_YOY_First|col_zscore|120_1.0@add_fun@stock_tab2_7|pnd_vol|60_-1.0@add_fun@' \
+              'R_EPS_s_YOY_First|col_zscore|60_1.0@add_fun@R_OperCost_sales_s_First|pnd_vol|120_-1.0@add_fun@' \
+              'R_TotRev_TTM_Y3YGR|col_zscore|120_1.0'
+
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
 

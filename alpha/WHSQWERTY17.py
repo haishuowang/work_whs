@@ -1048,14 +1048,13 @@ class CorrCheck:
 
 
 def main_fun():
-    str_1 = 'market_top_300plus|10|False|0.1'
-    exe_str = 'bar_num_7_df|col_zscore|60_-1.0@add_fun@bar_num_7_df|row_zscore_-1.0@add_fun@' \
-              'R_TotAssets_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'R_NonOperProft_TotProfit_s_First|pnd_vol|120_-1.0@add_fun@' \
-              'R_INCOMETAX_QTTM|col_zscore|120_1.0@add_fun@R_OperCost_sales_s_First|row_zscore_-1.0@add_fun@' \
-              'R_SalesGrossMGN_s_First|col_zscore|60_1.0@add_fun@R_LTDebt_WorkCap_QTTM|pnd_vol|60_-1.0@add_fun@' \
-              'R_INCOMETAX_QTTM|pnd_vol|120_1.0@add_fun@R_SUMASSET_First|pnd_vol|120_1.0@add_fun@' \
-              'R_CFO_s_YOY_First|pnd_vol|20_-1.0'
+    str_1 = 'market_top_300plus|20|False|0.1'
+    exe_str = 'news_num_df_20|row_zscore_-1.0@add_fun@R_SalesGrossMGN_s_Y3YGR|pnd_vol|120_-1.0@add_fun@' \
+              'bar_num_7_df|col_zscore|60_-1.0@add_fun@R_NetAssets_s_YOY_First|pnd_vol|60_-1.0@add_fun@' \
+              'bar_num_12_df|col_zscore|5_-1.0@add_fun@R_SalesNetMGN_s_First|col_zscore|60_1.0@add_fun@' \
+              'R_OperProfit_sales_Y3YGR|row_zscore_1.0@add_fun@R_TangAssets_TotLiab_QTTM|col_zscore|120_-1.0@add_fun@' \
+              'R_NetCf_TTM_QSD4Y|pnd_vol|5_1.0@add_fun@R_TangAssets_TotLiab_QTTM|pnd_vol|120_-1.0@add_fun@' \
+              'stock_tab1_7|pnd_vol|60_-1.0'
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
 
