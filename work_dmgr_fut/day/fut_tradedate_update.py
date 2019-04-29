@@ -27,8 +27,8 @@ def get_TradeDates(start_date, end_date):
 
 def main():
     save_path = '/mnt/mfs/DAT_FUT/DailyPX/TradeDates'
-    start_date = str(datetime.datetime.now().year) + '-01-01'
-    end_date = str(datetime.datetime.now().year) + '-12-31'
+    start_date = str(datetime.datetime.now().year) + '-01-15'
+    end_date = str(datetime.datetime.now().year + 1) + '-01-15'
 
     # access new data
     data_collected = get_TradeDates(start_date, end_date)
