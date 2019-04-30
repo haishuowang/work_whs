@@ -27,20 +27,20 @@ def get_TradeDates(start_date, end_date):
 
 def main():
     save_path = '/mnt/mfs/DAT_FUT/DailyPX/TradeDates'
-    start_date = str(datetime.datetime.now().year) + '-01-15'
+    start_date = str(datetime.datetime.now().year-8) + '-01-15'
     end_date = str(datetime.datetime.now().year + 1) + '-01-15'
 
     # access new data
     data_collected = get_TradeDates(start_date, end_date)
     data_collected.index = pd.to_datetime(data_collected.index)
-
+    data_collected.to_csv(save_path, sep='|')
     # read old data
-    old_data = pd.read_csv(save_path, index_col=0, sep='|')
-    old_data.index = pd.to_datetime(old_data.index)
-    # update
-    new_data = data_collected.combine_first(old_data)
-    # save
-    new_data.to_csv(save_path, sep='|')
+    # old_data = pd.read_csv(save_path, index_col=0, sep='|')
+    # old_data.index = pd.to_datetime(old_data.index)
+    # # update
+    # new_data = data_collected.combine_first(old_data)
+    # # save
+    # new_data.to_csv(save_path, sep='|')
 
 
 if __name__ == '__main__':

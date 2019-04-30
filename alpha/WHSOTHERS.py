@@ -674,11 +674,13 @@ class FactorTestBase:
         # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
-        limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
+        limit_buy_sell_df_c = limit_buy_sell_df
         limit_buy_sell_df_c.iloc[-1] = 1
 
-        suspendday_df_c = suspendday_df.shift(-1)
-        suspendday_df_c.iloc[-1] = 1
+        suspendday_df_c = suspendday_df
+        suspendday_df_c.iloc[-1] = True
+        self.suspendday_df_c = suspendday_df_c
+        self.limit_buy_sell_df_c = limit_buy_sell_df_c
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
         # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
@@ -1067,8 +1069,8 @@ def main_fun():
     #           'R_AssetDepSales_QTTM|pnd_vol|60_-1.0@add_fun@R_NetInc_TotProfit_s_First|pnd_vol|20_1.0@add_fun@' \
     #           'R_GSCF_TTM_QSD4Y|pnd_vol|5_1.0'
 
-    str_1 = 'index_000300|30|False|0.2'
-    exe_str = 'PEG_PARENTNETPROFIT_3Y|col_zscore|60_-1.0@add_fun@PEG_PARENTNETPROFIT_3Y|pnd_vol|60_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|pnd_vol|60_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|row_zscore_-1.0@add_fun@R_SalesGrossMGN_First|col_zscore|60_1.0@add_fun@PEG_EBIT_3Y|row_zscore_-1.0@add_fun@ab_grossprofit|row_zscore_1.0@add_fun@R_EBITDA_IntDebt_QTTM|pnd_vol|120_-1.0@add_fun@RZCHE|pnd_vol|20_-1.0@add_fun@R_INVENTORY_QTTM|pnd_vol|5_1.0@add_fun@PEG_OPCF_5Y|pnd_vol|60_1.0'
+    str_1 = 'market_top_300plus|30|False|0.2'
+    exe_str = 'PEG_PARENTNETPROFIT_5Y|col_zscore|60_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|pnd_vol|60_-1.0@add_fun@PEG_EBIT_5Y|row_zscore_-1.0@add_fun@R_OperCost_sales_s_First|col_zscore|60_-1.0@add_fun@PEG_PARENTNETPROFIT_3Y|pnd_vol|60_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|pnd_vol|120_-1.0@add_fun@PEG_PARENTNETPROFIT_3Y|row_zscore_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|row_zscore_-1.0@add_fun@R_WorkCapital_QSD4Y|col_zscore|20_-1.0@add_fun@R_Tax_TotProfit_s_First|pnd_vol|120_-1.0@add_fun@R_ParentProfit_s_POP_First|pnd_vol|20_-1.0'
 
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
@@ -1116,6 +1118,7 @@ def main_fun():
 
 
 if __name__ == '__main__':
+    print(datetime.now())
     a = time.time()
     main_fun()
     b = time.time()
@@ -1124,10 +1127,8 @@ if __name__ == '__main__':
     # file_name = 'index_000905_13'
     # *sector_name_list, target_str = file_name.split('_')
     # sector_name = '_'.join(sector_name_list)
-    # result_df = pd.read_csv(f'/mnt/mfs/dat_whs/result_new/{sector_name}.csv', header=None)
+    # result_df = pd.read_csv(f'/mnt/mfs/dat_whs/result_new/evangle/{sector_name}.csv', header=None)
     # info_str = result_df.loc[int(target_str)].values[0]
     # str_1, exe_str = info_str.split('#')
     # print(str_1)
     # print(exe_str)
-    # import sys; print('Python %s on %s' % (sys.version, sys.platform))
-    # evangle

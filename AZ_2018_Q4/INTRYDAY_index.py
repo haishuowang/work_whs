@@ -94,7 +94,7 @@ def create_intra_data():
 
     begin_year, begin_month, begin_day = begin_str[:4], begin_str[:6], begin_str
     end_year, end_month, end_day = end_str[:4], end_str[:6], end_str
-    intraday_path = '/mnt/mfs/DAT_PUBLIC/intraday/eqt_1mbar'
+    intraday_path = '/mnt/mfs/DAT_EQT/intraday/eqt_1mbar'
     index_save_path = '/mnt/mfs/dat_whs/EM_Funda/my_data'
 
     up_vol_df = pd.DataFrame()
@@ -129,6 +129,7 @@ def create_intra_data():
                     daily_deal_fun(day, day_path, up_vol_df, dn_vol_df, up_15_bar_vol_df, dn_15_bar_vol_df, daily_vwap,
                                    up_15_bar_vwap_df, dn_15_bar_vwap_df, up_vwap_df, dn_vwap_df,
                                    money_flow1_df, money_flow2_df)
+
 
     up_div_dn = up_vwap_df / dn_vwap_df
     up_div_daily = up_vwap_df / daily_vwap
@@ -205,5 +206,3 @@ if __name__ == '__main__':
     intra_data_deal()
 
     # esg_data_deal()
-
-    pass

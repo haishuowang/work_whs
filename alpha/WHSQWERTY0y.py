@@ -185,6 +185,16 @@ base_data_dict = OrderedDict({
     'ab_ab_pre_rec': '/EM_Funda/dat_whs/ab_ab_pre_rec.csv',
     'ab_sale_mng_exp': '/EM_Funda/dat_whs/ab_sale_mng_exp.csv',
     'ab_grossprofit': '/EM_Funda/dat_whs/ab_grossprofit.csv',
+
+    'PEG_EBIT_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_EBIT_3Y.csv',
+    'PEG_EBIT_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_EBIT_5Y.csv',
+    'PEG_OPCF_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPCF_3Y.csv',
+    'PEG_OPCF_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPCF_5Y.csv',
+    'PEG_OPERATEREVE_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPERATEREVE_3Y.csv',
+    'PEG_OPERATEREVE_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPERATEREVE_5Y.csv',
+    'PEG_PARENTNETPROFIT_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_PARENTNETPROFIT_3Y.csv',
+    'PEG_PARENTNETPROFIT_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_PARENTNETPROFIT_5Y.csv',
+
 })
 
 
@@ -970,6 +980,7 @@ class CorrCheck:
         index_df_2 = self.load_index_data('000905', return_df.index).fillna(0)
 
         sum_pnl_df = pd.DataFrame()
+        # 剔除directory
         for pos_file_name in pos_file_list:
             pos_df = bt.AZ_Load_csv('/mnt/mfs/AAPOS/{}'.format(pos_file_name))
 
@@ -1004,6 +1015,7 @@ class CorrCheck:
 
     def get_all_pnl_df(self, root_path):
         file_name_list = os.listdir(root_path)
+        file_name_list.remove('evangle')
         if len(file_name_list) == 0:
             return pd.DataFrame()
         else:
@@ -1046,13 +1058,22 @@ class CorrCheck:
 
 
 def main_fun():
-    str_1 = 'market_top_300to800plus_industry_10_15|5|False|0.1'
-    exe_str = 'TVALCNY|row_zscore_-1.0@add_fun@R_NetROA_s_First|row_zscore_1.0@add_fun@' \
-              'shares|pnd_vol|120_1.0@add_fun@R_OPEX_sales_TTM_First|col_zscore|120_-1.0@add_fun@' \
-              'news_num_df_20|pnd_vol|60_-1.0@add_fun@R_NetIncRecur_s_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperCost_sales_s_First|pnd_vol|60_-1.0@add_fun@R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'stock_tab2_5|pnd_vol|120_1.0@add_fun@R_EPS_s_YOY_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperProfit_sales_Y3YGR|pnd_vol|120_-1.0'
+    # market_top_300plus_19
+    # str_1 = 'market_top_300plus|10|False|0.1'
+    # exe_str = 'R_EPS_s_YOY_First|row_zscore_1.0@add_fun@bar_num_12_df|row_zscore_-1.0@add_fun@' \
+    #           'R_TotAssets_s_YOY_First|col_zscore|60_1.0@add_fun@R_NetROA_s_First|col_zscore|120_1.0@add_fun@' \
+    #           'R_OPCF_sales_s_First|row_zscore_1.0@add_fun@R_Tax_TotProfit_s_First|pnd_vol|120_-1.0@add_fun@' \
+    #           'stock_tab2_4|pnd_vol|60_1.0@add_fun@stock_tab2_7|pnd_vol|5_-1.0@add_fun@' \
+    #           'R_AssetDepSales_QTTM|pnd_vol|60_-1.0@add_fun@R_NetInc_TotProfit_s_First|pnd_vol|20_1.0@add_fun@' \
+    #           'R_GSCF_TTM_QSD4Y|pnd_vol|5_1.0'
+
+    str_1 = 'market_top_300plus|20|False|0.1'
+    exe_str = 'R_OperProfit_s_YOY_First|row_zscore_1.0@add_fun@TURNRATE|pnd_vol|20_-1.0@add_fun@' \
+              'TVALCNY|pnd_vol|20_-1.0@add_fun@R_RevenueTotPS_s_First|col_zscore|120_1.0@add_fun@' \
+              'R_SalesGrossMGN_First|col_zscore|120_1.0@add_fun@bar_num_12_df|col_zscore|120_-1.0@add_fun@' \
+              'PE_TTM|row_zscore_-1.0@add_fun@ab_grossprofit|row_zscore_1.0@add_fun@' \
+              'lsgg_num_df_20|col_zscore|20_-1.0@add_fun@R_TotProfit_EBIT_First|col_zscore|60_1.0@add_fun@' \
+              'R_SalesNetMGN_s_First|pnd_vol|120_-1.0'
 
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
@@ -1113,3 +1134,5 @@ if __name__ == '__main__':
     # str_1, exe_str = info_str.split('#')
     # print(str_1)
     # print(exe_str)
+    # import sys; print('Python %s on %s' % (sys.version, sys.platform))
+    # evangle

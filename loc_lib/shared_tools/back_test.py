@@ -62,8 +62,8 @@ def AZ_MaxDrawdown(asset_df):
 
 
 def AZ_Col_zscore(df, n, cap=None, min_periods=1):
-    df_mean = AZ_Rolling_mean(df, n, min_periods=min_periods)
-    df_std = df.rolling(window=n, min_periods=min_periods).std().replace(0, np.nan)
+    df_mean = AZ_Rolling_mean(df, n, min_periods=min_periods).round(4)
+    df_std = df.rolling(window=n, min_periods=min_periods).std().round(4).replace(0, np.nan)
     target = (df - df_mean) / df_std
     if cap is not None:
         target[target > cap] = cap

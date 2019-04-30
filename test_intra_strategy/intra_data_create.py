@@ -3,9 +3,7 @@ import pandas as pd
 import numpy as np
 from multiprocessing import Pool
 from collections import OrderedDict
-
-
-# import work_whs.loc_lib.shared_tools.back_test as bt
+import work_whs.loc_lib.shared_tools.back_test as bt
 
 
 def AZ_filter_stock(stock_list):  # 筛选相应股票池
@@ -20,6 +18,16 @@ class DailyDealFunSet:
         part_open_min_return = close.iloc[cut_num - 1] / close.iloc[0].replace(0, np.nan) - 1
         part_open_min_return.name = day
         return part_open_min_return
+
+    @staticmethod
+    def intra_open_min_index_return(day, close, index_name, cut_num):
+        if f'SH{index_name}' in close.columns:
+            part_index_return = close[[f'SH{index_name}']].iloc[end_num - 1] / \
+                                close[[f'SH{index_name}']].iloc[begin_num - 1] - 1
+        else:
+            part_index_return = pd.Series([0], index=[f'SH{index_name}'])
+        part_index_return.name = day
+        return part_index_return
 
     @staticmethod
     def intra_open_min_vol(day, volume, cut_num):
@@ -44,9 +52,11 @@ class DailyDealFunSet:
         part_index_return.name = day
         return part_index_return
 
-    # @staticmethod
-    # def intra_target_close(day, close, cut_num):
-    #     close.iloc
+    @staticmethod
+    def intra_target_close(day, close, cut_num):
+        part_target_close = close.iloc[cut_num]
+        part_target_close.name = day
+        return part_target_close
 
 
 class GetIntraData(DailyDealFunSet):
@@ -75,8 +85,7 @@ class GetIntraData(DailyDealFunSet):
         print(day)
         result_list = []
         volume = pd.read_csv(os.path.join(day_path, 'Volume.csv'), index_col=0).astype(float)
-        close = pd.read_csv(os.path.join(day_path, 'Close.csv'), index_col=0).astype(float)
-
+        close = pd.read_csv(os.path.join(day_path, 'Close.csv'), index_col=0).astype(float).fillna(method='ffill')
         for file_name in self.fun_dict.keys():
             fun_name, para_str = file_name.split('|')
             para = self.str_to_list(para_str)
@@ -125,9 +134,17 @@ def main_fun(fun_dict, begin_str, end_str):
 
 
 if __name__ == '__main__':
-    fun_dict = OrderedDict({'intra_open_min_return|15': dict({'data': ['close']}),
-                            'intra_open_min_vol|15': dict({'data': ['volume']})
-                            })
-    begin_str = '20190109'
+    fun_dict = OrderedDict({
+        # 'intra_open_min_return|15': dict({'data': ['close']}),
+        # 'intra_open_min_vol|15': dict({'data': ['volume']}),
+        # 'intra_stock_return|17_235': dict({'data': ['close']}),
+        # 'intra_index_return|000905_17_235': dict({'data': ['close']}),
+        'intra_target_close|30': dict({'data': ['close']}),
+        'intra_index_return|000905_17_235': dict({'data': ['close']}),
+    })
+    begin_str = '20100101'
     end_str = '20190408'
     main_fun(fun_dict, begin_str, end_str)
+
+    # adj_factor = bt.AZ_Load_csv(f'{root_path}/EM_Funda/TRAD_SK_FACTOR1/TAFACTOR.csv')
+    # pre_close = bt.AZ_Load_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_p.csv').shift(1)

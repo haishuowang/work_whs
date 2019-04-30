@@ -60,10 +60,6 @@ def mysql_select(select_col_list, table_name, conn, key_col=None, cond=None, cpu
                                f'FROM {table_name}', conn).values.ravel()
     select_col_str = ', '.join(select_col_list)
 
-    # sql_str = f'SELECT {select_col_str} ' \
-    #           f'FROM {table_name} ' \
-    #           f'WHERE {cond}'
-
     def fetch_data(sids):
         print(f"SELECT {select_col_str} "
               f"FROM {table_name} "
@@ -76,3 +72,14 @@ def mysql_select(select_col_list, table_name, conn, key_col=None, cond=None, cpu
     p = ThreadPool(cpu_num)
     res = pd.concat(p.map(fetch_data, [key_col_list[i: i + step] for i in range(0, len(key_col_list), step)]))
     return res
+
+
+def plot_send_data(raw_df, subject, text=''):
+    figure_save_path = os.path.join('/mnt/mfs/dat_whs', 'tmp_figure')
+    raw_df.plot(legend=True)
+    plt.savefig(f'{figure_save_path}/{subject}.png')
+    plt.close()
+    to = ['whs@yingpei.com']
+    filepath = [f'{figure_save_path}/{subject}.png']
+    send_email.send_email(text, to, filepath, subject)
+

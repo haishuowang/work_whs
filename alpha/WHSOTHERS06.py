@@ -1101,13 +1101,14 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000300|30|True|0.1'
-    exe_str = 'PEG_PARENTNETPROFIT_3Y|col_zscore|5_-1.0@add_fun@PEG_EBIT_3Y|row_zscore_-1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_3Y|row_zscore_-1.0@add_fun@R_OperProfit_sales_Y3YGR|col_zscore|120_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_5Y|row_zscore_-1.0@add_fun@R_NetAssets_s_YOY_First|pnd_vol|60_-1.0@add_fun@' \
-              'R_EPS_s_YOY_First|col_zscore|60_1.0@add_fun@bar_num_12_df|pnd_vol|120_-1.0@add_fun@' \
-              'PEG_OPCF_5Y|pnd_vol|5_-1.0@add_fun@R_EBIT_sales_QTTM|pnd_vol|20_-1.0@add_fun@' \
-              'R_DebtAssets_QTTM|col_zscore|120_1.0'
+    str_1 = 'index_000905|30|False|0.1'
+    exe_str = 'PEG_EBIT_3Y|col_zscore|120_-1.0@add_fun@TVALCNY|pnd_vol|5_-1.0@add_fun@' \
+              'bulletin_num_df_20|col_zscore|60_-1.0@add_fun@R_NetWorkCapital_QTTM|pnd_vol|5_1.0@add_fun@' \
+              'R_ROE_s_First|col_zscore|60_1.0@add_fun@PEG_OPCF_5Y|pnd_vol|5_-1.0@add_fun@' \
+              'R_TotLiab_s_YOY_First|pnd_vol|5_1.0@add_fun@R_MgtExp_sales_s_First|row_zscore_1.0@add_fun@' \
+              'PEG_OPCF_3Y|row_zscore_1.0@add_fun@buy_summary_key_word|pnd_vol|5_-1.0@add_fun@' \
+              'PEG_OPCF_5Y|row_zscore_-1.0'
+
     a = time.time()
     main_fun(str_1, exe_str)
     b = time.time()

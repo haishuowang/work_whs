@@ -78,8 +78,8 @@ class IntraBackTest(FilterFun):
         self.xinx = self.sector_df.index
         self.xnms = self.sector_df.columns
         #
-        bar_num_df = bt.AZ_Load_csv(f'/media/hdd1/DAT_EQT/EM_Funda/dat_whs/bar_num_df.csv')
-        self.bar_roll_num_df = bt.AZ_Rolling_mean(bar_num_df, 10)
+        # bar_num_df = bt.AZ_Load_csv(f'/media/hdd1/DAT_EQT/EM_Funda/dat_whs/bar_num_df.csv')
+        # self.bar_roll_num_df = bt.AZ_Rolling_mean(bar_num_df, 10)
         # 数据文件名
         self.open_min_return_df = self.load_data(f'intra_open_min_return|{cut_num}')
         self.open_min_vol_df = self.load_data(f'intra_open_min_vol|{cut_num}')
@@ -206,39 +206,48 @@ class IntraBackTest(FilterFun):
                 yield '|'.join(['@'.join(list(key_list)), '@'.join(list(signal_sides_list))]), signal_df
 
     def run(self, limit, window, pct, if_hegde):
-        try:
-            self.return_df = self.get_return_table(if_hegde)
-            # 根据数据生成 dict
-            open_min_return_signal_dict = \
-                self.all_filter_signal(self.open_min_return_df, self.sector_df, window, pct, limit)
-            open_min_vol_signal_dict = \
-                self.all_filter_signal(self.open_min_vol_df, self.sector_df, window, pct, limit)
-            bar_roll_num_signal_dict = \
-                self.all_filter_signal(self.bar_roll_num_df, self.sector_df, window, pct, limit)
+        print(self.cut_num, self.end_num, self.index_code, limit, window, pct, if_hegde)
+        # try:
+        self.return_df = self.get_return_table(if_hegde)
+        # 根据数据生成 dict
+        open_min_return_signal_dict = \
+            self.all_filter_signal(self.open_min_return_df, self.sector_df, window, pct, limit)
+        open_min_vol_signal_dict = \
+            self.all_filter_signal(self.open_min_vol_df, self.sector_df, window, pct, limit)
+        vol_df = pd.read_pickle(f'/mnt/mfs/dat_whs/data/new_factor_data/'
+                                f'index_{self.index_code}/vol_p100d.pkl').shift(1)
 
-            suject_suffix = f'{self.index_code}|{limit}|{window}|{pct}|{if_hegde}'
-            signal_dict_list = [open_min_vol_signal_dict, open_min_return_signal_dict, bar_roll_num_signal_dict]
-            mix_signal_dict = self.mul_signal_fun(signal_dict_list)
+        vol_df_signal_dict = \
+            self.all_filter_signal(vol_df, self.sector_df, window, pct, limit)
 
-            self.plot_send_fun(open_min_return_signal_dict, 'open_min_return_signal_list' + suject_suffix)
-            self.plot_send_fun(open_min_vol_signal_dict, 'open_min_vol_signal_list' + suject_suffix)
-            self.plot_send_fun(bar_roll_num_signal_dict, 'bar_roll_num_signal_list' + suject_suffix)
+        # bar_roll_num_signal_dict = \
+        #     self.all_filter_signal(self.bar_roll_num_df, self.sector_df, window, pct, limit)
 
-            self.plot_send_fun_mix(mix_signal_dict, 'mix_signal_list' + suject_suffix)
-        except Exception as error:
-            send_email.send_email(str(error), ['whs@yingpei.com'], [],
-                                  f'[intratest]{self.cut_num}, {self.end_num}, {self.index_code}, '
-                                  f'{limit}, {window}, {pct}, {if_hegde} error')
+        suject_suffix = f'{self.index_code}|{limit}|{window}|{pct}|{if_hegde}'
+        signal_dict_list = [open_min_vol_signal_dict, open_min_return_signal_dict, vol_df_signal_dict]
+        mix_signal_dict = self.mul_signal_fun(signal_dict_list)
+
+        # self.plot_send_fun(open_min_return_signal_dict, 'open_min_return_signal_list' + suject_suffix)
+        # self.plot_send_fun(open_min_vol_signal_dict, 'open_min_vol_signal_list' + suject_suffix)
+        self.plot_send_fun(vol_df_signal_dict, 'vol_df_signal_list' + suject_suffix)
+
+        # 多重filter
+        self.plot_send_fun_mix(mix_signal_dict, 'mix_signal_list' + suject_suffix)
+
+        # except Exception as error:
+        #     send_email.send_email(str(error), ['whs@yingpei.com'], [],
+        #                           f'[intratest]{self.cut_num}, {self.end_num}, {self.index_code}, '
+        #                           f'{limit}, {window}, {pct}, {if_hegde} error')
 
 
 def main_fun(cut_num_list, end_num_list, index_code_list, limit_list, window_list, pct_list, if_hegde_list):
     root_path = '/mnt/mfs/DAT_EQT'
     begin_str, end_str = '20130101', '20190404'
-    pool = Pool(28)
+    pool = Pool(15)
     for cut_num, end_num, index_code in product(cut_num_list, end_num_list, index_code_list):
+
         intra_back_test = IntraBackTest(root_path, begin_str, end_str, cut_num, end_num, index_code)
         for limit, window, pct, if_hegde in product(limit_list, window_list, pct_list, if_hegde_list):
-
             args = (limit, window, pct, if_hegde)
             # intra_back_test.run(*args)
             pool.apply_async(intra_back_test.run, args=args)

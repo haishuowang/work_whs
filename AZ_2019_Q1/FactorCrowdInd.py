@@ -3,6 +3,8 @@ import numpy as np
 import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/mnt/mfs/LIB_ROOT")
 from open_lib.shared_tools import send_email
 from itertools import combinations
 from datetime import datetime
@@ -1046,14 +1048,13 @@ class CorrCheck:
 
 
 def main_fun():
-    str_1 = 'market_top_300to800plus_industry_10_15|5|False|0.1'
-    exe_str = 'TVALCNY|row_zscore_-1.0@add_fun@R_NetROA_s_First|row_zscore_1.0@add_fun@' \
-              'shares|pnd_vol|120_1.0@add_fun@R_OPEX_sales_TTM_First|col_zscore|120_-1.0@add_fun@' \
-              'news_num_df_20|pnd_vol|60_-1.0@add_fun@R_NetIncRecur_s_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperCost_sales_s_First|pnd_vol|60_-1.0@add_fun@R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'stock_tab2_5|pnd_vol|120_1.0@add_fun@R_EPS_s_YOY_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperProfit_sales_Y3YGR|pnd_vol|120_-1.0'
-
+    str_1 = 'market_top_300plus|20|False|0.1'
+    exe_str = 'R_OperProfit_s_YOY_First|row_zscore_1.0@add_fun@TURNRATE|pnd_vol|20_-1.0@add_fun@' \
+              'TVALCNY|pnd_vol|20_-1.0@add_fun@R_RevenueTotPS_s_First|col_zscore|120_1.0@add_fun@' \
+              'R_SalesGrossMGN_First|col_zscore|120_1.0@add_fun@bar_num_12_df|col_zscore|120_-1.0@add_fun@' \
+              'PE_TTM|row_zscore_-1.0@add_fun@ab_grossprofit|row_zscore_1.0@add_fun@' \
+              'lsgg_num_df_20|col_zscore|20_-1.0@add_fun@R_TotProfit_EBIT_First|col_zscore|60_1.0@add_fun@' \
+              'R_SalesNetMGN_s_First|pnd_vol|120_-1.0'
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
 
@@ -1086,30 +1087,126 @@ def main_fun():
     pnl_df.name = alpha_name
 
     # 相关性测试
-    corr_sr = CorrCheck().corr_self_check(pnl_df)
-    print(corr_sr[corr_sr > 0.5])
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    # corr_sr = CorrCheck().corr_self_check(pnl_df)
+    # print(corr_sr)
+    # bt.commit_check(pd.DataFrame(pnl_df))
 
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:
         pos_df['IC01'] = -factor_test.ic_weight * pos_df.sum(axis=1)
-    # pos_df.fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    pos_df.fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+
+
+class FactorCrowdInd:
+    def __init__(self, begin_time, end_time, root_path, sector_name, percent=0.2):
+        begin_date = pd.to_datetime(begin_time)
+        end_date = pd.to_datetime(end_time)
+        self.root_path = root_path
+        return_df = bt.AZ_Load_csv(f'{root_path}/EM_Funda/DERIVED_14/aadj_r.csv')
+        self.return_df = return_df.truncate(before=begin_date, after=end_date)
+        self.xinx = self.return_df.index
+        self.xnms = self.return_df.columns
+        self.sector_name = sector_name
+        self.percent = percent
+        self.factor_path = '/mnt/mfs/dat_whs/data/factor_data'
+        if sector_name.startswith('market_top_300plus') \
+                or sector_name.startswith('index_000300'):
+            self.index_df = self.load_index_data('000300').fillna(0)
+
+        elif sector_name.startswith('market_top_300to800plus') \
+                or sector_name.startswith('index_000905'):
+            self.index_df = self.load_index_data('000905').fillna(0)
+        else:
+            print('error')
+            self.index_df = pd.DataFrame()
+
+    def load_index_data(self, index_name):
+        data = bt.AZ_Load_csv(os.path.join(self.root_path, 'EM_Funda/INDEX_TD_DAILYSYS/CHG.csv'))
+        target_df = data[index_name].reindex(index=self.xinx)
+        return target_df * 0.01
+
+    @staticmethod
+    def row_extre(raw_df, sector_df, percent):
+        raw_df = raw_df * sector_df
+        target_df = raw_df.rank(axis=1, pct=True)
+        target_df[target_df >= 1 - percent] = 1
+        target_df[target_df <= percent] = -1
+        target_df[(target_df > percent) & (target_df < 1 - percent)] = 0
+        return target_df
+
+    def valuation_spread(self, factor_df):
+        signal_df = self.row_extre(factor_df, 1, self.percent) \
+            .reindex(index=self.xinx, columns=self.xnms)
+
+        PB = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/TRAD_SK_REVALUATION/PE_TTM.csv')\
+            .reindex(index=self.xinx, columns=self.xnms)
+        factor_long_value = ((signal_df > 0) * PB).sum(1)
+        factor_short_value = ((signal_df < 0) * PB).sum(1)
+        target_sr = np.log(factor_long_value / factor_short_value)
+        return target_sr
+
+    def pairwise_correlation(self, factor_df):
+        signal_df = self.row_extre(factor_df, 1, self.percent) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        a = (signal_df > 0).astype(int)
+        b = (signal_df < 0).astype(int)
+
+    def long_term_return_reversal(self):
+
+        pass
+
+    def factor_volatility(self, factor_df):
+        signal_df = self.row_extre(factor_df, 1, self.percent) \
+            .reindex(index=self.xinx, columns=self.xnms)
+
+        pnl_df = (self.return_df * signal_df).sum(1)
+        target_sr = pnl_df.std() / (self.index_df * self.return_df.sum(1)).std()
+
+        return target_sr
+
+    def factor_pnl(self, factor_df):
+        signal_df = self.row_extre(factor_df, 1, self.percent) \
+            .reindex(index=self.xinx, columns=self.xnms)
+        pnl_df = (signal_df * self.return_df).sum(1)
+        return pnl_df
+
+    def load_raw_factor(self, file_name):
+        raw_df = pd.read_pickle(f'{self.factor_path}/{self.sector_name}/{file_name}.pkl')
+        raw_df = raw_df.reindex(index=self.xinx)
+        return raw_df
 
 
 if __name__ == '__main__':
-    a = time.time()
-    main_fun()
-    b = time.time()
-    print(b - a)
+    begin_time = '20130101'
+    end_time = '20190401'
+    root_path = '/mnt/mfs/DAT_EQT'
+    sector_name = 'index_000300'
+    factor_crowd_ind = FactorCrowdInd(begin_time, end_time, root_path, sector_name)
 
-    # file_name = 'index_000905_13'
-    # *sector_name_list, target_str = file_name.split('_')
-    # sector_name = '_'.join(sector_name_list)
-    # result_df = pd.read_csv(f'/mnt/mfs/dat_whs/result_new/{sector_name}.csv', header=None)
-    # info_str = result_df.loc[int(target_str)].values[0]
-    # str_1, exe_str = info_str.split('#')
-    # print(str_1)
-    # print(exe_str)
+    factor_name_list = [x[:-4] for x in os.listdir(f'{factor_crowd_ind.factor_path}/{sector_name}')]
+    # import random
+    # for factor_name in random.sample(factor_name_list, 4)[:1]:
+    factor_name = 'news_num_df_60|row_zscore'
+    factor_df = factor_crowd_ind.load_raw_factor(factor_name)
+    target_sr = factor_crowd_ind.valuation_spread(factor_df)
+    pnl_df = factor_crowd_ind.factor_pnl(factor_df)
+    print(target_sr)
+# fut_list = ['IF', 'IC', 'T', 'TF', 'TS', 'IH']
+# fut_list = ['IF', 'IC', 'IH']
+# # fut_list = ['T', 'TF', 'TS']
+# for fut_name in fut_list:
+#     print('*******************************')
+#     print(fut_name)
+#     root_path = f'/mnt/mfs/DAT_FUT/intraday/fut_1mbar/{fut_name}'
+#     for file_name in sorted(os.listdir(root_path)):
+#         if len(file_name) == len('IC1901.CFE') or len(file_name) == len('T1901.CFE'):
+#             print(file_name)
+#             data = bt.AZ_Load_csv(f'{root_path}/{file_name}')
+#
+#             # if len(data[data['Time'] == '11:31']) > 0:
+#             #     print(data[data['Time'] == '11:31'])
+#                 # print(file_name)
+#                 # data[(data.index.dt.strftime('%H:%S') != '11:31')].to_csv(f'{root_path}/{file_name}', sep='|')
+#             if len(data[data['Time'] == '15:16']) > 0:
+#                 print(data[data['Time'] == '15:16'])

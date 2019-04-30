@@ -85,7 +85,7 @@ class DataDeal(SectorData, DiscreteClass, ContinueClass):
             save_file = f'{file_name}|{fun_name}|{para_str}'
         else:
             save_file = f'{file_name}|{fun_name}'
-        if save_file == 'R_NetAssets_s_YOY_First|col_zscore|120':
+        if save_file == 'R_COMMPAY_QTTM|pnd_vol|20':
             print(1)
         save_path = f'{self.save_sector_path}/{save_file}.pkl'
         target_df.to_pickle(save_path)
@@ -114,7 +114,6 @@ class DataDeal(SectorData, DiscreteClass, ContinueClass):
         else:
             raw_df = bt.AZ_Load_csv(f'{self.root_path}/EM_Funda/daily/{file_name}.csv') \
                 .reindex(index=self.xinx, columns=self.xnms).round(4)
-
         return raw_df
 
     def fun_info_dict_deal(self, data_name, raw_df, fun_info_dict):
@@ -184,7 +183,7 @@ def check_fun(data_1, data_2):
 
 
 if __name__ == '__main__':
-    begin_date = '20100101'
+    begin_date = '20130101'
     end_date = '20190411'
     root_path = '/mnt/mfs/DAT_EQT'
     sector_name_list = [
@@ -206,16 +205,21 @@ if __name__ == '__main__':
     ]
 
     data_name_list = [
-        'R_NetAssets_s_YOY_First',
+        'PEG_EBIT_3Y',
+        'PEG_EBIT_5Y',
+        'PEG_OPCF_3Y',
+        'PEG_OPCF_5Y',
+        'PEG_OPERATEREVE_3Y',
+        'PEG_OPERATEREVE_5Y',
+        'PEG_PARENTNETPROFIT_3Y',
+        'PEG_PARENTNETPROFIT_5Y',
     ]
-
-    # 'R_NetAssets_s_YOY_First|col_zscore|120'
     a = time.time()
     for sector_name in sector_name_list:
         print('**********************************************************')
         print(f'{sector_name}')
         data_deal = DataDeal(begin_date, end_date, root_path, sector_name)
-        data_deal.common_fun(base_data_dict.keys())
-        # data_deal.common_fun(data_name_list)
+        # data_deal.common_fun(base_data_dict.keys())
+        data_deal.common_fun(data_name_list)
     b = time.time()
     print(f'花费时间：{b-a}')

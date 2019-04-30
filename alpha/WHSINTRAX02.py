@@ -915,18 +915,15 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
             exe_list = exe_str.split('@')
             way_str_1 = exe_list[0].split('_')[-1]
             name_1 = '_'.join(exe_list[0].split('_')[:-1])
-            factor_1 = data_deal.count_return_data(name_1) * float(way_str_1)
-            factor_1_r = self.load_raw_factor(name_1) * float(way_str_1)
+            factor_1 = data_deal.count_return_data(name_1, z_score=False) * float(way_str_1)
             for i in range(int((len(exe_list) - 1) / 2)):
                 fun_str = exe_list[2 * i + 1]
                 way_str_2 = exe_list[2 * i + 2].split('_')[-1]
                 name_2 = '_'.join(exe_list[2 * i + 2].split('_')[:-1])
                 print(name_2)
                 factor_2 = data_deal.count_return_data(name_2) * float(way_str_2)
-                factor_2_r = self.load_raw_factor(name_2) * float(way_str_2)
                 self.check_fun(factor_2, factor_2_r)
                 factor_1 = getattr(self, fun_str)(factor_1, factor_2)
-                factor_1_r = getattr(self, fun_str)(factor_1_r, factor_2_r)
                 self.check_fun(factor_1, factor_1_r)
             return factor_1
 

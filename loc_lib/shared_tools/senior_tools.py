@@ -1,5 +1,5 @@
 import sys
-
+import os
 sys.path.append('/mnt/mfs')
 import work_whs.loc_lib.shared_tools.back_test as bt
 from sklearn import cluster, datasets, mixture
@@ -21,3 +21,4 @@ class Signal:
         target_df[target_df <= percent] = -1
         target_df[(target_df > percent) & (target_df < 1 - percent)] = 0
         return target_df
+

@@ -3,6 +3,8 @@ import numpy as np
 import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/mnt/mfs/LIB_ROOT")
 from open_lib.shared_tools import send_email
 from itertools import combinations
 from datetime import datetime
@@ -1046,14 +1048,13 @@ class CorrCheck:
 
 
 def main_fun():
-    str_1 = 'market_top_300to800plus_industry_10_15|5|False|0.1'
-    exe_str = 'TVALCNY|row_zscore_-1.0@add_fun@R_NetROA_s_First|row_zscore_1.0@add_fun@' \
-              'shares|pnd_vol|120_1.0@add_fun@R_OPEX_sales_TTM_First|col_zscore|120_-1.0@add_fun@' \
-              'news_num_df_20|pnd_vol|60_-1.0@add_fun@R_NetIncRecur_s_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperCost_sales_s_First|pnd_vol|60_-1.0@add_fun@R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'stock_tab2_5|pnd_vol|120_1.0@add_fun@R_EPS_s_YOY_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperProfit_sales_Y3YGR|pnd_vol|120_-1.0'
-
+    str_1 = 'market_top_300plus|20|False|0.1'
+    exe_str = 'R_OperProfit_s_YOY_First|row_zscore_1.0@add_fun@TURNRATE|pnd_vol|20_-1.0@add_fun@' \
+              'TVALCNY|pnd_vol|20_-1.0@add_fun@R_RevenueTotPS_s_First|col_zscore|120_1.0@add_fun@' \
+              'R_SalesGrossMGN_First|col_zscore|120_1.0@add_fun@bar_num_12_df|col_zscore|120_-1.0@add_fun@' \
+              'PE_TTM|row_zscore_-1.0@add_fun@ab_grossprofit|row_zscore_1.0@add_fun@' \
+              'lsgg_num_df_20|col_zscore|20_-1.0@add_fun@R_TotProfit_EBIT_First|col_zscore|60_1.0@add_fun@' \
+              'R_SalesNetMGN_s_First|pnd_vol|120_-1.0'
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
 
@@ -1086,17 +1087,15 @@ def main_fun():
     pnl_df.name = alpha_name
 
     # 相关性测试
-    corr_sr = CorrCheck().corr_self_check(pnl_df)
-    print(corr_sr[corr_sr > 0.5])
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    # corr_sr = CorrCheck().corr_self_check(pnl_df)
+    # print(corr_sr)
+    # bt.commit_check(pd.DataFrame(pnl_df))
 
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:
         pos_df['IC01'] = -factor_test.ic_weight * pos_df.sum(axis=1)
-    # pos_df.fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    pos_df.fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
 
 
 if __name__ == '__main__':
@@ -1104,12 +1103,3 @@ if __name__ == '__main__':
     main_fun()
     b = time.time()
     print(b - a)
-
-    # file_name = 'index_000905_13'
-    # *sector_name_list, target_str = file_name.split('_')
-    # sector_name = '_'.join(sector_name_list)
-    # result_df = pd.read_csv(f'/mnt/mfs/dat_whs/result_new/{sector_name}.csv', header=None)
-    # info_str = result_df.loc[int(target_str)].values[0]
-    # str_1, exe_str = info_str.split('#')
-    # print(str_1)
-    # print(exe_str)

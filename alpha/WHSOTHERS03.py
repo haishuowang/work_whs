@@ -1057,12 +1057,12 @@ class CorrCheck:
 
 
 def main_fun():
-    str_1 = 'index_000300|30|False|0.2'
-    exe_str = 'PEG_PARENTNETPROFIT_3Y|col_zscore|60_-1.0@add_fun@PEG_PARENTNETPROFIT_3Y|pnd_vol|60_-1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_5Y|pnd_vol|60_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|row_zscore_-1.0@add_fun@' \
-              'R_SalesGrossMGN_First|col_zscore|60_1.0@add_fun@PEG_EBIT_3Y|row_zscore_-1.0@add_fun@' \
-              'ab_grossprofit|row_zscore_1.0@add_fun@R_EBITDA_IntDebt_QTTM|pnd_vol|120_-1.0@add_fun@' \
-              'RZCHE|pnd_vol|20_-1.0@add_fun@R_INVENTORY_QTTM|pnd_vol|5_1.0@add_fun@PEG_OPCF_5Y|pnd_vol|60_1.0'
+    str_1 = 'index_000300|30|True|0.1'
+    exe_str = 'PEG_PARENTNETPROFIT_3Y|col_zscore|5_-1.0@add_fun@PEG_EBIT_3Y|row_zscore_-1.0@add_fun@' \
+              'PEG_PARENTNETPROFIT_3Y|row_zscore_-1.0@add_fun@PEG_OPCF_5Y|row_zscore_-1.0@add_fun@' \
+              'PEG_OPCF_3Y|row_zscore_-1.0@add_fun@R_WorkCapital_QSD4Y|col_zscore|20_-1.0@add_fun@' \
+              'R_SUMASSET_First|col_zscore|60_1.0@add_fun@R_NetInc_TotProfit_s_First|pnd_vol|5_1.0@add_fun@' \
+              'RQMCL|pnd_vol|5_1.0@add_fun@news_num_df_5|pnd_vol|5_-1.0'
 
     alpha_name = os.path.basename(__file__).split('.')[0]
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')

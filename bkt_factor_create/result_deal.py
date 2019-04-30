@@ -185,6 +185,15 @@ base_data_dict = OrderedDict({
     'ab_ab_pre_rec': '/EM_Funda/dat_whs/ab_ab_pre_rec.csv',
     'ab_sale_mng_exp': '/EM_Funda/dat_whs/ab_sale_mng_exp.csv',
     'ab_grossprofit': '/EM_Funda/dat_whs/ab_grossprofit.csv',
+
+    'PEG_EBIT_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_EBIT_3Y.csv',
+    'PEG_EBIT_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_EBIT_5Y.csv',
+    'PEG_OPCF_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPCF_3Y.csv',
+    'PEG_OPCF_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPCF_5Y.csv',
+    'PEG_OPERATEREVE_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPERATEREVE_3Y.csv',
+    'PEG_OPERATEREVE_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_OPERATEREVE_5Y.csv',
+    'PEG_PARENTNETPROFIT_3Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_PARENTNETPROFIT_3Y.csv',
+    'PEG_PARENTNETPROFIT_5Y': '/EM_Funda/DERIVED_EVA/PEG_precast/PEG_PARENTNETPROFIT_5Y.csv',
 })
 
 
@@ -935,16 +944,49 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
         # return aa, bb, d, c
 
     def get_mix_pnl_df(self, data_deal, exe_str, cut_date, percent):
+        sector_df_r = SectorData(self.root_path).load_sector_data \
+            (self.begin_date, self.end_date, self.sector_name)
+
         def tmp_fun():
             exe_list = exe_str.split('@')
             way_str_1 = exe_list[0].split('_')[-1]
             name_1 = '_'.join(exe_list[0].split('_')[:-1])
+            print(name_1)
             factor_1 = data_deal.count_return_data(name_1, z_score=False) * float(way_str_1)
+
+            # factor_1_r = self.load_zscore_factor(name_1, sector_df_r) * float(way_str_1)
+            factor_1_r = self.load_raw_factor(name_1) * float(way_str_1)
+            self.check_fun(factor_1, factor_1_r)
             for i in range(int((len(exe_list) - 1) / 2)):
                 fun_str = exe_list[2 * i + 1]
                 way_str_2 = exe_list[2 * i + 2].split('_')[-1]
                 name_2 = '_'.join(exe_list[2 * i + 2].split('_')[:-1])
+                print(name_2)
+                # ####################
+                # if len(name_2.split('|')) == 3:
+                #     str_to_num = lambda x: float(x) if '.' in x else int(x)
+                #     file_name, fun_name, para_str = name_2.split('|')
+                #     para = [str_to_num(x) for x in para_str.split('_')]
+                # else:
+                #     file_name, fun_name = name_2.split('|')
+                #     para = []
+                #
+                # raw_df = self.load_raw_data(file_name)
+                # fun = getattr(self, fun_name)
+                #
+                # sector_df_r = SectorData(self.root_path).load_sector_data\
+                #     (self.begin_date, self.end_date, self.sector_name)
+                # target_df = fun(raw_df, sector_df_r, *para)
+                # factor_2_r = self.load_raw_factor(name_2)
+                #
+                # factor_2 = bt.AZ_Col_zscore(target_df, sector_df_r)
+                # factor_2_r = bt.AZ_Col_zscore(factor_2_r, sector_df_r)
+
+                # ####################
                 factor_2 = data_deal.count_return_data(name_2) * float(way_str_2)
+                factor_2_r = self.load_zscore_factor(name_2, sector_df_r) * float(way_str_2)
+                self.check_fun(factor_2, factor_2_r)
+
                 factor_1 = getattr(self, fun_str)(factor_1, factor_2)
             return factor_1
 
@@ -1037,24 +1079,17 @@ class CorrCheck:
         print('______________________________________')
         return 0
 
-    def corr_self_check(self, pnl_df):
+    def corr_self_check(self, pnl_df, pnl_save_path):
         assert type(pnl_df) == pd.Series
-        root_path = '/mnt/mfs/dat_whs/result_new/tmp_pnl'
-        all_pnl_df = self.get_all_pnl_df(root_path)
+        all_pnl_df = self.get_all_pnl_df(pnl_save_path)
         corr_sr = all_pnl_df.corrwith(pnl_df, axis=0)
         return corr_sr
 
 
-def main_fun():
-    str_1 = 'market_top_300to800plus_industry_10_15|5|False|0.1'
-    exe_str = 'TVALCNY|row_zscore_-1.0@add_fun@R_NetROA_s_First|row_zscore_1.0@add_fun@' \
-              'shares|pnd_vol|120_1.0@add_fun@R_OPEX_sales_TTM_First|col_zscore|120_-1.0@add_fun@' \
-              'news_num_df_20|pnd_vol|60_-1.0@add_fun@R_NetIncRecur_s_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperCost_sales_s_First|pnd_vol|60_-1.0@add_fun@R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'stock_tab2_5|pnd_vol|120_1.0@add_fun@R_EPS_s_YOY_First|pnd_vol|60_1.0@add_fun@' \
-              'R_OperProfit_sales_Y3YGR|pnd_vol|120_-1.0'
-
-    alpha_name = os.path.basename(__file__).split('.')[0]
+def main_fun(str_1, exe_str, i):
+    print(i)
+    print(str_1)
+    print(exe_str)
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
 
     hold_time = int(hold_time_str)
@@ -1065,14 +1100,14 @@ def main_fun():
     else:
         if_only_long = True
 
-    root_path = '/media/hdd1/DAT_EQT'
-    # root_path = '/mnt/mfs/DAT_EQT'
+    # root_path = '/media/hdd1/DAT_EQT'
+    root_path = '/mnt/mfs/DAT_EQT'
     if_save = True
     if_new_program = True
 
     begin_date = pd.to_datetime('20130101')
-    # end_date = pd.to_datetime('20190411')
-    end_date = datetime.now()
+    end_date = pd.to_datetime('20190411')
+    # end_date = datetime.now()
     cut_date = pd.to_datetime('20180101')
     lag = 2
     return_file = ''
@@ -1083,33 +1118,52 @@ def main_fun():
     data_deal = DataDeal(begin_date, end_date, root_path, sector_name)
     # 生成回测脚本
     info_df, pnl_df, pos_df = factor_test.get_mix_pnl_df(data_deal, exe_str, cut_date, percent)
-    pnl_df.name = alpha_name
-
-    # 相关性测试
-    corr_sr = CorrCheck().corr_self_check(pnl_df)
-    print(corr_sr[corr_sr > 0.5])
-    bt.commit_check(pd.DataFrame(pnl_df))
+    pnl_df.name = f'{sector_name}_{i}'
     print(info_df)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
-
-    if factor_test.if_weight != 0:
-        pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
-    if factor_test.ic_weight != 0:
-        pos_df['IC01'] = -factor_test.ic_weight * pos_df.sum(axis=1)
-    # pos_df.fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    # 相关性测试
+    pnl_save_path = '/mnt/mfs/dat_whs/result_new/tmp_pnl/evangle'
+    corr_sr = CorrCheck().corr_self_check(pnl_df, pnl_save_path)
+    print(corr_sr[corr_sr > 0.5])
+    result_df, corr_info_df = bt.commit_check(pd.DataFrame(pnl_df))
+    if result_df.prod()[0] == 1 and len(corr_sr[corr_sr > 0.6]) == 0 and info_df['pot'] > 50:
+        bt.AZ_Path_create(pnl_save_path)
+        pnl_df.to_pickle(f'{pnl_save_path}/{sector_name}_{i}')
+        plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), f'[new framewor result]{sector_name}_{i}',
+                         pd.DataFrame(info_df).to_html() + corr_info_df.to_html() +
+                         pd.DataFrame(corr_sr[corr_sr > 0.5]).to_html())
+        print('success')
+    else:
+        print('fail')
+    return info_df, pnl_df, pos_df
 
 
 if __name__ == '__main__':
-    a = time.time()
-    main_fun()
-    b = time.time()
-    print(b - a)
+    sector_name_list = [
+        'index_000300',
+        'index_000905',
+        'market_top_300plus',
+        'market_top_300plus_industry_10_15',
+        'market_top_300plus_industry_20_25_30_35',
+        'market_top_300plus_industry_40',
+        'market_top_300plus_industry_45_50',
+        'market_top_300plus_industry_55',
 
-    # file_name = 'index_000905_13'
-    # *sector_name_list, target_str = file_name.split('_')
-    # sector_name = '_'.join(sector_name_list)
-    # result_df = pd.read_csv(f'/mnt/mfs/dat_whs/result_new/{sector_name}.csv', header=None)
-    # info_str = result_df.loc[int(target_str)].values[0]
-    # str_1, exe_str = info_str.split('#')
-    # print(str_1)
-    # print(exe_str)
+        'market_top_300to800plus',
+        'market_top_300to800plus_industry_10_15',
+        'market_top_300to800plus_industry_20_25_30_35',
+        'market_top_300to800plus_industry_40',
+        'market_top_300to800plus_industry_45_50',
+        'market_top_300to800plus_industry_55'
+    ]
+    pool = Pool(20)
+    for sector_name in sector_name_list:
+        result_df = pd.read_csv(f'/mnt/mfs/dat_whs/result_new/evangle/{sector_name}.csv', header=None)
+        for i in result_df.index:
+            print('*******************************************')
+            info_str = result_df.loc[i].values[0]
+            str_1, exe_str = info_str.split('#')
+
+            a = time.time()
+            info_df, pnl_df, pos_df = main_fun(str_1, exe_str, i)
+            b = time.time()
+            print(b - a)

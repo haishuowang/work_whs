@@ -675,11 +675,9 @@ class FactorTestBase:
         # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
-        limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
-        limit_buy_sell_df_c.iloc[-1] = 1
+        limit_buy_sell_df_c = limit_buy_sell_df
 
-        suspendday_df_c = suspendday_df.shift(-1)
-        suspendday_df_c.iloc[-1] = 1
+        suspendday_df_c = suspendday_df
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
         # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
@@ -1101,13 +1099,14 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000300|30|True|0.1'
-    exe_str = 'PEG_PARENTNETPROFIT_3Y|col_zscore|5_-1.0@add_fun@PEG_EBIT_3Y|row_zscore_-1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_3Y|row_zscore_-1.0@add_fun@R_OperProfit_sales_Y3YGR|col_zscore|120_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_5Y|row_zscore_-1.0@add_fun@R_NetAssets_s_YOY_First|pnd_vol|60_-1.0@add_fun@' \
-              'R_EPS_s_YOY_First|col_zscore|60_1.0@add_fun@bar_num_12_df|pnd_vol|120_-1.0@add_fun@' \
-              'PEG_OPCF_5Y|pnd_vol|5_-1.0@add_fun@R_EBIT_sales_QTTM|pnd_vol|20_-1.0@add_fun@' \
-              'R_DebtAssets_QTTM|col_zscore|120_1.0'
+    str_1 = 'market_top_300plus|30|False|0.1'
+    exe_str = 'R_EPS_s_YOY_First|row_zscore_1.0@add_fun@PEG_PARENTNETPROFIT_5Y|col_zscore|5_-1.0@add_fun@' \
+              'PEG_EBIT_3Y|col_zscore|5_-1.0@add_fun@PEG_EBIT_3Y|row_zscore_-1.0@add_fun@' \
+              'PEG_PARENTNETPROFIT_5Y|row_zscore_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|pnd_vol|60_-1.0@add_fun@' \
+              'PEG_PARENTNETPROFIT_3Y|row_zscore_-1.0@add_fun@stock_tab2_1|col_zscore|120_1.0@add_fun@' \
+              'PEG_EBIT_3Y|col_zscore|60_-1.0@add_fun@R_NetIncRecur_QTTM|col_zscore|20_1.0@add_fun@' \
+              'PEG_EBIT_5Y|col_zscore|20_-1.0'
+
     a = time.time()
     main_fun(str_1, exe_str)
     b = time.time()

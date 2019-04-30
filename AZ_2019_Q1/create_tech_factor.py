@@ -477,6 +477,7 @@ class FactorTestSector(mfrh.FactorTest):
             #                      file_name,
             #                      text='|'.join(['|'.join(fun_path), '|'.join([str(x) for x in result_list])]))
             # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), 'test', text='|'.join([str(x) for x in result_list]))
+            print(sp_in, pot_in)
             if bt.AZ_Sharpe_y(pnl_df) > 0:
                 return daily_pos, bt.AZ_Sharpe_y(pnl_df)
             else:
@@ -803,7 +804,6 @@ class TechFactor(FunSet):
                 pass
 
     def bkt_fpe_1(self, data_price_list, data_other_list, fun_name_str, file_name_str):
-        # file_name_str = 'fun_path1617|[]|pnd_continue_ud||div||pnd_col_extre|17_0.3|1'
         _, all_para_str, other_fun_str, other_para_str, combine_fun_str, combine_para_str, \
         signal_fun_str, signal_para_str, _ = file_name_str.split('|')
         fun_name_list = fun_name_str.split('|')
@@ -944,8 +944,8 @@ class TechFactor(FunSet):
         print('TEST_BEGIN')
         data_list = list(self.data_info_set.keys())
         data_list.remove('volume')
-        all_para_list = [('close',)]
-        # all_para_list = list(combinations(data_list, 2))
+        # all_para_list = [('close',)]
+        all_para_list = list(combinations(data_list, 2))
 
         # all_para_list = list(combinations(data_list, 1)) + list(combinations(data_list, 2)) + \
         #                 list(combinations(data_list, 3)) + list(combinations(data_list, 4))
@@ -965,7 +965,7 @@ class TechFactor(FunSet):
     def mix_test_fun(self, portfolio_index):
         target_pos = pd.DataFrame()
         for select_name in portfolio_index:
-            data_name, fun_name, file_name = select_name.split('@')
+            sector_hold_ls, data_name, fun_name, file_name = select_name.split('@')
             # 生成signal
             daily_pos = self.single_test_fun(data_name, fun_name, file_name)
             target_pos = target_pos.add(daily_pos, fill_value=0)

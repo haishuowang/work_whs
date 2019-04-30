@@ -70,7 +70,8 @@ class TaobaoFutDeal:
             if len(self.deal_info_dict[contract_name]) > 1:
                 print(contract_name, '!!!!!!')
             for year_name in self.deal_info_dict[contract_name]:
-                raw_df = pd.read_csv(f'{self.root_path}/{year_name}/{contract_name}.CFE',
+                print(year_name, contract_name)
+                raw_df = pd.read_csv(f'{self.root_path}/{year_name}/{contract_name}.csv',
                                      encoding='gbk', usecols=self.usecols)
                 raw_df.columns = self.columns_list
                 result_list.append(raw_df)
@@ -92,6 +93,7 @@ class TaobaoFutDeal:
         pool = Pool(20)
         for contract_name in list(deal_info_dict.keys()):
             args = (contract_name,)
+            # self.part_deal_fun(*args)
             pool.apply_async(self.part_deal_fun, args=args)
         pool.close()
         pool.join()
@@ -133,6 +135,15 @@ class ZYYFutDeal:
                 pass
         return deal_info_dict
 
+    def bad_time_deal(self, raw_df, fut_name):
+        if fut_name in ['IF', 'IC', 'IH']:
+            raw_df['Time'].replace('15:00', '14:59', inplace=True)
+            raw_df['Time'].replace('11:30', '11:29', inplace=True)
+        elif fut_name in ['T', 'TF', 'TS']:
+            raw_df['Time'].replace('11:30', '11:29', inplace=True)
+            raw_df['Time'].replace('15:15', '15:14', inplace=True)
+        return raw_df
+
     def deal_daily_fun(self, file_name):
         raw_df = pd.read_csv(f'{self.root_path}/FIN_FUTURE_DATA/{file_name}.csv', encoding='GBK',
                              usecols=self.usecols)
@@ -144,11 +155,9 @@ class ZYYFutDeal:
                 raw_df[['New', 'Volume', 'OpenInterest', 'Turnover']] = \
                     raw_df[['New', 'Volume', 'OpenInterest', 'Turnover']].astype(float)
             year, month, day, contract_id, _, _ = file_name.split('_')
-
             raw_df['Time'] = np.array([x[:5] for x in raw_df['TradeDate'].values])
-
+            raw_df = self.bad_time_deal(raw_df, re.sub('\d', '', contract_id))
             raw_df['TradeDate'] = pd.to_datetime(f'{year}-{month}-{day} ' + raw_df['Time'])
-
             price_df = raw_df.groupby(['TradeDate'])['New'].apply(lambda x: {
                 'High': max(x),
                 'Open': x.iloc[0],
@@ -165,7 +174,8 @@ class ZYYFutDeal:
             target_df.index = target_df.index + timedelta(minutes=1)
             target_df['Time'] = [x.strftime('%H:%M') for x in target_df.index]
             # 过滤时间段
-            target_df = target_df[(target_df['Time'] > '09:00') & (target_df['Time'] <= '15:00')]
+            target_df = target_df[(target_df['Time'] > '09:00') & (target_df['Time'] <= '15:15')]
+
             return target_df
         else:
             return pd.DataFrame()
@@ -178,6 +188,7 @@ class ZYYFutDeal:
         return target_df
 
     def part_run(self, contract_id):
+
         try:
             print(contract_id)
             fut_name = re.sub('\d', '', contract_id)
@@ -190,19 +201,20 @@ class ZYYFutDeal:
             else:
                 target_df = tmp_df[self.columns_sorted]
                 print(1)
-            target_df[self.columns_sorted].to_csv(save_path, sep='|')
+            print("hahah")
+            # target_df[self.columns_sorted].to_csv(save_path, sep='|')
         except Exception as error:
             print(error)
 
     def run(self):
-        # pool = Pool(20)
+        pool = Pool(20)
         for contract_id in self.deal_info_dict.keys():
-            self.part_run(contract_id)
-        #     pool.apply_async(self.part_run, (contract_id,))
-        # pool.close()
-        # pool.join()
+            # self.part_run(contract_id)
+            pool.apply_async(self.part_run, (contract_id,))
+        pool.close()
+        pool.join()
 
-    def part_update(self, contract_id, file_name):
+    def part_update(self, contract_id, file_name, target_date):
         print(contract_id)
         fut_name = re.sub('\d', '', contract_id)
         save_path = f'{self.save_root_path}/{fut_name}/{contract_id}.CFE'
@@ -210,19 +222,29 @@ class ZYYFutDeal:
         print(save_path)
         if os.path.exists(save_path):
             raw_df = pd.read_csv(save_path, sep='|', index_col=0)
+            raw_df = raw_df[raw_df['Date'] != target_date.strftime('%Y-%m-%d')]
             target_df = raw_df.combine_first(tmp_df)[self.columns_sorted]
         else:
             target_df = tmp_df[self.columns_sorted]
         save_fun(target_df[self.columns_sorted], save_path)
+        # print('haha')
 
     def update(self, target_date):
         deal_info_dict = self.get_deal_date_dict(target_date)
         for contract_id in deal_info_dict.keys():
             print(deal_info_dict[contract_id])
-            self.part_update(contract_id, deal_info_dict[contract_id][0])
+            self.part_update(contract_id, deal_info_dict[contract_id][0], target_date)
 
 
 if __name__ == '__main__':
-    target_date = datetime.now()
-    zyy_fut_deal = ZYYFutDeal()
-    zyy_fut_deal.update(target_date)
+    # taobao_fut_deal = TaobaoFutDeal()
+    # taobao_fut_deal.run()
+    #
+    # target_date = datetime.now()
+    # zyy_fut_deal = ZYYFutDeal()
+    # target_date = pd.to_datetime('20190401')
+    # while target_date < pd.to_datetime('20190420'):
+    #     print(target_date)
+    #     zyy_fut_deal.update(target_date)
+    #     target_date += timedelta(days=1)
+    pass
