@@ -531,7 +531,7 @@ def main_fun():
     ]
 
     hold_time_list = [5, 10, 20]
-    for if_only_long in [False, True]:
+    for if_only_long in [True]:
         for sector_name in sector_name_list:
             for percent in [0.1, 0.2]:
                 for hold_time in hold_time_list:
