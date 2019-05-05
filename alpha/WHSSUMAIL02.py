@@ -1082,17 +1082,14 @@ def main_fun(str_1, exe_str):
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:
         pos_df['IC01'] = -factor_test.ic_weight * pos_df.sum(axis=1)
-    pos_df.fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    pos_df.round(5).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
 
 
 if __name__ == '__main__':
     str_1 = 'index_000905|5|True|0.1'
-    exe_str = 'R_EPS_s_First|row_zscore_1.0@add_fun@bar_num_7_df|row_zscore_-1.0@add_fun@' \
-              'R_TotRev_TTM_Y3YGR|col_zscore|120_1.0@add_fun@R_ParentProfit_s_POP_First|row_zscore_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_5Y|col_zscore|60_-1.0@add_fun@R_NetInc_TotProfit_s_First|pnd_vol|5_1.0@add_fun@' \
-              'R_DEFERTAX_QTTM|pnd_vol|120_1.0@add_fun@lsgg_num_df_5|pnd_vol|5_-1.0@add_fun@' \
-              'R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@R_FinExp_sales_s_First|row_zscore_-1.0@add_fun@' \
-              'R_Cashflow_s_YOY_First|col_zscore|120_-1.0'
+    exe_str = 'PEG_EBIT_3Y|col_zscore|120_-1.0@add_fun@bar_num_7_df|pnd_vol|20_-1.0@add_fun@' \
+              'buy_summary_key_word|pnd_vol|5_-1.0@add_fun@R_OperProfit_s_YOY_First|pnd_vol|60_-1.0@add_fun@' \
+              'aadj_p_LOW|pnd_vol|60_1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

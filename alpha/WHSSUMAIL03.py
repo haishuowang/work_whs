@@ -1082,7 +1082,7 @@ def main_fun(str_1, exe_str):
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:
         pos_df['IC01'] = -factor_test.ic_weight * pos_df.sum(axis=1)
-    pos_df.fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
+    pos_df.round(5).fillna(0).to_csv(f'/mnt/mfs/AAPOS/{alpha_name}.pos', sep='|', index_label='Date')
 
 
 if __name__ == '__main__':
