@@ -10,7 +10,7 @@ root_path = '/mnt/mfs/DAT_FUT'
 class FutData:
     def __init__(self, root_path):
         self.root_path = root_path
-        self.act_info_df = bt.AZ_Load_csv(f'{root_path}/day/DailyPX/Contract')
+        self.act_info_df = bt.AZ_Load_csv(f'{root_path}/DailyPX/Contract')
 
     def load_fut_data(self, fut_name, file_name):
         raw_df = bt.AZ_Load_csv(f'{self.root_path}/day/union/{fut_name}/{file_name}')
@@ -41,6 +41,17 @@ class FutData:
         raw_df = bt.AZ_Load_csv(f'{self.root_path}/Inventory/{fut_name}/{file_name}.csv')
         return raw_df
 
-    # def load_act_intra_data(self):
+    def load_act_intra_data(self):
+        pass
 
-    # def load_intra_data(self):
+    def load_intra_data(self, contract_id, usecols_list):
+        fut_name = re.sub('\d', '', contract_id)
+        data = bt.AZ_Load_csv(f'{self.root_path}/intraday/fut_1mbar/{fut_name}/{contract_id}',
+                              usecols=['TradeDate', 'Date', 'Time', 'Close'] + usecols_list)
+        return data
+
+
+if __name__ == '__main__':
+    fut_data = FutData('/mnt/mfs/DAT_FUT')
+    close_df = fut_data.load_intra_data('IC1906.CFE', 'Close')
+    print(close_df)

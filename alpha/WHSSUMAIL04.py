@@ -1043,8 +1043,6 @@ class CorrCheck:
 
 
 def main_fun(str_1, exe_str):
-    print(str_1)
-    print(exe_str)
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
     alpha_name = os.path.basename(__file__).split('.')[0]
     hold_time = int(hold_time_str)

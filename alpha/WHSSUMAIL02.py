@@ -1043,8 +1043,6 @@ class CorrCheck:
 
 
 def main_fun(str_1, exe_str):
-    print(str_1)
-    print(exe_str)
     sector_name, hold_time_str, if_only_long, percent_str = str_1.split('|')
     alpha_name = os.path.basename(__file__).split('.')[0]
     hold_time = int(hold_time_str)
@@ -1074,8 +1072,8 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
 
     # 相关性测试
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
+    # bt.commit_check(pd.DataFrame(pnl_df))
+    # print(info_df)
 
     plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
