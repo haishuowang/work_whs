@@ -11,6 +11,25 @@ engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:33
 conn = engine.connect()
 
 
+def mysql_select(select_col_list, table_name, conn, key_col=None, cond=None, cpu_num=20, step=100):
+    key_col_list = pd.read_sql(f'SELECT DISTINCT {key_col} '
+                               f'FROM {table_name}', conn).values.ravel()
+    select_col_str = ', '.join(select_col_list)
+
+    def fetch_data(sids):
+        print(f"SELECT {select_col_str} "
+              f"FROM {table_name} "
+              f"WHERE {key_col} in {str(tuple(sids))} AND BulletinType = 'lsgg'")
+        lsgg_df = pd.read_sql(f"SELECT {select_col_str} "
+                              f"FROM {table_name} "
+                              f"WHERE {key_col} in {str(tuple(sids))} AND BulletinType = 'lsgg'", conn)
+        return lsgg_df
+
+    p = ThreadPool(cpu_num)
+    res = pd.concat(p.map(fetch_data, [key_col_list[i: i + step] for i in range(0, len(key_col_list), step)]))
+    return res
+
+
 def fun(x):
     # if '董事' in x:
     if x.startswith('010'):

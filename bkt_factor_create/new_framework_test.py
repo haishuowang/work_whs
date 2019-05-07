@@ -5,6 +5,8 @@ sys.path.append('/mnt/mfs')
 from work_whs.loc_lib.pre_load import *
 from work_whs.bkt_factor_create.base_fun_import import DiscreteClass, ContinueClass
 from multiprocessing import Lock
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class TrainFunSet:
@@ -226,56 +228,16 @@ class FactorTestBase:
 
     def signal_to_pos_ls(self, signal_df, ls_para):
         if ls_para == 'l':
-            signal_df_up = (signal_df > 0).astype(int)
+            signal_df_up = signal_df[signal_df > 0]
             daily_pos = self.signal_to_pos(signal_df_up)
         elif ls_para == 's':
-            signal_df_dn = (signal_df < 0).astype(int)
+            signal_df_dn = signal_df[signal_df < 0].abs()
             daily_pos = self.signal_to_pos(signal_df_dn)
         elif ls_para == 'ls':
             daily_pos = self.signal_to_pos(signal_df)
         else:
             daily_pos = self.signal_to_pos(signal_df)
         return daily_pos
-
-    def save_load_control(self, tech_name_list, funda_name_list, suffix_name, file_name):
-        # 参数存储与加载的路径控制
-        result_save_path = '/mnt/mfs/dat_whs/result'
-        if self.if_new_program:
-            now_time = datetime.now().strftime('%Y%m%d_%H%M')
-            if self.if_only_long:
-                file_name = '{}_{}_{}_hold_{}_{}_{}_long.txt' \
-                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
-            else:
-                file_name = '{}_{}_{}_hold_{}_{}_{}.txt' \
-                    .format(self.sector_name, self.if_hedge, now_time, self.hold_time, self.return_file, suffix_name)
-
-            log_save_file = os.path.join(result_save_path, 'log', file_name)
-            result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
-            para_dict = dict()
-            para_ready_df = pd.DataFrame(list(self.create_all_para(tech_name_list, funda_name_list)))
-            total_para_num = len(para_ready_df)
-            if self.if_save:
-                self.create_log_save_path(log_save_file)
-                self.create_log_save_path(result_save_file)
-                self.create_log_save_path(para_save_file)
-                para_dict['para_ready_df'] = para_ready_df
-                para_dict['tech_name_list'] = tech_name_list
-                para_dict['funda_name_list'] = funda_name_list
-                pd.to_pickle(para_dict, para_save_file)
-
-        else:
-            log_save_file = os.path.join(result_save_path, 'log', file_name)
-            result_save_file = os.path.join(result_save_path, 'result', file_name)
-            para_save_file = os.path.join(result_save_path, 'para', file_name)
-
-            para_tested_df = pd.read_table(log_save_file, sep='|', header=None, index_col=0)
-            para_all_df = pd.read_pickle(para_save_file)
-            total_para_num = len(para_all_df)
-            para_ready_df = para_all_df.loc[sorted(list(set(para_all_df.index) - set(para_tested_df.index)))]
-        print(file_name)
-        print(f'para_num:{len(para_ready_df)}')
-        return para_ready_df, log_save_file, result_save_file, total_para_num
 
 
 class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
@@ -309,11 +271,11 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
         else:
             return 0
 
-    def back_test(self, data_df, cut_date, percent, return_pos=False):
+    def back_test(self, data_df, cut_date, percent, return_pos=False, ls_para='ls'):
         cut_time = pd.to_datetime(cut_date)
         signal_df = self.row_extre(data_df, self.sector_df, percent)
         if len(signal_df.abs().sum(1).replace(0, np.nan).dropna()) / len(self.xinx) > 0.7:
-            pos_df = self.signal_to_pos(signal_df)
+            pos_df = self.signal_to_pos_ls(signal_df, ls_para)
             pnl_table = pos_df.shift(self.lag) * self.return_df
             pnl_df = pnl_table.sum(1)
             sample_in_index = (self.xinx < cut_time)
@@ -333,7 +295,15 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
 
             sp = bt.AZ_Sharpe_y(pnl_df)
             pot = bt.AZ_Pot(pos_df, pnl_df.sum())
-            way_in, way_out, way = self.judge_way(sp_in), self.judge_way(sp_out), self.judge_way(sp)
+            if self.if_only_long:
+                if ls_para == 'l':
+                    way_in, way_out, way = 1, 1, 1
+                elif ls_para == 's':
+                    way_in, way_out, way = -1, -1, -1
+                else:
+                    way_in, way_out, way = self.judge_way(sp_in), self.judge_way(sp_out), self.judge_way(sp)
+            else:
+                way_in, way_out, way = self.judge_way(sp_in), self.judge_way(sp_out), self.judge_way(sp)
             result_list = [sp_in, sp_out, sp, pot_in, pot_out, pot, way_in, way_out, way]
             info_df = pd.Series(result_list, index=['sp_in', 'sp_out', 'sp',
                                                     'pot_in', 'pot_out', 'pot',
@@ -351,10 +321,25 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
 
     def get_pnl_df(self, file_name, cut_date, percent):
         data_df = self.load_zscore_factor(file_name)
-        info_df, pnl_df = self.back_test(data_df, cut_date, percent)
-        pnl_df.name = file_name
-        info_df.name = file_name
-        # print(info_df, pnl_df)
+        if self.if_only_long:
+            info_df_l, pnl_df_l = self.back_test(data_df, cut_date, percent, ls_para='l')
+            pnl_df_l.name = file_name
+            info_df_l.name = file_name
+
+            info_df_s, pnl_df_s = self.back_test(data_df, cut_date, percent, ls_para='s')
+            pnl_df_s.name = file_name
+            info_df_s.name = file_name
+            if info_df_l['sp_in'] > info_df_s['sp_in']:
+                info_df = info_df_l
+                pnl_df = pnl_df_l
+            else:
+                info_df = info_df_s
+                pnl_df = pnl_df_s
+        else:
+            info_df, pnl_df = self.back_test(data_df, cut_date, percent)
+            pnl_df.name = file_name
+            info_df.name = file_name
+            # print(info_df, pnl_df)
         return info_df, pnl_df
 
     def get_all_pnl_df(self, file_list, cut_date, percent, if_multy=True):
@@ -411,7 +396,10 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
                 tmp_factor_df = self.load_zscore_factor(low_corr_factor) * low_corr_factor_way
                 # tmp_factor_df = self.load_raw_factor(low_corr_factor) * low_corr_factor_way
                 tmp_mix_df = mix_factor_df + tmp_factor_df
-                info_df, pnl_df = self.back_test(tmp_mix_df, cut_date, percent)
+                if self.if_only_long:
+                    info_df, pnl_df = self.back_test(tmp_mix_df, cut_date, percent, ls_para='l')
+                else:
+                    info_df, pnl_df = self.back_test(tmp_mix_df, cut_date, percent)
                 return tmp_mix_df, info_df, pnl_df
 
             all_file = sorted(os.listdir(f'/mnt/mfs/dat_whs/data/factor_data/{self.sector_name}'))
@@ -464,7 +452,8 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
                     if mix_num >= 10:
                         break
             if mix_info.loc['sp'] > 2 and mix_info.loc['pot'] > 50:
-                result_save_path = f'/mnt/mfs/dat_whs/result_new/'
+                result_save_path = f'/mnt/mfs/dat_whs/result_new/only_long/'
+                bt.AZ_Path_create(result_save_path)
                 result_df, info_df = bt.commit_check(pd.DataFrame(mix_pnl))
                 if result_df.prod().iloc[0] == 1:
                     lock = Lock()
@@ -483,10 +472,12 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
 
         except Exception as error:
             print(error)
+            send_email.send_email(str(error), ['whs@yingpei.com'], [], '[ERROR]')
 
     def run(self, cut_date, percent, run_num=100):
         pool = Pool(28)
         for i in range(run_num):
+            # self.train_fun(cut_date, percent)
             pool.apply_async(self.train_fun, args=(cut_date, percent))
         pool.close()
         pool.join()
@@ -530,7 +521,7 @@ def main_fun():
         'market_top_300to800plus_industry_55'
     ]
 
-    hold_time_list = [5, 10, 20]
+    hold_time_list = [5, 10, 20, 30]
     for if_only_long in [True]:
         for sector_name in sector_name_list:
             for percent in [0.1, 0.2]:

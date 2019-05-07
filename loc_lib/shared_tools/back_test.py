@@ -24,8 +24,8 @@ def AZ_Rolling_mean_multi(data, window, func, ncore=4):
     return result
 
 
-def AZ_Load_csv(target_path, parse_dates=True, sep='|'):
-    target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False, parse_dates=parse_dates)
+def AZ_Load_csv(target_path, parse_dates=True, sep='|', **kwargs):
+    target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False, parse_dates=parse_dates, **kwargs)
     return target_df
 
 
@@ -393,63 +393,13 @@ def commit_check(pnl_df, mod='o'):
     info_df = info_df.T
 
     if mod == 'h':
-        cond_matrix = pd.DataFrame([[0.49, 1.90, 1.66, 1.70, 1.70],
-                                    [0.59, 2.00, 1.75, 1.75, 1.75],
-                                    [0.69, 2.10, 1.80, 1.80, 1.80]])
-    else:
-        cond_matrix = pd.DataFrame([[0.49, 2.00, 1.75, 2.00, 2.00],
-                                    [0.59, 2.10, 1.85, 2.10, 2.10],
-                                    [0.69, 2.25, 1.95, 2.20, 2.20]])
-
-    def result_deal(x):
-        for i in range(len(cond_matrix)):
-            if x[0] <= cond_matrix.iloc[i, 0]:
-                corr, sp_5, sp_2, lv_5, lv_2 = cond_matrix.iloc[i]
-                res = x > [-1, sp_5, sp_2, lv_5, lv_2]
-                return res.astype(int)
-        return [0, 0, 0, 0, 0]
-
-    result_df = info_df.apply(result_deal)
-    print('*******info_df*******')
-    print(info_df)
-
-    print('*******result_df*******')
-    print(result_df)
-
-    return result_df, info_df
-
-
-def commit_check_beta(pnl_df, mod='o'):
-    """
-    pnl_df
-    :param pnl_df:要求DataFrame格式,其中index为时间格式,columns为pnl的名称
-    :param mod: 'o':多空,'h':对冲
-    :return:result_df包含corr,sp5,sp2,lv5,lv2,其中0表示不满足,1表示满足,
-            info_df为具体数值
-    """
-    assert type(pnl_df) == pd.DataFrame
-    all_pnl_df = pd.read_csv('/mnt/mfs/AATST/corr_tst_pnls', sep='|', index_col=0, parse_dates=True)
-    all_pnl_df_c = pd.concat([all_pnl_df, pnl_df], axis=1)
-    all_pnl_df_c_ma3 = AZ_Rolling(all_pnl_df_c, 3).mean().iloc[-1250:]
-
-    matrix_corr_o = all_pnl_df_c_ma3.corr()[pnl_df.columns].drop(index=pnl_df.columns)
-    matrix_sp5 = pnl_df.iloc[-1250:].apply(AZ_Sharpe_y)
-    matrix_lv5 = pnl_df.iloc[-1250:].cumsum().apply(AZ_Leverage_ratio)
-    matrix_sp2 = pnl_df.iloc[-500:].apply(AZ_Sharpe_y)
-    matrix_lv2 = pnl_df.iloc[-500:].cumsum().apply(AZ_Leverage_ratio)
-
-    info_df = pd.concat([matrix_corr_o.max(), matrix_sp5, matrix_sp2, matrix_lv5, matrix_lv2], axis=1)
-    info_df.columns = ['corr', 'sp5', 'sp2', 'lv5', 'lv2']
-    info_df = info_df.T
-
-    if mod == 'h':
-        cond_matrix = pd.DataFrame([[0.46, 1.90, 1.66, 1.70, 1.70],
+        cond_matrix = pd.DataFrame([[0.45, 1.90, 1.66, 1.70, 1.70],
                                     [0.56, 2.00, 1.75, 1.75, 1.75],
-                                    [0.66, 2.10, 1.80, 1.80, 1.80]])
+                                    [0.62, 2.10, 1.80, 1.80, 1.80]])
     else:
-        cond_matrix = pd.DataFrame([[0.46, 2.00, 1.75, 2.00, 2.00],
+        cond_matrix = pd.DataFrame([[0.45, 2.00, 1.75, 2.00, 2.00],
                                     [0.56, 2.10, 1.85, 2.10, 2.10],
-                                    [0.66, 2.25, 1.95, 2.20, 2.20]])
+                                    [0.62, 2.25, 1.95, 2.20, 2.20]])
 
     def result_deal(x):
         for i in range(len(cond_matrix)):

@@ -6,6 +6,15 @@ from work_whs.loc_lib.pre_load import *
 
 root_path = '/mnt/mfs/DAT_FUT'
 
+FutClass = dict({
+    '黑色': ['RB', 'HC', 'J', 'JM', 'ZC', 'I', 'WR', 'SF', 'SM'],
+    '化工': ['RU', 'FU', 'L', 'V', 'J', 'TA', 'BU', 'SC', 'MA', 'FG', 'PP', 'FB', 'BB', 'EG'],
+    '有色': ['AU', 'AG', 'CU', 'PB', 'ZN', 'SN', 'NI', 'AL'],
+    '农产品': ['OI', 'RS', 'RM', 'WH', 'JR', 'SR', 'CF', 'RI', 'LR', 'CY', 'AP', 'P', 'B', 'M', 'JD',
+            'Y', 'C', 'A', 'CS'],
+    '金融': ['IF', 'IH', 'IC', 'T', 'TF', 'TS']
+})
+
 
 class FutData:
     def __init__(self, root_path):
@@ -26,7 +35,7 @@ class FutData:
         return target_sr
 
     def load_contract_data(self, contract_id, file_name):
-        fut_name = re.sub('\d', '', contract_id)
+        fut_name = re.sub('\d', '', contract_id.split('.')[0])
         raw_df = self.load_fut_data(fut_name, file_name)
         target_df = raw_df[[contract_id]]
         return target_df
@@ -41,17 +50,17 @@ class FutData:
         raw_df = bt.AZ_Load_csv(f'{self.root_path}/Inventory/{fut_name}/{file_name}.csv')
         return raw_df
 
-    def load_act_intra_data(self):
-        pass
-
     def load_intra_data(self, contract_id, usecols_list):
-        fut_name = re.sub('\d', '', contract_id)
+        fut_name = re.sub('\d', '', contract_id.split('.')[0])
         data = bt.AZ_Load_csv(f'{self.root_path}/intraday/fut_1mbar/{fut_name}/{contract_id}',
-                              usecols=['TradeDate', 'Date', 'Time', 'Close'] + usecols_list)
+                              usecols=['TradeDate', 'Date', 'Time'] + usecols_list)
         return data
+
+    def load_act_intra_data(self, fut_name, file_name):
+        pass
 
 
 if __name__ == '__main__':
     fut_data = FutData('/mnt/mfs/DAT_FUT')
-    close_df = fut_data.load_intra_data('IC1906.CFE', 'Close')
-    print(close_df)
+    data_df = fut_data.load_intra_data('IC1906.CFE', ['Close', 'Volume'])
+    print(data_df)

@@ -69,44 +69,6 @@ class SignalSet:
         return signal_df
 
 
-class SignalAnalysis:
-    @staticmethod
-    def CDF(signal_df, raw_return_df, hold_time, title='CDF Figure', lag=2):
-        signal_df = signal_df.shift(lag).values
-        return_df = bt.AZ_Rolling_sum(raw_return_df, hold_time).shift(-hold_time + 1).values
-
-        save_path = '/mnt/mfs/dat_whs/tmp_figure/CDF_Figure.png'
-        f_return_m = return_df - return_df.mean()
-        a = np.argsort(signal_df)
-        plt.figure(figsize=(10, 6))
-        p1 = plt.subplot(221)
-        p2 = plt.subplot(222)
-        p3 = plt.subplot(223)
-        p4 = plt.subplot(224)
-        p1.plot(np.cumsum(return_df[a]))
-        p1.set_title('cumsum return')
-        p1.grid(1)
-
-        p2.plot(signal_df[a], np.cumsum(return_df[a]))
-        p2.set_title('signal and cumsum return')
-        p2.grid(1)
-
-        p3.plot(np.cumsum(f_return_m[a]))
-        p3.set_title('cumsum mean return')
-        p3.grid(1)
-
-        p4.plot(signal_df[a], np.cumsum(f_return_m[a]))
-        p4.set_title('signal and cumsum mean return')
-        p4.grid(1)
-
-        plt.suptitle(title)
-        plt.savefig(save_path)
-        plt.close()
-        to = ['whs@yingpei.com']
-        filepath = [save_path]
-        send_email.send_email('', to, filepath, title)
-
-
 class SpotDataTest(FutData, SignalSet):
     def __init__(self, root_path, fut_name, hold_time, lag=2, use_num=3):
         super(SpotDataTest, self).__init__(root_path=root_path)
