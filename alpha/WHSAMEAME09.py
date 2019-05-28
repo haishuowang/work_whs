@@ -4,6 +4,8 @@ import os
 from sqlalchemy import create_engine
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/mnt/mfs/LIB_ROOT")
 
 from open_lib.shared_tools import send_email
 from itertools import combinations
@@ -1080,7 +1082,7 @@ def main_fun(str_1, exe_str, filter_i):
     data_deal = DataDeal(begin_date, end_date, root_path, sector_name)
     # 生成回测脚本
     info_df, pnl_df, pos_df = factor_test.get_mix_pnl_df(data_deal, exe_str, cut_date, percent)
-
+    pos_df = pos_df.shift(2)
     pnl_df.name = alpha_name
 
     # 相关性测试
@@ -1096,13 +1098,13 @@ def main_fun(str_1, exe_str, filter_i):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000300|5|False|0.1'
-    exe_str = 'PEG_PARENTNETPROFIT_5Y|col_zscore|120_-1.0@add_fun@RZYE|pnd_vol|120_-1.0@add_fun@' \
-              'PEG_OPCF_5Y|pnd_vol|120_-1.0@add_fun@R_EMPLOYEEPAY_QTTM|col_zscore|60_1.0@add_fun@' \
-              'PEG_OPCF_3Y|pnd_vol|20_-1.0@add_fun@R_TotAssets_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'R_ROETrig_First|col_zscore|60_1.0@add_fun@R_TotProfit_EBIT_First|col_zscore|120_1.0@add_fun@' \
-              'PE_TTM|pnd_vol|120_-1.0@add_fun@R_WorkCapital_First|row_zscore_1.0@add_fun@PEG_OPCF_3Y|row_zscore_-1.0'
-    filter_i = 0
+    str_1 = 'index_000300|20|False|0.1'
+    exe_str = 'PEG_EBIT_3Y|col_zscore|60_-1.0@add_fun@R_SalesGrossMGN_First|col_zscore|60_1.0@add_fun@' \
+              'TVALCNY|pnd_vol|120_-1.0@add_fun@RQCHL|pnd_vol|60_1.0@add_fun@TURNRATE|row_zscore_-1.0@add_fun@' \
+              'PS_TTM|row_zscore_-1.0@add_fun@R_TotLiab_s_YOY_First|pnd_vol|120_-1.0@add_fun@' \
+              'R_OPCF_TotDebt_QTTM|pnd_vol|120_-1.0@add_fun@R_OPCF_sales_s_First|row_zscore_-1.0@add_fun@' \
+              'R_CurrentLiabInt0_QTTM|col_zscore|120_1.0@add_fun@ab_sale_mng_exp|pnd_vol|20_1.0'
+    filter_i = 1
 
     a = time.time()
     main_fun(str_1, exe_str, filter_i)

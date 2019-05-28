@@ -4,6 +4,8 @@ import os
 from sqlalchemy import create_engine
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/mnt/mfs/LIB_ROOT")
 
 from open_lib.shared_tools import send_email
 from itertools import combinations
@@ -1080,7 +1082,7 @@ def main_fun(str_1, exe_str, filter_i):
     data_deal = DataDeal(begin_date, end_date, root_path, sector_name)
     # 生成回测脚本
     info_df, pnl_df, pos_df = factor_test.get_mix_pnl_df(data_deal, exe_str, cut_date, percent)
-
+    pos_df = pos_df.shift(2)
     pnl_df.name = alpha_name
 
     # 相关性测试
