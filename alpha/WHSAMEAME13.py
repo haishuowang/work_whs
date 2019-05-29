@@ -16,7 +16,7 @@ import time
 
 usr_name = 'whs'
 pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
-engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:3306/choice_fndb?charset=utf8')
+engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.33:3306/choice_fndb?charset=utf8')
 conn = engine.connect()
 
 base_data_dict = OrderedDict({
@@ -547,11 +547,11 @@ class SectorData:
 class TrainFunSet:
     @staticmethod
     def mul_fun(a, b):
-        a_l = a.where(a > 0, 0)
-        a_s = a.where(a < 0, 0)
+        a_l = a.where(a > 0, np.nan)
+        a_s = a.where(a < 0, np.nan)
 
-        b_l = b.where(b > 0, 0)
-        b_s = b.where(b < 0, 0)
+        b_l = b.where(b > 0, np.nan)
+        b_s = b.where(b < 0, np.nan)
 
         pos_l = a_l.mul(b_l)
         pos_s = a_s.mul(b_s)
@@ -561,11 +561,11 @@ class TrainFunSet:
 
     @staticmethod
     def sub_fun(a, b):
-        return a.sub(b)
+        return a.sub(b, fill_value=0)
 
     @staticmethod
     def add_fun(a, b):
-        return a.add(b)
+        return a.add(b, fill_value=0)
 
 
 def add_suffix(x):
@@ -1086,9 +1086,9 @@ def main_fun(str_1, exe_str, filter_i):
     pnl_df.name = alpha_name
 
     # 相关性测试
-    # bt.commit_check(pd.DataFrame(pnl_df))
-    # print(info_df)
-    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    bt.commit_check(pd.DataFrame(pnl_df))
+    print(info_df)
+    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
 
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
@@ -1098,13 +1098,13 @@ def main_fun(str_1, exe_str, filter_i):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000300|20|False|0.1'
-    exe_str = 'R_CFO_s_YOY_First|col_zscore|60_1.0@add_fun@R_OperProfit_s_YOY_First|col_zscore|60_1.0@add_fun@' \
-              'R_SalesGrossMGN_s_Y3YGR|pnd_vol|60_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|col_zscore|20_-1.0@add_fun@' \
-              'R_OPCF_TTM_QSD4Y|pnd_vol|5_1.0@add_fun@TVALCNY|pnd_vol|20_-1.0@add_fun@' \
-              'aadj_p_HIGH|pnd_vol|5_-1.0@add_fun@R_NetROA_TTM_First|row_zscore_-1.0@add_fun@' \
-              'R_SalesNetMGN_s_First|pnd_vol|120_-1.0@add_fun@R_OperProfit_sales_s_First|col_zscore|120_1.0@add_fun@' \
-              'RZMRE|pnd_vol|20_-1.0'
+    str_1 = 'index_000300|20|True|0.1'
+    exe_str = 'PEG_PARENTNETPROFIT_3Y|row_zscore_-1.0@add_fun@R_ParentProfit_s_YOY_First|col_zscore|60_1.0@add_fun@' \
+              'PEG_OPCF_5Y|col_zscore|60_-1.0@add_fun@R_NetROA_TTM_First|pnd_vol|120_-1.0@add_fun@' \
+              'R_Revenue_s_YOY_First|col_zscore|60_1.0@add_fun@R_DebtAssets_QTTM|pnd_vol|60_-1.0@add_fun@' \
+              'TVALCNY|pnd_vol|60_-1.0@add_fun@news_num_df_5|row_zscore_-1.0@add_fun@' \
+              'R_OPCF_TTM_QSD4Y|pnd_vol|20_1.0@add_fun@TVOL|col_zscore|60_-1.0@add_fun@' \
+              'R_ACCEPTINVREC_QTTM|pnd_vol|5_1.0'
     filter_i = 1
 
     a = time.time()

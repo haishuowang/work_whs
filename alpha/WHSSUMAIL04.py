@@ -1072,8 +1072,8 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
 
     # 相关性测试
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
+    # bt.commit_check(pd.DataFrame(pnl_df))
+    # print(info_df)
 
     plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
@@ -1084,13 +1084,13 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000905|5|True|0.1'
-    exe_str = 'R_EPS_s_First|row_zscore_1.0@add_fun@bar_num_7_df|row_zscore_-1.0@add_fun@' \
-              'R_TotRev_TTM_Y3YGR|col_zscore|120_1.0@add_fun@R_ParentProfit_s_POP_First|row_zscore_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_5Y|col_zscore|60_-1.0@add_fun@R_NetInc_TotProfit_s_First|pnd_vol|5_1.0@add_fun@' \
-              'R_DEFERTAX_QTTM|pnd_vol|120_1.0@add_fun@lsgg_num_df_5|pnd_vol|5_-1.0@add_fun@' \
-              'R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@R_FinExp_sales_s_First|row_zscore_-1.0@add_fun@' \
-              'R_Cashflow_s_YOY_First|col_zscore|120_-1.0'
+    str_1 = 'index_000905|20|True|0.1'
+    exe_str = 'R_ROENetIncRecur_s_First|row_zscore_1.0@add_fun@PEG_OPERATEREVE_3Y|pnd_vol|20_-1.0@add_fun@' \
+              'restricted_shares|pnd_vol|120_-1.0@add_fun@R_TangAssets_TotLiab_QTTM|col_zscore|120_-1.0@add_fun@' \
+              'R_EBIT_TTM_QTTM|col_zscore|20_1.0@add_fun@bulletin_num_df_60|pnd_vol|5_-1.0@add_fun@' \
+              'R_TotRev_TTM_QSD4Y|col_zscore|20_1.0@add_fun@R_TangAssets_TotLiab_QTTM|col_zscore|60_-1.0@add_fun@' \
+              'R_GSCF_sales_s_First|pnd_vol|60_-1.0@add_fun@aadj_p|pnd_vol|120_-1.0@add_fun@' \
+              'bulletin_num_df_5|pnd_vol|20_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

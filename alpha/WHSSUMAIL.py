@@ -8,7 +8,6 @@ from itertools import combinations
 from datetime import datetime
 from collections import OrderedDict
 import time
-import work_whs.bkt_factor_create.new_framework_test as nft
 
 base_data_dict = OrderedDict({
     'TVOL': 'EM_Funda/TRAD_SK_DAILY_JC/TVOL.csv',
@@ -1107,7 +1106,11 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
     print(info_df)
     # 相关性测试
+    CorrCheck().corr_test_fun(pnl_df, alpha_name)
+    # print(corr_sr[corr_sr > 0.5])
     bt.commit_check(pd.DataFrame(pnl_df))
+    print(info_df)
+    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
 
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
@@ -1117,14 +1120,11 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000905|5|True|0.1'
-    exe_str = 'R_EPS_s_First|row_zscore_1.0@add_fun@bar_num_7_df|row_zscore_-1.0@add_fun@' \
-              'R_TotRev_TTM_Y3YGR|col_zscore|120_1.0@add_fun@R_ParentProfit_s_POP_First|row_zscore_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_5Y|col_zscore|60_-1.0@add_fun@R_NetInc_TotProfit_s_First|pnd_vol|5_1.0@add_fun@' \
-              'R_DEFERTAX_QTTM|pnd_vol|120_1.0@add_fun@lsgg_num_df_5|pnd_vol|5_-1.0@add_fun@' \
-              'R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@R_FinExp_sales_s_First|row_zscore_-1.0@add_fun@' \
-              'R_Cashflow_s_YOY_First|col_zscore|120_-1.0'
-
+    str_1 = 'index_000905|20|True|0.2'
+    exe_str = 'PEG_EBIT_3Y|col_zscore|60_-1.0@add_fun@stock_tab2_9|pnd_vol|60_1.0@add_fun@' \
+              'R_SUMASSET_First|col_zscore|20_1.0@add_fun@R_FinCf_TTM_QTTM|pnd_vol|5_-1.0@add_fun@' \
+              'R_NetIncRecur_QTTM|col_zscore|20_1.0@add_fun@R_SUMASSET_First|col_zscore|5_1.0@add_fun@' \
+              'sell_summary_key_word|pnd_vol|60_-1.0@add_fun@R_INVENTORY_QTTM|pnd_vol|20_-1.0'
     a = time.time()
     info_df, pnl_df, pos_df = main_fun(str_1, exe_str)
     b = time.time()

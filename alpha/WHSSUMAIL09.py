@@ -1070,11 +1070,11 @@ def main_fun(str_1, exe_str):
     # 生成回测脚本
     info_df, pnl_df, pos_df = factor_test.get_mix_pnl_df(data_deal, exe_str, cut_date, percent)
     pnl_df.name = alpha_name
-
+    pos_df = pos_df.shift(2)
     # 相关性测试
     # bt.commit_check(pd.DataFrame(pnl_df))
     # print(info_df)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:
@@ -1083,11 +1083,13 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000905|20|True|0.2'
-    exe_str = 'PEG_EBIT_3Y|col_zscore|60_-1.0@add_fun@stock_tab2_9|pnd_vol|60_1.0@add_fun@' \
-              'R_SUMASSET_First|col_zscore|20_1.0@add_fun@R_FinCf_TTM_QTTM|pnd_vol|5_-1.0@add_fun@' \
-              'R_NetIncRecur_QTTM|col_zscore|20_1.0@add_fun@R_SUMASSET_First|col_zscore|5_1.0@add_fun@' \
-              'sell_summary_key_word|pnd_vol|60_-1.0@add_fun@R_INVENTORY_QTTM|pnd_vol|20_-1.0'
+    str_1 = 'index_000905|5|True|0.1'
+    exe_str = 'TURNRATE|pnd_vol|60_-1.0@add_fun@R_NetROA_s_First|col_zscore|120_1.0@add_fun@' \
+              'R_OperProfit_sales_s_First|col_zscore|60_1.0@add_fun@R_GSCF_TTM_QSD4Y|pnd_vol|120_1.0@add_fun@' \
+              'R_NetDebt_First|pnd_vol|120_1.0@add_fun@R_GSCF_TTM_QSD4Y|pnd_vol|20_1.0@add_fun@' \
+              'R_ParentProfit_s_POP_First|pnd_vol|5_1.0@add_fun@R_OPCF_sales_s_First|pnd_vol|60_-1.0@add_fun@' \
+              'R_TotRev_s_POP_First|pnd_vol|20_1.0@add_fun@PE_TTM|row_zscore_-1.0@add_fun@' \
+              'R_AssetDepSales_QTTM|row_zscore_1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

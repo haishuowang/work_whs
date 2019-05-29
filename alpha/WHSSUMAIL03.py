@@ -1072,8 +1072,8 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
 
     # 相关性测试
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
+    # bt.commit_check(pd.DataFrame(pnl_df))
+    # print(info_df)
 
     plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
@@ -1084,13 +1084,11 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000300|10|True|0.1'
-    exe_str = 'PEG_OPERATEREVE_5Y|pnd_vol|60_-1.0@add_fun@R_NetInc_s_First|pnd_vol|120_1.0@add_fun@' \
-              'stock_tab4_1|row_zscore_1.0@add_fun@RZMRE|pnd_vol|120_-1.0@add_fun@' \
-              'PEG_EBIT_5Y|col_zscore|60_-1.0@add_fun@R_OPCF_TTM_QSD4Y|pnd_vol|5_-1.0@add_fun@' \
-              'TVALCNY|pnd_vol|60_-1.0@add_fun@R_OperCost_sales_s_First|row_zscore_-1.0@add_fun@' \
-              'R_OperProfit_sales_s_First|col_zscore|120_1.0@add_fun@R_MgtExp_sales_s_First|pnd_vol|60_-1.0@add_fun@' \
-              'lsgg_num_df_5|col_zscore|60_-1.0'
+    str_1 = 'index_000905|10|True|0.1'
+    exe_str = 'PEG_EBIT_3Y|col_zscore|120_-1.0@add_fun@R_NetROA_s_First|row_zscore_1.0@add_fun@' \
+              'bar_num_7_df|pnd_vol|60_-1.0@add_fun@bar_num_12_df|pnd_vol|20_-1.0@add_fun@' \
+              'RZMRE|pnd_vol|60_-1.0@add_fun@R_CFO_s_YOY_First|col_zscore|20_-1.0@add_fun@' \
+              'R_CostSales_s_First|pnd_vol|5_1.0@add_fun@RQYE|pnd_vol|60_-1.0@add_fun@R_NETPROFIT_QTTM|pnd_vol|60_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

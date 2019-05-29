@@ -941,7 +941,7 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
                 factor_1 = getattr(self, fun_str)(factor_1, factor_2)
             return factor_1
 
-        mix_factor = tmp_fun()
+        mix_factor = tmp_fun().reindex(index=self.xinx)
 
         if self.if_only_long:
             info_df, pnl_df, pos_df = self.back_test(mix_factor, cut_date, percent, ls_para='l', return_pos=True)
@@ -1072,9 +1072,8 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
 
     # 相关性测试
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
-
+    # bt.commit_check(pd.DataFrame(pnl_df))
+    # print(info_df)
     plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
@@ -1084,13 +1083,12 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000905|5|True|0.1'
-    exe_str = 'R_EPS_s_First|row_zscore_1.0@add_fun@bar_num_7_df|row_zscore_-1.0@add_fun@' \
-              'R_TotRev_TTM_Y3YGR|col_zscore|120_1.0@add_fun@R_ParentProfit_s_POP_First|row_zscore_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_5Y|col_zscore|60_-1.0@add_fun@R_NetInc_TotProfit_s_First|pnd_vol|5_1.0@add_fun@' \
-              'R_DEFERTAX_QTTM|pnd_vol|120_1.0@add_fun@lsgg_num_df_5|pnd_vol|5_-1.0@add_fun@' \
-              'R_TotRev_s_YOY_First|col_zscore|60_1.0@add_fun@R_FinExp_sales_s_First|row_zscore_-1.0@add_fun@' \
-              'R_Cashflow_s_YOY_First|col_zscore|120_-1.0'
+    str_1 = 'market_top_300plus|30|True|0.1'
+    exe_str = 'stock_tab2_7|pnd_vol|120_-1.0@add_fun@R_NetInc_s_First|pnd_vol|60_1.0@add_fun@' \
+              'buy_key_title__word|pnd_vol|120_1.0@add_fun@R_NetDebt_First|row_zscore_-1.0@add_fun@' \
+              'R_DEFERTAX_QTTM|pnd_vol|20_-1.0@add_fun@R_CurrentLiabInt0_QTTM|pnd_vol|5_1.0@add_fun@' \
+              'RZMRE|col_zscore|60_-1.0@add_fun@R_EBIT_sales_QTTM|pnd_vol|20_-1.0@add_fun@' \
+              'R_AssetDepSales_s_First|pnd_vol|20_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

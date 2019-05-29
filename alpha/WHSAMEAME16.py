@@ -16,7 +16,7 @@ import time
 
 usr_name = 'whs'
 pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
-engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:3306/choice_fndb?charset=utf8')
+engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.33:3306/choice_fndb?charset=utf8')
 conn = engine.connect()
 
 base_data_dict = OrderedDict({
@@ -547,11 +547,11 @@ class SectorData:
 class TrainFunSet:
     @staticmethod
     def mul_fun(a, b):
-        a_l = a.where(a > 0, 0)
-        a_s = a.where(a < 0, 0)
+        a_l = a.where(a > 0, np.nan)
+        a_s = a.where(a < 0, np.nan)
 
-        b_l = b.where(b > 0, 0)
-        b_s = b.where(b < 0, 0)
+        b_l = b.where(b > 0, np.nan)
+        b_s = b.where(b < 0, np.nan)
 
         pos_l = a_l.mul(b_l)
         pos_s = a_s.mul(b_s)
@@ -561,11 +561,11 @@ class TrainFunSet:
 
     @staticmethod
     def sub_fun(a, b):
-        return a.sub(b)
+        return a.sub(b, fill_value=0)
 
     @staticmethod
     def add_fun(a, b):
-        return a.add(b)
+        return a.add(b, fill_value=0)
 
 
 def add_suffix(x):
@@ -1098,7 +1098,7 @@ def main_fun(str_1, exe_str, filter_i):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000300|20|False|0.1'
+    str_1 = 'market_top_300plus|20|False|0.1'
     exe_str = 'R_CFO_s_YOY_First|col_zscore|60_1.0@add_fun@R_OperProfit_s_YOY_First|col_zscore|60_1.0@add_fun@' \
               'R_SalesGrossMGN_s_Y3YGR|pnd_vol|60_-1.0@add_fun@PEG_PARENTNETPROFIT_5Y|col_zscore|20_-1.0@add_fun@' \
               'R_OPCF_TTM_QSD4Y|pnd_vol|5_1.0@add_fun@TVALCNY|pnd_vol|20_-1.0@add_fun@' \

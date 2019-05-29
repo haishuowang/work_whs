@@ -547,11 +547,11 @@ class SectorData:
 class TrainFunSet:
     @staticmethod
     def mul_fun(a, b):
-        a_l = a.where(a > 0, 0)
-        a_s = a.where(a < 0, 0)
+        a_l = a.where(a > 0, np.nan)
+        a_s = a.where(a < 0, np.nan)
 
-        b_l = b.where(b > 0, 0)
-        b_s = b.where(b < 0, 0)
+        b_l = b.where(b > 0, np.nan)
+        b_s = b.where(b < 0, np.nan)
 
         pos_l = a_l.mul(b_l)
         pos_s = a_s.mul(b_s)
@@ -561,11 +561,11 @@ class TrainFunSet:
 
     @staticmethod
     def sub_fun(a, b):
-        return a.sub(b)
+        return a.sub(b, fill_value=0)
 
     @staticmethod
     def add_fun(a, b):
-        return a.add(b)
+        return a.add(b, fill_value=0)
 
 
 def add_suffix(x):
