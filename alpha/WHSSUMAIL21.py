@@ -659,7 +659,7 @@ class FactorTestBase:
 
         return_df = return_df.reindex(columns=self.xnms)
         self.sector_df = sector_df.reindex(index=self.xinx)
-        print('Loaded sector DataFrame!')
+        # print('Loaded sector DataFrame!')
         if if_hedge:
             if ic_weight + if_weight != 1:
                 exit(-1)
@@ -671,7 +671,7 @@ class FactorTestBase:
         index_df_2 = self.load_index_data('000905').fillna(0)
         hedge_df = if_weight * index_df_1 + ic_weight * index_df_2
         self.return_df = return_df.sub(hedge_df, axis=0)
-        print('Loaded return DataFrame!')
+        # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
         limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
@@ -681,7 +681,7 @@ class FactorTestBase:
         suspendday_df_c.iloc[-1] = 1
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
-        print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+        # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
 
     def reindex_fun(self, df):
         return df.reindex(index=self.xinx, columns=self.xnms)
@@ -991,13 +991,13 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
             exe_list = exe_str.split('@')
             way_str_1 = exe_list[0].split('_')[-1]
             name_1 = '_'.join(exe_list[0].split('_')[:-1])
-            print(name_1)
+            # print(name_1)
             factor_1 = data_deal.count_return_data(name_1, z_score=False) * float(way_str_1)
             for i in range(int((len(exe_list) - 1) / 2)):
                 fun_str = exe_list[2 * i + 1]
                 way_str_2 = exe_list[2 * i + 2].split('_')[-1]
                 name_2 = '_'.join(exe_list[2 * i + 2].split('_')[:-1])
-                print(name_2)
+                # print(name_2)
                 factor_2 = data_deal.count_return_data(name_2) * float(way_str_2)
                 factor_1 = getattr(self, fun_str)(factor_1, factor_2)
             return factor_1
@@ -1230,9 +1230,9 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
     pos_df = pos_df.shift(2)
     # 相关性测试
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    # bt.commit_check(pd.DataFrame(pnl_df))
+    # print(info_df)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:

@@ -659,7 +659,7 @@ class FactorTestBase:
 
         return_df = return_df.reindex(columns=self.xnms)
         self.sector_df = sector_df.reindex(index=self.xinx)
-        print('Loaded sector DataFrame!')
+        # print('Loaded sector DataFrame!')
         if if_hedge:
             if ic_weight + if_weight != 1:
                 exit(-1)
@@ -671,7 +671,7 @@ class FactorTestBase:
         index_df_2 = self.load_index_data('000905').fillna(0)
         hedge_df = if_weight * index_df_1 + ic_weight * index_df_2
         self.return_df = return_df.sub(hedge_df, axis=0)
-        print('Loaded return DataFrame!')
+        # print('Loaded return DataFrame!')
 
         suspendday_df, limit_buy_sell_df = self.load_locked_data()
         limit_buy_sell_df_c = limit_buy_sell_df.shift(-1)
@@ -681,7 +681,7 @@ class FactorTestBase:
         suspendday_df_c.iloc[-1] = 1
         self.suspendday_df_c = suspendday_df_c
         self.limit_buy_sell_df_c = limit_buy_sell_df_c
-        print('Loaded suspendday_df and limit_buy_sell DataFrame!')
+        # print('Loaded suspendday_df and limit_buy_sell DataFrame!')
 
     def reindex_fun(self, df):
         return df.reindex(index=self.xinx, columns=self.xnms)
@@ -991,13 +991,11 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
             exe_list = exe_str.split('@')
             way_str_1 = exe_list[0].split('_')[-1]
             name_1 = '_'.join(exe_list[0].split('_')[:-1])
-            print(name_1)
             factor_1 = data_deal.count_return_data(name_1, z_score=False) * float(way_str_1)
             for i in range(int((len(exe_list) - 1) / 2)):
                 fun_str = exe_list[2 * i + 1]
                 way_str_2 = exe_list[2 * i + 2].split('_')[-1]
                 name_2 = '_'.join(exe_list[2 * i + 2].split('_')[:-1])
-                print(name_2)
                 factor_2 = data_deal.count_return_data(name_2) * float(way_str_2)
                 factor_1 = getattr(self, fun_str)(factor_1, factor_2)
             return factor_1
@@ -1241,13 +1239,12 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000300|5|True|0.1'
-    exe_str = 'PEG_OPERATEREVE_5Y|pnd_vol|120_-1.0@add_fun@R_DebtAssets_QTTM|pnd_vol|120_-1.0@add_fun@' \
-              'R_CFOPS_s_First|row_zscore_1.0@add_fun@R_NetIncRecur_s_First|pnd_vol|60_1.0@add_fun@' \
-              'R_EPS_s_First|pnd_vol|120_1.0@add_fun@R_ParentProfit_s_YOY_First|row_zscore_1.0@add_fun@' \
-              'RZCHE|col_zscore|120_-1.0@add_fun@R_NetCf_TTM_QSD4Y|pnd_vol|20_-1.0@add_fun@' \
-              'R_NetCashflowPS_s_First|row_zscore_1.0@add_fun@R_TotAssets_s_YOY_First|row_zscore_1.0@add_fun@' \
-              'R_SalesGrossMGN_s_First|pnd_vol|60_-1.0'
+    str_1 = 'index_000905|10|True|0.1'
+    exe_str = 'PEG_EBIT_5Y|col_zscore|120_-1.0@add_fun@TURNRATE|pnd_vol|60_-1.0@add_fun@' \
+              'bar_num_7_df|pnd_vol|20_-1.0@add_fun@R_TotRev_TTM_Y3YGR|col_zscore|20_1.0@add_fun@' \
+              'R_SalesCost_s_First|row_zscore_-1.0@add_fun@ab_sale_mng_exp|pnd_vol|5_-1.0@add_fun@' \
+              'R_TotRev_TTM_QTTM|pnd_vol|60_1.0@add_fun@aadj_p_OPEN|pnd_vol|20_-1.0@add_fun@' \
+              'R_OTHERCINCOME_QTTM|pnd_vol|20_-1.0@add_fun@PE_TTM|pnd_vol|5_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)
