@@ -1228,9 +1228,9 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
     pos_df = pos_df.shift(2)
     # 相关性测试
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    # bt.commit_check(pd.DataFrame(pnl_df))
+    # print(info_df)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:
@@ -1240,11 +1240,12 @@ def main_fun(str_1, exe_str):
 
 if __name__ == '__main__':
     str_1 = 'index_000905|10|True|0.1'
-    exe_str = 'RZYE|row_zscore_-1.0@add_fun@TVOL|row_zscore_-1.0@add_fun@R_EPS_s_First|col_zscore|60_1.0@add_fun@' \
-              'R_TotCapital_First|pnd_vol|20_1.0@add_fun@R_OPCF_TotDebt_QTTM|pnd_vol|120_1.0@add_fun@' \
-              'bulletin_num_df_5|pnd_vol|120_1.0@add_fun@R_NetROA_TTM_First|col_zscore|120_1.0@add_fun@' \
-              'R_NetInc_TotProfit_s_First|col_zscore|120_-1.0@add_fun@R_TotRev_TTM_Y3YGR|col_zscore|120_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_3Y|pnd_vol|5_-1.0@add_fun@R_ParentProfit_s_YOY_First|pnd_vol|60_-1.0'
+    exe_str = 'stock_tab2_7|pnd_vol|20_-1.0@add_fun@bulletin_num_df_5|pnd_vol|5_-1.0@add_fun@' \
+              'PEG_EBIT_3Y|col_zscore|60_-1.0@add_fun@bar_num_12_df|pnd_vol|120_-1.0@add_fun@' \
+              'R_OperProfit_s_YOY_First|col_zscore|60_1.0@add_fun@R_OperCost_sales_s_First|col_zscore|60_-1.0@add_fun@' \
+              'PE_TTM|col_zscore|5_-1.0@add_fun@R_SalesGrossMGN_s_Y3YGR|pnd_vol|120_-1.0@add_fun@' \
+              'R_TotRev_TTM_QSD4Y|col_zscore|20_1.0@add_fun@news_num_df_20|col_zscore|120_-1.0@add_fun@' \
+              'aadj_p|pnd_vol|20_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

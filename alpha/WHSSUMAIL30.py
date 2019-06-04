@@ -1239,13 +1239,13 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000905|10|True|0.1'
-    exe_str = 'TURNRATE|pnd_vol|60_-1.0@add_fun@R_NetROA_s_First|row_zscore_1.0@add_fun@' \
-              'PEG_PARENTNETPROFIT_3Y|col_zscore|120_-1.0@add_fun@R_TotLiab_s_YOY_First|row_zscore_1.0@add_fun@' \
-              'R_CFO_s_YOY_First|col_zscore|20_-1.0@add_fun@PEG_PARENTNETPROFIT_3Y|col_zscore|5_-1.0@add_fun@' \
-              'R_DebtAssets_QTTM|row_zscore_-1.0@add_fun@restricted_shares|pnd_vol|120_-1.0@add_fun@' \
-              'R_Tax_TotProfit_s_First|pnd_vol|5_1.0@add_fun@R_ParentProfit_s_POP_First|pnd_vol|5_1.0@add_fun@' \
-              'R_FairValChg_TotProfit_s_First|pnd_vol|20_1.0'
+    str_1 = 'index_000905|20|True|0.1'
+    exe_str = 'R_ROENetIncRecur_s_First|row_zscore_1.0@add_fun@TURNRATE|pnd_vol|5_-1.0@add_fun@' \
+              'PS_TTM|row_zscore_-1.0@add_fun@bar_num_12_df|row_zscore_-1.0@add_fun@' \
+              'R_EPS_s_YOY_First|col_zscore|60_1.0@add_fun@R_LTDebt_WorkCap_QTTM|row_zscore_-1.0@add_fun@' \
+              'PEG_PARENTNETPROFIT_3Y|col_zscore|60_-1.0@add_fun@R_TotRev_TTM_QTTM|col_zscore|20_1.0@add_fun@' \
+              'R_ACCEPTINVREC_QTTM|row_zscore_1.0@add_fun@R_NetWorkCapital_QSD4Y|row_zscore_-1.0@add_fun@' \
+              'R_INVENTORY_QTTM|pnd_vol|20_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

@@ -1228,9 +1228,9 @@ def main_fun(str_1, exe_str):
     pnl_df.name = alpha_name
     pos_df = pos_df.shift(2)
     # 相关性测试
-    bt.commit_check(pd.DataFrame(pnl_df))
-    print(info_df)
-    plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
+    # bt.commit_check(pd.DataFrame(pnl_df))
+    # print(info_df)
+    # plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df), alpha_name, '')
     if factor_test.if_weight != 0:
         pos_df['IF01'] = -factor_test.if_weight * pos_df.sum(axis=1)
     if factor_test.ic_weight != 0:
