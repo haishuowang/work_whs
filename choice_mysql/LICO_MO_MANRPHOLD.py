@@ -67,28 +67,31 @@ def company_to_stock(map_data_c, company_code_df):
 #
 if __name__ == '__main__':
     print(1)
-    raw_df = pd.read_sql('SELECT * FROM choice_fndb.LICO_MO_MANRPHOLD', sql.conn)
+    raw_df = pd.read_sql('SELECT * FROM choice_fndb.TRAD_SK_FACTOR1 '
+                         'WHERE TRADEDATE in ("20190612", "20190613", "20190614")', sql.conn)
     print(2)
+    a = raw_df.pivot('TRADEDATE', 'SECURITYCODE', 'AFACTOR')
+    b = raw_df.pivot('TRADEDATE', 'SECURITYCODE', 'TAFACTOR')
     # raw_df[['NOTICEDATE', 'PERSONCODE', 'PERSONNAME', 'POSITIONCODE', 'CHANNUM', 'AVGPRICE']]
-    raw_df['EITIME'] = [sql.date_deal_fun(x) for x in raw_df['EITIME']]
-    raw_df['NOTICEDATE'] = sql.create_date_list(raw_df['EITIME'], raw_df['NOTICEDATE'])
-
-    raw_df = time_format(raw_df, 'EITIME')
-    map_data_c = sql.get_map_data()
-    raw_df_c = raw_df[list(map(lambda x: True if x in map_data_c.index else False, raw_df['COMPANYCODE']))]
-    raw_df_c['CHANCASH'] = raw_df_c['CHANNUM'] * raw_df_c['AVGPRICE']
-    tmp_df = raw_df_c.groupby(['NOTICEDATE', 'COMPANYCODE'])['CHANCASH'].sum().unstack()
-    target_df = company_to_stock(map_data_c, tmp_df)
-    target_df_1 = (target_df > 100000).astype(int)
-    target_df_2 = (target_df > 200000).astype(int)
-    target_df_3 = (target_df > 300000).astype(int)
-    data_raw = (target_df_1 + target_df_2 + target_df_3)
-
-    a = pd.DataFrame.from_dict(Counter(data_raw.columns), orient='index')
-    b = a[a > 1].dropna()
-    c = a[a == 1].dropna().index
-    data = data_raw[c]
-    for code in b.index:
-        print(code)
-        data[code] = data_raw[code].sum(1)
-    data.to_pickle('/mnt/mfs/dat_whs/LICO_MO_MANRPHOLD.pkl')
+    # raw_df['EITIME'] = [sql.date_deal_fun(x) for x in raw_df['EITIME']]
+    # raw_df['NOTICEDATE'] = sql.create_date_list(raw_df['EITIME'], raw_df['NOTICEDATE'])
+    #
+    # raw_df = time_format(raw_df, 'EITIME')
+    # map_data_c = sql.get_map_data()
+    # raw_df_c = raw_df[list(map(lambda x: True if x in map_data_c.index else False, raw_df['COMPANYCODE']))]
+    # raw_df_c['CHANCASH'] = raw_df_c['CHANNUM'] * raw_df_c['AVGPRICE']
+    # tmp_df = raw_df_c.groupby(['NOTICEDATE', 'COMPANYCODE'])['CHANCASH'].sum().unstack()
+    # target_df = company_to_stock(map_data_c, tmp_df)
+    # target_df_1 = (target_df > 100000).astype(int)
+    # target_df_2 = (target_df > 200000).astype(int)
+    # target_df_3 = (target_df > 300000).astype(int)
+    # data_raw = (target_df_1 + target_df_2 + target_df_3)
+    #
+    # a = pd.DataFrame.from_dict(Counter(data_raw.columns), orient='index')
+    # b = a[a > 1].dropna()
+    # c = a[a == 1].dropna().index
+    # data = data_raw[c]
+    # for code in b.index:
+    #     print(code)
+    #     data[code] = data_raw[code].sum(1)
+    # data.to_pickle('/mnt/mfs/dat_whs/LICO_MO_MANRPHOLD.pkl')

@@ -1092,6 +1092,6 @@ if __name__ == '__main__':
               'R_AssetDepSales_QTTM|row_zscore_1.0'
 
     a = time.time()
-    main_fun(str_1, exe_str)
+    # main_fun(str_1, exe_str)
     b = time.time()
     print(b - a)

@@ -21,7 +21,7 @@ def date_deal_fun(x, cut_hour=7):
 
 def part_deal_fun(stock_id, target_df):
     print(stock_id)
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     stock_df = pd.read_sql(f"SELECT FirstPostTime FROM StockBar_em WHERE StockId='{stock_id}'", conn)
     stock_df['FirstPostTime'] = [date_deal_fun(x) for x in stock_df['FirstPostTime']]
@@ -35,7 +35,7 @@ def part_deal_fun(stock_id, target_df):
 
 def part_deal_fun_mul(stock_id, cut_hour):
     print(stock_id)
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     stock_df = pd.read_sql(f"SELECT FirstPostTime FROM StockBar_em WHERE StockId='{stock_id}'", conn)
     stock_df['FirstPostTime'] = [date_deal_fun(x, cut_hour) for x in stock_df['FirstPostTime']]
@@ -48,7 +48,7 @@ def part_deal_fun_mul(stock_id, cut_hour):
 
 
 def get_bar_num(save_root_path, cut_hour):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     all_stock_id = pd.read_sql('SELECT DISTINCT StockId '
                                'FROM StockBar_em', conn)

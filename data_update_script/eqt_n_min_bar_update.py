@@ -325,7 +325,7 @@ def adj_vwap(price_df):
 
 if __name__ == '__main__':
     a = time.time()
-    begin_str = (datetime.now()-timedelta(3)).strftime('%Y%m%d')
+    begin_str = (datetime.now()-timedelta(4)).strftime('%Y%m%d')
     end_str = datetime.now().strftime('%Y%m%d')
     print(begin_str, end_str)
     create_intra_data_v2(begin_str, end_str, split_time=10)

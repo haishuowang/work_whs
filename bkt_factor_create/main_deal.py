@@ -205,15 +205,34 @@ if __name__ == '__main__':
     ]
 
     data_name_list = [
-        'PEG_EBIT_3Y',
-        'PEG_EBIT_5Y',
-        'PEG_OPCF_3Y',
-        'PEG_OPCF_5Y',
-        'PEG_OPERATEREVE_3Y',
-        'PEG_OPERATEREVE_5Y',
-        'PEG_PARENTNETPROFIT_3Y',
-        'PEG_PARENTNETPROFIT_5Y',
+        'intra_oc_15min_volume_div',
+        'intra_last_15min_volume_pct',
+        'intra_hl_pct',
+        'intra_today_sharpe',
+        'intra_last_15_min_ud',
+        'intra_r_vol_last_15min',
+        'intra_r_vol',
+        'intra_p_vol_last_15min',
+        'intra_p_vol',
+        'intra_money_flow2',
+        'intra_money_flow1',
+        'intra_dn_15_bar_div_daily',
+        'intra_up_15_bar_div_daily',
+        'intra_up_15_bar_div_dn_15_bar',
+        'intra_dn_div_daily',
+        'intra_up_div_daily',
+        'intra_up_div_dn',
+        'intra_dn_vwap',
+        'intra_up_vwap',
+        'intra_dn_15_bar_vwap',
+        'intra_up_15_bar_vwap',
+        'intra_daily_vwap',
+        'intra_dn_15_bar_vol',
+        'intra_up_15_bar_vol',
+        'intra_dn_vol',
+        'intra_up_vol',
     ]
+
     a = time.time()
     for sector_name in sector_name_list:
         print('**********************************************************')

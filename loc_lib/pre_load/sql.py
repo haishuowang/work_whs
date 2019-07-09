@@ -6,8 +6,7 @@ from sqlalchemy import create_engine
 
 usr_name = 'whs'
 pass_word = 'kj23#12!^3weghWhjqQ2rjj197'
-engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:3306/choice_fndb?charset=utf8')
-
+engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.33:3306/choice_fndb?charset=utf8')
 conn = engine.connect()
 
 
@@ -135,5 +134,6 @@ def date_deal_fun(x):
 
 
 if __name__ == '__main__':
-    map_data_c = get_map_data()
-    print(map_data_c)
+    raw_df = pd.read_sql(f'SELECT REPORTDATE, FIRSTNOTICEDATE, LATESTNOTICEDATE, STARTDATE '
+                         f'FROM LICO_FN_RGINCOME', conn)
+    print(raw_df)

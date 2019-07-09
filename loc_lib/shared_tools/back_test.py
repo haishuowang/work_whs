@@ -24,9 +24,14 @@ def AZ_Rolling_mean_multi(data, window, func, ncore=4):
     return result
 
 
-def AZ_Load_csv(target_path, parse_dates=True, sep='|', **kwargs):
-    target_df = pd.read_table(target_path, sep=sep, index_col=0, low_memory=False, parse_dates=parse_dates, **kwargs)
+def AZ_Load_csv(target_path, parse_dates=True, index_col=0, sep='|', **kwargs):
+    target_df = pd.read_table(target_path, sep=sep, index_col=index_col, low_memory=False,
+                              parse_dates=parse_dates, **kwargs)
     return target_df
+
+
+def AZ_Save_csv(target_df, target_path, **kwargs):
+    target_df.to_csv(target_path, sep='|', **kwargs)
 
 
 def AZ_Catch_error(func):
@@ -248,14 +253,19 @@ def AZ_clear_columns(stock_list):
     return [x[2:] + '.' + x[:2] for x in stock_list]
 
 
-def AZ_Delete_file(target_path, except_list=None):
+def AZ_Delete_file(target_path, target_list=None, except_list=None):
+
     if except_list is None:
         except_list = []
-    assert type(except_list) == list
+
     file_list = os.listdir(target_path)
-    file_list = list(set(file_list) - set(except_list))
+    if target_list is None:
+        file_list = list(set(file_list) - set(except_list))
+    else:
+        file_list = list(set(file_list) & set(target_list))
     for file_name in sorted(file_list):
         os.remove(os.path.join(target_path, file_name))
+        # print(f'delete {file_name}~~')
 
 
 def AZ_turnover(pos_df):

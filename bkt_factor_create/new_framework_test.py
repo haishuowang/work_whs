@@ -3,6 +3,7 @@ import sys
 sys.path.append('/mnt/mfs')
 
 from work_whs.loc_lib.pre_load import *
+from work_whs.loc_lib.pre_load.plt import plot_send_result
 from work_whs.bkt_factor_create.base_fun_import import DiscreteClass, ContinueClass
 from multiprocessing import Lock
 import warnings
@@ -530,4 +531,7 @@ def main_fun():
 
 
 if __name__ == '__main__':
-    main_fun()
+    # main_fun()
+    pass
+
+

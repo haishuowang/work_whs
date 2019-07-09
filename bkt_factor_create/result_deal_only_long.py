@@ -872,8 +872,8 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
             pos_df = self.signal_to_pos_ls(signal_df, ls_para)
             pnl_table = pos_df.shift(self.lag) * self.return_df
             pnl_df = pnl_table.sum(1)
-            sample_in_index = (self.xinx < cut_time)
-            sample_out_index = (self.xinx >= cut_time)
+            sample_in_index = (pnl_df.index < cut_time)
+            sample_out_index = (pnl_df.index >= cut_time)
 
             pnl_df_in = pnl_df[sample_in_index]
             pnl_df_out = pnl_df[sample_out_index]
@@ -1093,8 +1093,8 @@ def main_fun(str_1, exe_str, i):
     if_new_program = True
 
     begin_date = pd.to_datetime('20130101')
-    end_date = pd.to_datetime('20190411')
-    # end_date = datetime.now()
+    # end_date = pd.to_datetime('20190411')
+    end_date = datetime.now()
     cut_date = pd.to_datetime('20180101')
     lag = 2
     return_file = ''
@@ -1145,13 +1145,20 @@ if __name__ == '__main__':
     result_root_path = '/mnt/mfs/dat_whs/result_new'
     pool = Pool(20)
     for sector_name in sector_name_list:
-        result_df = pd.read_csv(f'{result_root_path}/only_long/{sector_name}.csv', header=None)
-        for i in result_df.index:
-            print('*******************************************')
-            info_str = result_df.loc[i].values[0]
-            str_1, exe_str = info_str.split('#')
+        result_path = f'{result_root_path}/only_long/{sector_name}.csv'
+        if os.path.exists(result_path):
+            result_df = pd.read_csv(result_path, header=None)
+            for i in result_df.index:
+                if sector_name in ['index_000300', 'index_000905']:
+                    continue
+                if sector_name in ['market_top_300to800plus'] and i < 21:
+                    continue
 
-            a = time.time()
-            info_df, pnl_df, pos_df = main_fun(str_1, exe_str, i)
-            b = time.time()
-            print(b - a)
+                print('*******************************************')
+                info_str = result_df.loc[i].values[0]
+                str_1, exe_str = info_str.split('#')
+
+                a = time.time()
+                info_df, pnl_df, pos_df = main_fun(str_1, exe_str, i)
+                b = time.time()
+                print(b - a)

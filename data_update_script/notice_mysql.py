@@ -26,7 +26,7 @@ def save_fun(df, save_path, sep='|'):
 
 
 def class_bulletintype(StockId):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     try:
         exe_str = f'SELECT * FROM crawl.StockBulletin_sina WHERE StockId="{StockId}"'
@@ -48,7 +48,7 @@ def class_bulletintype(StockId):
 
 
 def get_bulletin_num_table():
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     StockId_df = pd.read_sql('SELECT StockId FROM crawl.StockBulletin_sina', conn)
     StockId_list = sorted(list(set(StockId_df.values.ravel())))[:3]
@@ -69,7 +69,7 @@ def get_bulletin_num_table():
 
 
 def get_lsgg_table(root_path, save_path):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     print(0)
     print(datetime.now())
@@ -88,7 +88,7 @@ def get_lsgg_table(root_path, save_path):
 
 
 def get_bulletin_table(root_path, save_path):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     lsgg_df = pd.read_sql('SELECT StockId, ReportDate FROM crawl.StockBulletin_sina', conn)
     # LSGG_df.to_pickle('/mnt/mfs/dat_whs/tmp/LSGG.pkl')
@@ -116,7 +116,7 @@ def date_deal_fun(x):
 
 
 def get_news_table(root_path, save_path):
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     news_df = pd.read_sql('SELECT StockId, NewsDate FROM crawl.StockNews_xueqiu', conn)
     news_df['mark'] = 1
@@ -134,7 +134,7 @@ def get_news_table(root_path, save_path):
 
 class ClassifyBulletin:
     def __init__(self, save_path):
-        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
         conn = engine.connect()
         news_df = pd.read_sql('SELECT StockId, BulletinTitle, ReportDate FROM crawl.StockBulletin_sina', conn)
         news_df['mark'] = 1
@@ -198,7 +198,7 @@ class ClassifyBulletin:
 
 class ClassifyNews:
     def __init__(self, save_path):
-        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+        engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
         conn = engine.connect()
         news_df = pd.read_sql('SELECT StockId, NewsDate, NewsTitle, Summary FROM crawl.StockNews_xueqiu', conn)
         news_df['mark'] = 1
@@ -278,7 +278,7 @@ class ClassifyNews:
 
 
 def test_fun():
-    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.28:7777/{mysql_name}?charset=utf8')
+    engine = create_engine(f'mysql+pymysql://{usr_name}:{pass_word}@192.168.16.10:7777/{mysql_name}?charset=utf8')
     conn = engine.connect()
     news_df = pd.read_sql('SELECT StockId, NewsDate, SourceDomain FROM crawl.StockNews_xueqiu', conn)
     news_df['mark'] = 1

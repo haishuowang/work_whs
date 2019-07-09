@@ -1083,13 +1083,13 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'index_000905|5|True|0.1'
-    exe_str = 'TURNRATE|pnd_vol|60_-1.0@add_fun@R_NetROA_s_First|col_zscore|120_1.0@add_fun@' \
-              'R_OperProfit_sales_s_First|col_zscore|60_1.0@add_fun@R_GSCF_TTM_QSD4Y|pnd_vol|120_1.0@add_fun@' \
-              'R_NetDebt_First|pnd_vol|120_1.0@add_fun@R_GSCF_TTM_QSD4Y|pnd_vol|20_1.0@add_fun@' \
-              'R_ParentProfit_s_POP_First|pnd_vol|5_1.0@add_fun@R_OPCF_sales_s_First|pnd_vol|60_-1.0@add_fun@' \
-              'R_TotRev_s_POP_First|pnd_vol|20_1.0@add_fun@PE_TTM|row_zscore_-1.0@add_fun@' \
-              'R_AssetDepSales_QTTM|row_zscore_1.0'
+    str_1 = 'index_000905|10|True|0.1'
+    exe_str = 'PEG_PARENTNETPROFIT_5Y|row_zscore_-1.0@add_fun@TVOL|pnd_vol|5_-1.0@add_fun@' \
+              'R_OperProfit_s_YOY_First|col_zscore|60_1.0@add_fun@R_IntDebt_First|col_zscore|20_1.0@add_fun@' \
+              'PEG_OPCF_3Y|col_zscore|5_-1.0@add_fun@R_NonOperProft_TotProfit_s_First|pnd_vol|60_-1.0@add_fun@' \
+              'R_FinCf_TTM_QTTM|pnd_vol|20_-1.0@add_fun@R_OperProfit_s_POP_First|pnd_vol|60_-1.0@add_fun@' \
+              'R_OPCF_TTM_QSD4Y|col_zscore|20_-1.0@add_fun@R_Cashflow_s_YOY_First|pnd_vol|60_1.0@add_fun@' \
+              'PE_TTM|pnd_vol|5_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)
