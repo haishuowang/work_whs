@@ -7,6 +7,7 @@ from work_whs.loc_lib.pre_load.plt import savfig_send
 from work_whs.loc_lib.pre_load.senior_tools import SignalAnalysis
 from work_whs.test_future.FutDataLoad import FutData, FutClass
 from work_whs.test_future.signal_fut_fun import FutIndex, Signal, Position
+import talib as ta
 
 
 def get_active_df(data_name):

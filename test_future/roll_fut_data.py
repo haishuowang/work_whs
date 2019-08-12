@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append('/mnf/mfs')
+sys.path = ['/mnt/mfs'] + sys.path
 from work_whs.loc_lib.pre_load import *
 from work_whs.loc_lib.pre_load import log
 from work_whs.loc_lib.pre_load.plt import savfig_send
@@ -54,7 +54,7 @@ class RollData(FutData):
             tmp_act_df = tmp_df.pivot(index='Date', columns=0, values='level_0')
             # act_df
             x = tmp_act_df[(tmp_act_df[instrument + '01'].shift(1) < tmp_act_df[instrument + '01'])]
-            act_df = x.reindex(tmp_act_df.index).fillna(method='ffill').shift(1)
+            act_df = x.reindex(tmp_act_df.index).fillna(method='ffill')
             return act_df, adj_factor
         except Exception as error:
             print(instrument, error)
@@ -72,6 +72,8 @@ class RollData(FutData):
 
         result_list = [x.get() for x in result_list]
         target_df = pd.concat([x[0] for x in result_list], axis=1)
+        target_df.loc[self.next_trade_date(target_df.index[-1])] = np.nan
+        target_df = target_df.shift(1)
         adj_factor_df = pd.concat([x[1] for x in result_list], axis=1)
 
         target_df.to_csv(f'/mnt/mfs/dat_whs/DAT_FUT/Active_{data_name}', sep='|')
@@ -87,3 +89,4 @@ if __name__ == '__main__':
     roll_data = RollData(fut_root_path)
     for data_name in data_name_list:
         target_df, adj_factor_df = roll_data.run(data_name)
+    pass

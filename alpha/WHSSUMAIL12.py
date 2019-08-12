@@ -870,46 +870,40 @@ class FactorTest(FactorTestBase, DiscreteClass, ContinueClass, TrainFunSet):
     def back_test(self, data_df, cut_date, percent, return_pos=False, ls_para='ls'):
         cut_time = pd.to_datetime(cut_date)
         signal_df = self.row_extre(data_df, self.sector_df, percent)
-        if len(signal_df.abs().sum(1).replace(0, np.nan).dropna()) / len(self.xinx) > 0.7:
-            pos_df = self.signal_to_pos_ls(signal_df, ls_para)
-            pnl_table = pos_df.shift(self.lag) * self.return_df
-            pnl_df = pnl_table.sum(1)
-            sample_in_index = (self.xinx < cut_time)
-            sample_out_index = (self.xinx >= cut_time)
+        # if len(signal_df.abs().sum(1).replace(0, np.nan).dropna()) / len(self.xinx) > 0.7:
+        pos_df = self.signal_to_pos_ls(signal_df, ls_para)
+        pnl_table = pos_df.shift(self.lag) * self.return_df
+        pnl_df = pnl_table.sum(1)
+        sample_in_index = (self.xinx < cut_time)
+        sample_out_index = (self.xinx >= cut_time)
 
-            pnl_df_in = pnl_df[sample_in_index]
-            pnl_df_out = pnl_df[sample_out_index]
+        pnl_df_in = pnl_df[sample_in_index]
+        pnl_df_out = pnl_df[sample_out_index]
 
-            pos_df_in = pos_df[sample_in_index]
-            pos_df_out = pos_df[sample_out_index]
+        pos_df_in = pos_df[sample_in_index]
+        pos_df_out = pos_df[sample_out_index]
 
-            sp_in = bt.AZ_Sharpe_y(pnl_df_in)
-            sp_out = bt.AZ_Sharpe_y(pnl_df_out)
+        sp_in = bt.AZ_Sharpe_y(pnl_df_in)
+        sp_out = bt.AZ_Sharpe_y(pnl_df_out)
 
-            pot_in = bt.AZ_Pot(pos_df_in, pnl_df_in.sum())
-            pot_out = bt.AZ_Pot(pos_df_out, pnl_df_out.sum())
+        pot_in = bt.AZ_Pot(pos_df_in, pnl_df_in.sum())
+        pot_out = bt.AZ_Pot(pos_df_out, pnl_df_out.sum())
 
-            sp = bt.AZ_Sharpe_y(pnl_df)
-            pot = bt.AZ_Pot(pos_df, pnl_df.sum())
-            if self.if_only_long:
-                if ls_para == 'l':
-                    way_in, way_out, way = 1, 1, 1
-                elif ls_para == 's':
-                    way_in, way_out, way = -1, -1, -1
-                else:
-                    way_in, way_out, way = self.judge_way(sp_in), self.judge_way(sp_out), self.judge_way(sp)
+        sp = bt.AZ_Sharpe_y(pnl_df)
+        pot = bt.AZ_Pot(pos_df, pnl_df.sum())
+        if self.if_only_long:
+            if ls_para == 'l':
+                way_in, way_out, way = 1, 1, 1
+            elif ls_para == 's':
+                way_in, way_out, way = -1, -1, -1
             else:
                 way_in, way_out, way = self.judge_way(sp_in), self.judge_way(sp_out), self.judge_way(sp)
-            result_list = [sp_in, sp_out, sp, pot_in, pot_out, pot, way_in, way_out, way]
-            info_df = pd.Series(result_list, index=['sp_in', 'sp_out', 'sp',
-                                                    'pot_in', 'pot_out', 'pot',
-                                                    'way_in', 'way_out', 'way'])
         else:
-            info_df = pd.Series([0] * 9, index=['sp_in', 'sp_out', 'sp',
+            way_in, way_out, way = self.judge_way(sp_in), self.judge_way(sp_out), self.judge_way(sp)
+        result_list = [sp_in, sp_out, sp, pot_in, pot_out, pot, way_in, way_out, way]
+        info_df = pd.Series(result_list, index=['sp_in', 'sp_out', 'sp',
                                                 'pot_in', 'pot_out', 'pot',
                                                 'way_in', 'way_out', 'way'])
-            pnl_df = pd.Series([0] * len(self.xinx), index=self.xinx)
-            pos_df = pd.DataFrame(columns=data_df.columns, index=data_df.index)
         if return_pos:
             return info_df, pnl_df, pos_df
         else:
@@ -1083,12 +1077,12 @@ def main_fun(str_1, exe_str):
 
 
 if __name__ == '__main__':
-    str_1 = 'market_top_300to800plus|5|True|0.1'
-    exe_str = 'R_NetIncRecur_s_First|row_zscore_1.0@add_fun@R_INVENTORY_QTTM|pnd_vol|5_-1.0@add_fun@' \
-              'R_ParentProfit_s_YOY_First|col_zscore|60_1.0@add_fun@R_WorkCapital_QTTM|col_zscore|60_1.0@add_fun@' \
-              'R_TotRev_s_YOY_First|pnd_vol|120_-1.0@add_fun@PEG_OPCF_3Y|col_zscore|120_-1.0@add_fun@' \
-              'ab_sale_mng_exp|pnd_vol|60_1.0@add_fun@R_Tax_TotProfit_QTTM|row_zscore_-1.0@add_fun@' \
-              'R_FinExp_sales_s_First|pnd_vol|60_1.0'
+    str_1 = 'index_000905|20|True|0.1'
+    exe_str = 'PEG_PARENTNETPROFIT_3Y|col_zscore|120_-1.0@add_fun@PEG_OPERATEREVE_5Y|row_zscore_-1.0@add_fun@' \
+              'bar_num_7_df|pnd_vol|120_-1.0@add_fun@R_NetIncRecur_QTTM|row_zscore_1.0@add_fun@' \
+              'RZMRE|pnd_vol|60_-1.0@add_fun@R_ParentProfit_s_YOY_First|row_zscore_1.0@add_fun@' \
+              'ab_inventory|pnd_vol|5_-1.0@add_fun@R_NetWorkCapital_QTTM|pnd_vol|20_-1.0@add_fun@' \
+              'R_NetMargin_s_YOY_First|pnd_vol|20_-1.0@add_fun@R_Tax_TotProfit_s_First|col_zscore|20_-1.0'
 
     a = time.time()
     main_fun(str_1, exe_str)

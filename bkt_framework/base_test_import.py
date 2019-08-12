@@ -631,7 +631,8 @@ class FactorTest(FactorTestBase):
         best_factor_way = select_info_df[str(best_factor)]['way_in']
 
         for low_corr_factor in low_corr_df.index:
-            # print(select_info_df[str(low_corr_factor)])
+            print('low_corr_factor info')
+            print(select_info_df[str(low_corr_factor)])
             low_corr_factor_way = self.factor_way_dict[str(low_corr_factor)]
             if best_factor_way * low_corr_factor_way > 0:
                 tmp_mix_factor = ['add', (best_factor, tmp_fun_2(low_corr_factor)), ()]
@@ -718,7 +719,7 @@ class FactorTest(FactorTestBase):
 
     def train_fun(self, fun_use_num, cut_date, percent, evol_num=6, if_multy=False):
         try:
-            result_save_path = '/mnt/mfs/dat_whs/result_new2/test02'
+            result_save_path = '/mnt/mfs/dat_whs/result_new2/test03'
             tmp_fun_1 = lambda x: True if '[' in x else False
             tmp_fun_2 = lambda x: eval(x) if '[' in x else x
 
@@ -743,7 +744,7 @@ class FactorTest(FactorTestBase):
             # 最大循环次数
             loop_max = 6
             # 下一轮进化
-            evol_keep_num = 50
+            evol_keep_num = 70
             while loop_now < loop_max:
                 loop_now += 1
                 print('_______________________________')
@@ -761,13 +762,17 @@ class FactorTest(FactorTestBase):
                 select_sp_in = select_info_df.loc['sp_in'].abs()
                 select_pot_in = select_info_df.loc['pot_in'].abs()
                 select_sp_out = select_info_df.loc['sp_out'].abs()
+                select_sp = select_info_df.loc['sp'].abs()
+                select_sp_sort = select_sp.sort_values(ascending=False).replace(0, np.nan).dropna()
+                high_sp_factor = select_sp_sort[select_sp_sort>0.5].index
 
                 select_factor_scores = self.get_scores_fun(select_sp_in, select_pot_in, select_sp_out) \
                     .sort_values(ascending=False)
 
                 if select_factor_scores.iloc[0] > best_score:
                     best_factor = tmp_fun_2(select_factor_scores.index[0])
-                    low_corr_df = select_pnl_df.corr()[str(best_factor)].fillna(0).abs().sort_values()
+                    low_corr_df = select_pnl_df.corr()[str(best_factor)][high_sp_factor].fillna(0).abs().sort_values()
+                    low_corr_df = low_corr_df[low_corr_df != 0]
                     best_score = select_factor_scores.iloc[0]
                     best_pnl = select_pnl_df[str(best_factor)]
                     best_info = select_info_df[str(best_factor)]
@@ -779,8 +784,8 @@ class FactorTest(FactorTestBase):
 
                 else:
                     if best_factor is not '':
-                        low_corr_df = select_pnl_df[select_factor_scores.index[:evol_keep_num]].corr()[
-                            str(best_factor)].fillna(0).sort_values()
+                        low_corr_df = select_pnl_df.corr()[str(best_factor)][high_sp_factor].fillna(0).sort_values()
+                        low_corr_df = low_corr_df[low_corr_df != 0]
                     else:
                         low_corr_df = pd.DataFrame()
                     print('evolution fail...')

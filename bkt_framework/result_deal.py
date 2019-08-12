@@ -95,14 +95,16 @@ def main_fun(base_info_str, exe_str, i):
     if result_df.prod()[0] == 1 and len(corr_sr[corr_sr > 0.6]) == 0 and info_df['pot'] > 50:
         pnl_df.to_pickle(f'{pnl_save_path}/{sector_name}_{i}')
         plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
-                         f'[new framewor result]{sector_name}_{i}_{if_only_long} {round(annual_r, 4)}',
+                         f'[new framewor result]{sector_name}|{hold_time}|{if_only_long}|{percent}|{i} '
+                         f'{round(annual_r, 4)}',
 
                          pd.DataFrame(info_df).to_html() + corr_info_df.to_html() +
                          pd.DataFrame(corr_sr[corr_sr > 0.5]).to_html())
         print('success')
     else:
         plot_send_result(pnl_df, bt.AZ_Sharpe_y(pnl_df),
-                         f'[new framewor result]{sector_name}_{i}_{if_only_long} {round(annual_r, 4)} fail',
+                         f'[new framewor result]{sector_name}|{hold_time}|{if_only_long}|{percent}|{i} '
+                         f'{round(annual_r, 4)} fail',
                          pd.DataFrame(info_df).to_html() + corr_info_df.to_html() +
                          pd.DataFrame(corr_sr[corr_sr > 0.5]).to_html())
         print('fail')
@@ -112,11 +114,9 @@ def main_fun(base_info_str, exe_str, i):
 
 if __name__ == '__main__':
     result_root_path = '/mnt/mfs/dat_whs/result_new2'
-    test_name = 'test01'
-    sector_name = 'market_top_300plus'
+    test_name = 'test02'
+    sector_name = 'index_000300'
     with open(f'{result_root_path}/{test_name}/{sector_name}.csv', 'r') as f:
         for i, row in enumerate(f.readlines()):
             base_info_str, exe_str, way = row.split('#')
             info_df, pnl_df, pos_df = main_fun(base_info_str, exe_str, i)
-
-    # info_df, pnl_df, pos_df = main_fun('', '', 'x')
