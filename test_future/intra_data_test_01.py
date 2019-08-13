@@ -48,7 +48,7 @@ def part_test(con_id, begin_time, end_time,
               # v_window, v_limit,
               # voli_window, voli_limit,
               CCI_window, CCI_limit,
-              # hold_time,
+              hold_time,
               cut_num):
     # print(con_id, begin_time, end_time)
     try:
@@ -170,8 +170,8 @@ def part_test(con_id, begin_time, end_time,
 
         # part_data_df['position'] = part_data_df['CCI_pos']
 
-        part_data_df['signal'] = part_data_df['test_signal']
-        part_data_df['position'] = Position.fun_1(part_data_df['signal'])#  * part_data_df['Vol_OI_pos']
+        part_data_df['signal'] = part_data_df['boll_signal']
+        part_data_df['position'] = Position.fun_1(part_data_df['signal'])
 
         part_data_df['position_exe'] = part_data_df['position'].shift(1)
         part_data_df['position_sft'] = part_data_df['position'].shift(2)
@@ -236,13 +236,13 @@ def part_test(con_id, begin_time, end_time,
         return pd.Series(), pd.Series(), pd.Series()
 
 
-def test_fun(fut_name, CCI_window, CCI_limit, cut_num):
+def test_fun(fut_name, CCI_window, CCI_limit, hold_time, cut_num):
     result_list = []
     pool = Pool(20)
     for con_id, part_info_df in active_df[[f'{fut_name}01']].groupby(f'{fut_name}01'):
         active_begin = fut_data.last_trade_date(part_info_df.index[0]) + timedelta(hours=17)
         active_end = part_info_df.index[-1] + timedelta(hours=17)
-        args = [con_id, active_begin, active_end, CCI_window, CCI_limit, cut_num]
+        args = [con_id, active_begin, active_end, CCI_window, CCI_limit, hold_time, cut_num]
         # part_test(*args)
         # print(part_info_df.index[0], part_info_df.index[-1])
         result_list.append(pool.apply_async(part_test, args=args))
@@ -267,7 +267,7 @@ def test_fun(fut_name, CCI_window, CCI_limit, cut_num):
     #     print(x, part_pnl.sum())
     #     plt.plot(part_pnl.cumsum())
     #     savfig_send(subject=f'{x}  {bt.AZ_Sharpe_y(part_pnl)}')
-    print(fut_name, sp, pot, CCI_window, CCI_limit, cut_num)
+    print(fut_name, sp, pot, CCI_window, CCI_limit, hold_time, cut_num)
     if abs(sp) > 1. and abs(pot) > 10:
         plt.figure(figsize=[16, 8])
         pnl_df.index = pd.to_datetime(pnl_df.index)
@@ -306,16 +306,16 @@ def test_fun(fut_name, CCI_window, CCI_limit, cut_num):
 
 
 def ana_fun(data_df, fut_name, col_name):
-    # raw_return_df = data_df['price_return']
-    raw_return_df = data_df['pnl']
+    raw_return_df = data_df['price_return']
+    # raw_return_df = data_df['pnl']
     signal_df = data_df[col_name]
     SignalAnalysis.CDF(signal_df, raw_return_df, hold_time=1, title=f'{fut_name} {col_name} CDF Figure', lag=1)
 
 
-def single_main(fut_name, window, limit, cut_num):
+def single_main(fut_name, window, limit, hold_time, cut_num):
     # fut_name, window, limit, cut_num = 'I', 10, 1, 20
     # fut_name, window, limit, cut_num = 'RB', 40, 1, 3
-    data_df = test_fun(fut_name, window, limit, cut_num)
+    data_df = test_fun(fut_name, window, limit, hold_time, cut_num)
 
     # ana_fun(data_df, fut_name, 'OpenInterest_core')
     # ana_fun(data_df, fut_name, 'Volume_zscore')
@@ -345,13 +345,16 @@ def main(fut_name_list, ban_name_list):
 
     # return data_df
     cut_num_list = [3, 5, 10, 20, 30]
+    hold_time_list = [10, 20, 40, 60, 120]
     for cut_num in cut_num_list:
         for fut_name in fut_name_list:
             for CCI_window in CCI_w_list:
+                # for hold_time in hold_time_list:
                 print(fut_name)
                 if fut_name in ban_name_list:
                     continue
-                single_main(fut_name, CCI_window, CCI_limit, cut_num)
+
+                single_main(fut_name, CCI_window, CCI_limit, 1, cut_num)
                 # data_df = test_fun(fut_name, CCI_window, CCI_limit, cut_num)
 
 
@@ -408,13 +411,14 @@ if __name__ == '__main__':
         'OI', 'ZC', 'SM', 'BB', 'FB', 'B',
     ]
     # main(fut_name_list, ban_name_list)
-    fut_name_list = ['RB', 'I', 'J', 'JM', 'RU', 'BU', 'HC', 'NI', 'ZN', 'SC', 'JD', 'CU', 'TA', 'MA', 'M']
-    # fut_name_list = ['MA', 'M']
+    # fut_name_list = ['RB', 'I', 'J', 'JM', 'RU', 'BU', 'HC', 'NI', 'ZN', 'SC', 'JD', 'CU', 'TA', 'MA', 'M']
+    fut_name_list = ['JD', 'CU', 'TA', 'MA', 'M', 'BU']
     data_df = main(fut_name_list, error_list)
 
     # fut_name, window, limit, cut_num = 'MA', 120, 1, 5
     # fut_name, window, limit, cut_num = 'SC', 60, 1, 20
-    # data_df = single_main(fut_name, window, limit, cut_num)
+    # fut_name, window, limit, hold_time, cut_num = 'I', 30, 1, 10, 3
+    # data_df = single_main(fut_name, window, limit, hold_time, cut_num)
 
     # for x, part_data_df in data_df.groupby(['weekday']):
     #     part_pnl = part_data_df['pnl'].fillna(0).values
@@ -427,35 +431,3 @@ if __name__ == '__main__':
     #     print(x, part_pnl.sum())
     #     plt.plot(part_pnl.cumsum())
     #     savfig_send(subject=f'{x}  {bt.AZ_Sharpe_y(part_pnl)}')
-# 70 50 30
-# boll
-# I 1.7751 14.637673042752189 10 1 20
-# I 077 42.250170418933195 40 1 201.4
-# I 1.7172 10.208387331338246 30 1 3
-
-# J 1.5262 43.850938098554764 40 1 20
-# J 1.5317 35.31747207490148 30 1 20
-# J 1.5262 43.850938098554764 40 1 20
-# J 1.8574 10.63766989026468 20 1 5
-# J 1.8613 10.463650573485896 30 1 3
-
-# RB 1.6369 6.778363309193089 20 1 5
-# RB 1.6122 9.23458693108728 30 1 5
-# RB 1.5097 7.9877299345480095 40 1 3
-
-# CCI
-# I 1.5553 44.436498670997594 30 1 20
-
-# test 3
-# I 1.9282 16.66912400501941 40 1 3
-# I 1.5089 27.097980812523808 40 1 10
-# J 1.6032 24.171569494478522 30 1 10
-# J 1.7793 35.661172402692024 40 1 10
-
-# J 1.5903 38.52005087403436 30 1 20
-# SC 1.705 175.4364497939048 180 1 20
-# SC 2.1932 70.49622264079085 60 1 20
-
-# test 4
-# RB 1.4618 8.946285385280508 CCI_window:40, CCI_limit:1, cut_num=3
-# SC sp:2.1932 pot=70.49622264079085 CCI_window:60, CCI_limit:1, cut_num=20
