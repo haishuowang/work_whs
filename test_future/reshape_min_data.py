@@ -5,6 +5,7 @@ from work_whs.loc_lib.pre_load import *
 
 root_path = '/mnt/mfs/DAT_FUT/intraday/fut_1mbar'
 
+
 # fut_name_list = ['CU', 'ZN', 'AL''PB', 'AU', 'RB', 'RU', 'WR', 'FU', 'AG', 'BU', 'HC', 'NI', 'SN',
 #                  'CF', 'SR', 'TA', 'WH', 'RI', 'JR', 'FG', 'OI', 'RM', 'RS', 'LR', 'SF', 'SM', 'MA',
 #                  'ZC', 'CY', 'AP',
@@ -60,7 +61,18 @@ def deal_contract(fut_name, con_id, cut_num, save_path):
 if __name__ == '__main__':
     cut_num_list = [3, 5, 10, 20, 30]
 
-    fut_name_list = ['RB', 'I', 'J', 'JM', 'BU', 'HC', 'NI', 'ZN', 'SC', 'JD', 'CU', 'TA', 'MA', 'M']
+    fut_name_list = [
+        'RB', 'I', 'J', 'JM', 'BU', 'HC', 'NI', 'ZN', 'SC', 'JD', 'CU', 'TA', 'MA', 'M',
+        'AP', 'RM', 'Y', 'P', 'Y', 'CF', 'OI', 'ZC',
+        'SR', 'RU',
+    ]
+    good_instruments = [
+        'CU', 'ZN', 'AL', 'PB', 'AU', 'RB', 'RU', 'WR', 'FU', 'AG', 'BU', 'HC', 'NI', 'SN',
+        'CF', 'SR', 'TA', 'WH', 'RI', 'JR', 'FG', 'OI', 'RM', 'RS', 'LR', 'SF', 'SM', 'MA',
+        'ZC', 'CY', 'AP',
+        'A', 'B', 'C', 'J', 'L', 'M', 'P', 'V', 'Y', 'JD', 'JM', 'I', 'FB', 'BB', 'PP', 'CS'
+        , 'SC', 'EG'
+    ]
     pool = Pool(10)
     for cut_num in cut_num_list:
         save_path = f'/mnt/mfs/dat_whs/DAT_FUT/intraday/fut_{cut_num}mvolbar'

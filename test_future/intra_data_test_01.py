@@ -96,7 +96,7 @@ def part_test(con_id, begin_time, end_time,
         part_data_df['past_roll_Volume'] = bt.AZ_Rolling_mean(part_data_df[['Volume']], CCI_window)
         v_window = 60
         part_data_df['Volume_zscore'] = bt.AZ_Col_zscore(part_data_df[['Volume']], CCI_window)
-        part_data_df['Volume_signal'] = Signal.fun_1(part_data_df['Volume_zscore'], 0.01)
+        part_data_df['Volume_signal'] = Signal.fun_1(part_data_df['Volume_zscore'], 1)
         # part_data_df['Volume_signal'] = (part_data_df['Volume_zscore'] < 2).astype(int).replace(0, -1)
 
         p_window = 5
