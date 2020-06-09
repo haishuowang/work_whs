@@ -10,14 +10,6 @@
           <option name="port" value="32514" />
         </fileTransfer>
       </webServer>
-      <webServer id="b598312e-87a6-470c-b131-384fa89fe4ea" name="beta" url="http://192.168.16.23">
-        <fileTransfer host="192.168.16.23" port="32514" rootFolder="/mnt/mfs/work_whs" accessType="SFTP">
-          <advancedOptions>
-            <advancedOptions dataProtectionLevel="Private" />
-          </advancedOptions>
-          <option name="port" value="32514" />
-        </fileTransfer>
-      </webServer>
       <webServer id="6d6c3381-d7f4-4c19-b826-3ada6ae96428" name="data" url="http://192.168.16.21">
         <fileTransfer host="192.168.16.21" port="32514" rootFolder="/media/hdd1/dat_whs/data" accessType="SFTP">
           <advancedOptions>

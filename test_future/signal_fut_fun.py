@@ -35,7 +35,7 @@ class FutIndex:
     @staticmethod
     def test_fun(close, n, cap=5, num=4, return_line=False):
         ma_n = bt.AZ_Rolling_mean(close, n)
-        md_n = bt.AZ_Rolling(close, n).apply(lambda x: np.mean(abs(((x - x.mean()) ** num))) ** (1/num), raw=False)
+        md_n = bt.AZ_Rolling(close, n).apply(lambda x: np.mean(abs(((x - x.mean()) ** num))) ** (1 / num), raw=False)
         tmp_df = (close - ma_n) / md_n
         if cap:
             tmp_df[tmp_df > cap] = cap
@@ -54,11 +54,27 @@ class Signal:
         target_df = target_df_up - target_df_dn
         return target_df
 
+    @staticmethod
+    def fun_2(tmp_df, limit_1, limit_2):
+        target_df_up_1 = (tmp_df > limit_1).astype(int)
+        target_df_dn_1 = (tmp_df < -limit_1).astype(int)
+
+        target_df = (target_df_up_1 - target_df_dn_1).replace(0, np.nan)
+
+        # tmp_up_2 = (tmp_df > limit_2)
+        # tmp_dn_2 = (tmp_df < -limit_2)
+        x = ((tmp_df < limit_2) & (tmp_df > -limit_2)).astype(int).replace(0, np.nan).replace(1, 0)
+        # a = (tmp_up_2 * tmp_up_2.shift(1)).replace(0, np.nan).replace(1, 0)
+        # b = (tmp_dn_2 * tmp_dn_2.shift(1)).replace(0, np.nan).replace(1, 0)
+        # target_df = target_df.add(a, fill_value=0).add(b, fill_value=0)
+        target_df = target_df.add(x, fill_value=0)
+        return target_df
+
 
 class Position:
     @staticmethod
     def fun_1(signal_df, method='ffill', limit=None):
-        pos_df = signal_df.replace(0, np.nan).fillna(method=method, limit=limit).fillna(0)
+        pos_df = signal_df.fillna(method=method, limit=limit).fillna(0)
         return pos_df
 
     @staticmethod
@@ -80,3 +96,10 @@ class Position:
         x = (tmp_df < 0).astype(int).replace(0, np.nan).replace(1, 0)
         pos_df = signal_df.add(x, fill_value=0).fillna(method=method, limit=limit).fillna(0)
         return pos_df
+
+    @staticmethod
+    def fun_4(signal_df, hold_time, cap=4):
+        pos_df = bt.AZ_Rolling(signal_df, hold_time).sum()
+        pos_df[pos_df > cap] = cap
+        pos_df[pos_df < -cap] = -cap
+        return pos_df/cap

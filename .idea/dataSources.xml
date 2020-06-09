@@ -29,7 +29,7 @@
         <property name="yearIsDateType" value="false" />
       </driver-properties>
     </data-source>
-    <data-source source="LOCAL" name="crawl@192.168.16.28" uuid="0c51e2dd-0916-4d86-9c80-f96cc2d91a6c">
+    <data-source source="LOCAL" name="crawl@192.168.16.10" uuid="0c51e2dd-0916-4d86-9c80-f96cc2d91a6c">
       <driver-ref>mysql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>

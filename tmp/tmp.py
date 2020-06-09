@@ -1,75 +1,141 @@
-#-*- coding:utf-8 -*-
-from __future__ import division
-import os
-import pandas as pd
-from WindPy import *
-import datetime
+import sys
+
+sys.path.append('/mnt/mfs')
+from work_dmgr_fut.loc_lib.pre_load import *
 
 
-def spot_data_update(ttt):
-    change = []
-    root_file = r'\\win-g12\ResearchWorks\Fulltime\haishuo.wang\Spot\spot_data\{}'.format(ttt)
-    root_file = unicode(root_file, 'utf-8')
-    filenames = os.listdir(root_file)
-    for i in range(len(filenames)):
-        path = root_file + '\\' + filenames[i]
-        spot_data = pd.read_excel(path, index_col=0)
-        spot_data.index.name = None
-        df = pd.DataFrame()
-        spot_data_info = spot_data.ix[:8]
-        spot_data = spot_data.ix[8:]
-        spot_data.index = pd.to_datetime(spot_data.index)
-        for j in range(len(spot_data.columns)):
-            column = spot_data.columns[j]
-            print(j)
-            print(column)
-            column_df = spot_data[column].dropna()
-            begin_date = column_df.index[-1].strftime('%Y%m%d')
-            end_date = datetime.date.today().strftime('%Y%m%d')
-            print(end_date)
-            id = spot_data_info.ix[u'指标ID'][column].encode('utf-8')
-            name = spot_data_info.ix[u'指标名称'][column].encode('utf-8')
-            add_data = w.edb(id, begin_date, end_date)
-            if add_data.Data:
-                add_df = pd.DataFrame(add_data.Data).T
-                add_df.index = pd.to_datetime([x.strftime('%Y%m%d') for x in add_data.Times])
-                add_df = add_df.ix[add_df.index > begin_date]
-                for i_error in range(len(add_df)):
-                    if type(add_df.ix[-(i_error+1)]) == unicode:
-                        add_df = add_df.ix[:-(i_error+1)]
-                if list(add_df.values):
-                    if type(add_df.values.ravel()[0]) != float:
-                        column_df = column_df.append(add_df)
-                        column_df.columns = [column]
-                        change += [[name, filenames[i][:-4], ttt, add_df.index[-1], add_df.values.ravel()[-1]]]
-                        print('changed')
-                else:
-                    print('no change')
+def id_to_price(opt_id, now_date, now_time):
+    print(opt_id)
+    a = pd.read_csv(f'/media/hdd1/DAT_OPT/Min/{opt_id}.csv', sep='|', index_col=0)
+    a.index = pd.to_datetime(a.index)
+    return a.loc[pd.to_datetime(f'{now_date} {now_time}')]['Close'] * 0.0001
+
+
+daily_data = pd.read_csv('/mnt/mfs/DAT_OPT/option_close.csv', sep='|', index_col=0)
+daily_data.index = pd.to_datetime(daily_data.index)
+
+
+def judge_daily_data(id_list, now_date):
+    return daily_data[id_list].loc[pd.to_datetime(now_date)].notna().values
+
+
+map_df = pd.read_csv('/mnt/mfs/DAT_OPT/mapping_table.csv', sep='|')
+map_df.index = pd.to_datetime(map_df['exercise_date'])
+map_df['exe_price'] = map_df['option_code'].str.slice(-4).astype(int) * 0.001
+map_df['type'] = map_df['option_code'].str.slice(6, 7)
+map_df['d_type'] = map_df['option_code'].str.slice(11, 12)
+
+
+def deal_fun(now_date='20191115'):
+    print('_______________________________')
+    print(now_date)
+    eqt_min_path = '/mnt/mfs/DAT_EQT/intraday/eqt_1mbar'
+
+    spot_id = 'SH510050'
+    now_time = '10:30'
+    spot_data = pd.read_csv(f'{eqt_min_path}/{now_date[:4]}/{now_date[:6]}/{now_date}/Close.csv', index_col=0)
+    if spot_id not in spot_data.columns:
+        return None
+    spot_price = spot_data[spot_id].round(6).loc[now_time]
+
+    a = ['option_code', 'exercise_date', 'exe_price', 'type']
+
+    exe_date_array = np.array(sorted(set(map_df.index)))
+    exe_date_list = exe_date_array[exe_date_array > pd.to_datetime(now_date)][:2]
+    rate_mean_dict = dict()
+    result_dict = dict()
+    result_dict['date'] = now_date
+    result_dict['spot_px'] = spot_price
+    for i, exe_date in enumerate(exe_date_list):
+        result_dict[f'opt_mat_{i+1}'] = exe_date
+        time_to_maturity = (exe_date - pd.to_datetime(now_date)).days / 365
+        result_dict[f'opt_ttm_{i+1}'] = (exe_date - pd.to_datetime(now_date)).days
+        map_df_date = map_df.loc[exe_date]
+        all_exe_price_list = np.array(sorted(set(map_df_date['exe_price'])))
+        target_exe_price_list = [all_exe_price_list[all_exe_price_list < spot_price][-1],
+                                 all_exe_price_list[all_exe_price_list > spot_price][0], ]
+        for ii, target_exe_price in enumerate(target_exe_price_list):
+            print(exe_date, target_exe_price)
+            result_dict[f'opt_k_{i+1}_{ii+1}'] = target_exe_price
+            map_df_date_price = map_df_date[map_df_date['exe_price'] == target_exe_price]
+            # 剔除当天没有close的id
+            map_df_date_price = map_df_date_price[judge_daily_data(map_df_date_price['option'].values, now_date)]
+            if len(map_df_date_price) == 0:
+                print('len map_df_date_price=0')
+                result_dict[f'call_px_{i+1}_{ii+1}'] = np.nan
+                result_dict[f'put_px_{i+1}_{ii+1}'] = np.nan
+
+            elif len(map_df_date_price) == 1:
+                print('len map_df_date_price=1')
+                result_dict[f'call_px_{i+1}_{ii+1}'] = np.nan
+                result_dict[f'put_px_{i+1}_{ii+1}'] = np.nan
+
             else:
-                print('no change')
-            df = pd.concat([df, column_df], axis=1)
+                if len(map_df_date_price[map_df_date_price['type'] == 'C']['option']) > 1:
+                    call_id = map_df_date_price[(map_df_date_price['type'] == 'C') & (map_df_date_price['d_type'] == 'M')][
+                        'option'].iloc[0]
+                else:
+                    call_id = map_df_date_price[map_df_date_price['type'] == 'C']['option'].iloc[0]
 
-        # new_spot_data = pd.concat([spot_data_info, spot_data], axis=0)
-        new_spot_data = pd.concat([spot_data_info, df], axis=0)
-        print(new_spot_data)
-        condition = False
-        for k in range(len(new_spot_data.columns)):
-            if type(new_spot_data.ix[-1, k]) == unicode:
-                condition = True
-                break
-        if condition:
-            new_spot_data.ix[:-1].to_excel(path)
-        else:
-            new_spot_data.to_excel(path)
+                if len(map_df_date_price[map_df_date_price['type'] == 'P']['option']) > 1:
+                    put_id = map_df_date_price[(map_df_date_price['type'] == 'P') & (map_df_date_price['d_type'] == 'M')][
+                        'option'].iloc[0]
+                else:
+                    put_id = map_df_date_price[map_df_date_price['type'] == 'P']['option'].iloc[0]
 
-    return change
+                call_price = id_to_price(call_id, now_date, now_time)
+                put_price = id_to_price(put_id, now_date, now_time)
+
+                result_dict[f'call_px_{i+1}_{ii+1}'] = call_price
+                result_dict[f'put_px_{i+1}_{ii+1}'] = put_price
+
+            # rate = np.log(target_exe_price /
+            #               (spot_price - (call_price - put_price))) / time_to_maturity
+            # rate_list.append(rate)
+
+            rate = np.log(result_dict[f'opt_k_{i+1}_{ii+1}'] /
+                          (spot_price - (result_dict[f'call_px_{i+1}_{ii+1}'] - result_dict[f'put_px_{i+1}_{ii+1}']))) \
+                   / time_to_maturity
+            result_dict[f'rate_{i+1}_{ii+1}'] = round(rate, 6)
+
+        rate_mean = (result_dict[f'rate_{i+1}_1'] + result_dict[f'rate_{i+1}_2'])/2
+        result_dict[f'rate_mean_{i+1}'] = rate_mean
+    # return rate_mean_dict
+    if 'rate_mean_1' and 'rate_mean_2':#result_dict[f'r_mean_{i+1}']:
+        a1 = (exe_date_list[0] - pd.to_datetime(now_date)).days
+        a2 = (exe_date_list[1] - pd.to_datetime(now_date)).days
+        x = (30 - a2) / (a1-a2)
+        print(x)
+        result_dict['rate_weight'] = x * result_dict[f'rate_mean_1'] + (1-x) * result_dict[f'rate_mean_2']
+    elif 'rate_mean_1' in result_dict.keys():
+        result_dict['rate_weight'] = result_dict['rate_mean_1']
+    elif 'rate_mean_2' in result_dict.keys():
+        result_dict['rate_weight'] = result_dict['rate_mean_2']
+    else:
+        result_dict['rate_weight'] = None
+    return result_dict
 
 
 if __name__ == '__main__':
-    List = ['软产品_白糖', '能源_动力煤']
-    change_list = []
-    w.start()
-    for i in range(len(List)):
-        change = spot_data_update(List[i])
-        change_list += change
-    w.close()
+    date_list = [x for x in sorted(os.listdir('/media/hdd1/DAT_OPT/Tick')) if x > '20190101']
+    result_dict = dict()
+    for now_date in date_list:
+        result_dict[now_date] = deal_fun(now_date)
+
+    x = pd.DataFrame().from_dict(result_dict).T
+    a = ['first_call_px_1', 'first_call_px_2', 'second_call_px_1',
+         'second_call_px_2', 'date', 'first_opt_k_1', 'first_opt_k_2',
+         'second_opt_k_1', 'second_opt_k_2', 'first_opt_mat', 'second_opt_mat',
+         'first_opt_ttm', 'second_opt_ttm', 'first_put_px_1', 'first_put_px_2',
+         'second_put_px_1', 'second_put_px_2', 'first_rate_1', 'first_rate_2',
+         'second_rate_1', 'second_rate_2', 'first_rate_mean', 'second_rate_mean',
+         'rate_weight', 'spot_px']
+    x.columns = a
+    b = ['date',
+         'first_opt_mat', 'first_opt_ttm', 'first_opt_k_1', 'first_call_px_1', 'first_put_px_1', 'first_opt_k_2',
+         'first_call_px_2', 'first_put_px_2',
+         'second_opt_mat', 'second_opt_ttm', 'second_opt_k_1', 'second_call_px_1', 'second_put_px_1', 'second_opt_k_2',
+         'second_call_px_2', 'second_put_px_2',
+         'first_rate_1', 'first_rate_2', 'second_rate_1', 'second_rate_2', 'first_rate_mean', 'second_rate_mean',
+         'rate_weight', 'spot_px']
+    result_df = x[b].round(6)

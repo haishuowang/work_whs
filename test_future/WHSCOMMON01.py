@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 
 class FutMinPosBase(FutData):
     def __init__(self, fut_name_list, usecols_list, cut_num=None,
-                 date_now=datetime.now(), lag=1,
+                 date_now=datetime.now(), lag=1, bkt_cut='2017-01-01',
                  live_path='/mnt/mfs/temp/LIVE_MIN_BAR', if_save=False, *args):
         super(FutMinPosBase, self).__init__(*args)
         self.live_path = live_path
@@ -27,7 +27,7 @@ class FutMinPosBase(FutData):
         self.today_str, self.next_trd_str, self.next_trd_str = self.judge_trade_date(date_now)
         self.next_day_str = (pd.to_datetime(self.today_str) + timedelta(1)).strftime('%Y%m%d')
         self.active_df, self.aadj_factor_df = self.get_active_df('Volume')
-        self.active_df = self.active_df.truncate(before='2018-01-01')
+        self.active_df = self.active_df.truncate(before=bkt_cut)
         self.save_exe_path = '/mnt/mfs/dat_whs/DAT_FUT'
         self.save_bkt_path = '/mnt/mfs/dat_whs/DAT_FUT'
 
@@ -169,7 +169,7 @@ class FutMinPosBase(FutData):
     def get_old_new_data(self, contract_id, update_live_data=True):
         fut_name = re.sub('\d', '', contract_id.split('.')[0])
         if self.cut_num:
-            old_data = self.load_intra_reshape_data(contract_id, self.usecols_list, self.cut_num, re_type='M')
+            old_data = self.load_intra_reshape_data(contract_id, self.usecols_list, self.cut_num)
         else:
             old_data = self.load_intra_data(contract_id, self.usecols_list)
         if update_live_data:
@@ -181,7 +181,7 @@ class FutMinPosBase(FutData):
             # all_data = new_data.combine_first(old_data)[['Date', 'Time'] + self.usecols_list]
         else:
             all_data = old_data
-        all_data = all_data.sort_index()
+
         part_info_df = self.active_df[self.active_df[fut_name + '01'] == contract_id]
         active_begin = self.next_trade_date(part_info_df.index[0]) + timedelta(hours=17)
         active_end = part_info_df.index[-1] + timedelta(hours=17)
@@ -232,13 +232,13 @@ class FutMinPosBase(FutData):
             if self.if_save:
                 pos_df.to_csv(exe_path, sep='|', index=None)
 
-    def generation(self, fut_name, window_s, window_l, hold_time, limit, concat=True, test=False):
+    def generation(self, fut_name, window_list, limit, hold_time, concat=True, test=False):
         result_list = []
         pool = Pool(20)
         for con_id, part_info_df in self.active_df[[f'{fut_name}01']].groupby(f'{fut_name}01'):
             # active_begin = self.next_trade_date(part_info_df.index[0]) + timedelta(hours=17)
             # active_end = part_info_df.index[-1] + timedelta(hours=17)
-            args = [fut_name, con_id, window_s, window_l, hold_time, limit]
+            args = [fut_name, con_id, window_list, limit, False, hold_time]
             result_list.append(pool.apply_async(self.part_generation, args=args))
             # self.part_generation(*args)
         pool.close()
@@ -250,30 +250,58 @@ class FutMinPosBase(FutData):
 
         pot = pnl_df.sum() / turnover_df.sum() * 10000
         sp = bt.AZ_Sharpe_y(pnl_df)
-        print(fut_name, sp, pot, window_s, window_l, hold_time, limit, cut_num)
+        print(fut_name, sp, pot, window_list, limit, cut_num, hold_time)
 
         Close_p = pd.read_csv(f'/mnt/mfs/DAT_FUT/day/{fut_name}/Close', sep='|', index_col=0, parse_dates=True)
         Open_p = pd.read_csv(f'/mnt/mfs/DAT_FUT/day/{fut_name}/Open', sep='|', index_col=0, parse_dates=True)
         jump_diff = Open_p / Close_p.shift(1) - 1
         self.jump_diff = jump_diff.reindex(self.active_df.index)
         act_info_sr = self.active_df[f'{fut_name}01']
+        fut_jump = self.jump_diff.apply(lambda x, y: x * (y == x.name), args=(act_info_sr,)).sum(1)
 
-        # if (sp < -1.2) or test:
-        plt.figure(figsize=[16, 8])
-        pnl_df.index = pd.to_datetime(pnl_df.index)
-        plt.plot(pnl_df.cumsum())
-        plt.grid()
-        savfig_send(f'{fut_name} sp:{sp} pot:{pot} window_s:{window_s} window_l:{window_l} hold_time:{hold_time}'
-                    f'limit:{limit} cut_num={self.cut_num}')
+        if ((abs(sp) > 1.2) and abs(pot) > 2) or test:
+            # if (sp < -1.2) or test:
+            plt.figure(figsize=[16, 8])
+            pnl_df.index = pd.to_datetime(pnl_df.index)
+            plt.plot(pnl_df.cumsum())
+            plt.grid()
+            savfig_send(
+                f'{fut_name} sp:{sp} pot={pot} CCI_window:{str(window_list)}, CCI_limit:{limit} cut_num={self.cut_num}')
 
-        part_data_df = data_df
-        col_name = 'Time'
-        raw_return_df = part_data_df['pnl']
-        signal_df = part_data_df[col_name].shift(2).replace(np.nan, '00:00')
-        SignalAnalysis.CDF_c(signal_df, raw_return_df, hold_time=1,
-                             title=f'{fut_name} {col_name} CDF Figure', lag=0)
+            part_data_df = data_df
+            col_name = 'Time'
+            raw_return_df = part_data_df['pnl']
+            signal_df = part_data_df[col_name].shift(2).replace(np.nan, '00:00')
+            SignalAnalysis.CDF_c(signal_df, raw_return_df, hold_time=1,
+                                 title=f'{fut_name} {col_name} CDF Figure', lag=0)
 
-        self.pos_to_bkt(data_df, concat)
+            ana_fun(data_df, fut_name, 'test_score')
+            ana_fun(data_df, fut_name, 'boll_score')
+            ana_fun(data_df, fut_name, 'CCI_score')
+
+            ana_fun(data_df, fut_name, 'trend_indicator')
+
+            ana_fun(data_df, fut_name, 'macd')
+            ana_fun(data_df, fut_name, 'RSI')
+            ana_fun(data_df, fut_name, 'obv')
+            ana_fun(data_df, fut_name, 'atr')
+            ana_fun(data_df, fut_name, 'adx')
+
+            ana_fun(data_df, fut_name, 'trix')
+            ana_fun(data_df, fut_name, 'willr')
+            ana_fun(data_df, fut_name, 'past_min_pct_change')
+
+            ana_fun(data_df, fut_name, 'Vol_OI')
+            ana_fun(data_df, fut_name, 'OI_boll')
+            ana_fun(data_df, fut_name, 'adosc')
+            ana_fun(data_df, fut_name, 'cmo')
+            ana_fun(data_df, fut_name, 'mfi')
+
+            # raw_return_df = data_df.groupby(by=['Date'])['pnl'].apply(lambda x: x.iloc[1:].sum())
+            # signal_df = fut_jump
+            # SignalAnalysis.CDF(signal_df, raw_return_df, hold_time=1, title=f'{fut_name} jump CDF Figure', lag=1)
+
+            self.pos_to_bkt(data_df, concat)
         return data_df, sp, pot
 
     def update(self, fut_name, window, limit, update_live_data=True):
@@ -308,11 +336,11 @@ def ana_fun(data_df, fut_name, col_name):
 
 
 class FutMinPosTest(FutMinPosBase):
-    def __init__(self, *args):
-        super(FutMinPosTest, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(FutMinPosTest, self).__init__(*args, **kwargs)
         self.alpha_name = os.path.basename(__file__).split('.')[0]
 
-    def part_generation(self, fut_name, con_id, window_s, window_l, hold_time, limit, update_live_data=False):
+    def part_generation(self, fut_name, con_id, window_list, limit, update_live_data=False, hold_time=0):
         try:
             old_min_trade_time = self.load_intra_time(con_id)
             part_data_df, active_begin, active_end = self.get_old_new_data(con_id, update_live_data)
@@ -333,10 +361,11 @@ class FutMinPosTest(FutMinPosBase):
                     .fillna(method='ffill')
                 part_data_df['next_trade_close'] = next_trade_close.values
 
-            part_pnl_df, part_turnover, part_data_df = self.run(part_data_df, con_id, window_s, window_l, hold_time, limit, active_begin)
+            part_pnl_df, part_turnover, part_data_df = self.run(part_data_df, con_id, window_list, limit,
+                                                                active_begin, hold_time)
             return part_pnl_df, part_turnover, part_data_df
         except Exception as error:
-            # print(fut_name, con_id, error)
+            print(fut_name, con_id, error)
             return pd.Series(), pd.Series(), pd.Series()
 
     # def part_generation(self, fut_name, con_id, window, limit, update_live_data=False):
@@ -375,57 +404,117 @@ class FutMinPosTest(FutMinPosBase):
         reverse_signal = up_signal - dn_signal
         return reverse_signal
 
-    def run(self, part_data_df, con_id, window_s, window_l, hold_time, limit, active_begin=None):
-        # hold_time = 3
-        # window_s = 30
-        # window_l = 300
-        # limit = 0.004
+    def run(self, part_data_df, con_id, window_list, limit, active_begin=None, hold_time=0):
+        window, window_2, window_3 = 12, 26, 9
+        window = window_list
         part_data_df['weekday'] = pd.to_datetime(part_data_df['Date']).dt.weekday
         part_data_df['weekday_pos'] = (
             (part_data_df['weekday'] != 2)
-            # & (part_data_df['weekday'] != 2)
+            # & (part_data_df['weekday'] != 4)
             # & (part_data_df['weekday'] != 3)
             # (part_data_df['weekday'] != 4)
         ).astype(int)
-        part_data_df['time_pos_cut'] = part_data_df.apply(lambda x: 0 if (((x['Time'] >= '09:00')
-                                                                           & (x['Time'] <= '10:00')
-                                                                           # | (x['Time'] > '22:50')
-                                                                           # & (x['Time'] <= '23:00')
+        part_data_df['time_pos_cut'] = part_data_df.apply(lambda x: 0 if (((x['Time'] >= '21:00')
+                                                                           & (x['Time'] <= '23:59')
+                                                                           | (x['Time'] > '00:00')
+                                                                           & (x['Time'] <= '03:00')
                                                                            # | (x['Time'] > '21:00')
                                                                            # & (x['Time'] <= '22:00')
                                                                            )) else 1, axis=1)
         part_data_df['tmp_return'] = part_data_df['Close'] / part_data_df['Close'].shift(1) - 1
+        part_data_df['reverse_signal'] = self.reverse_signal_fun(part_data_df['tmp_return'])
+        part_data_df['month'] = part_data_df['Date'].str.slice(5, 7)
+        part_data_df['month_pos'] = (
+                (part_data_df['month'] != '05')
+                & (part_data_df['month'] != '11')
+        ).astype(int)
+        part_data_df['Vol_OI'] = part_data_df['Volume'] / part_data_df['OpenInterest']
+        # part_data_df['Vol_OI_pos'] = ((part_data_df['Vol_OI'] > 0.35) & (part_data_df['Vol_OI'] < 0.35)).astype(int)
+        part_data_df['Vol_OI_pos'] = (part_data_df['Vol_OI'] < 0.01).astype(int)
 
-        part_data_df['EMA_10'] = bt.AZ_Rolling(part_data_df['Close'], window_s).mean()
-        part_data_df['EMA_60'] = bt.AZ_Rolling(part_data_df['Close'], window_l).mean()
+        part_data_df['OI_boll'], _, _ = FutIndex.boll_fun(part_data_df['OpenInterest'], window, return_line=True)
+        part_data_df['OI_boll'] = (part_data_df['OI_boll'] < 0.01).astype(int)
 
-        part_data_df['tmp_signal'] = ((part_data_df['EMA_10'] - part_data_df['EMA_60']) > 0).astype(int)
-        part_data_df['signal'] = part_data_df['tmp_signal'] - part_data_df['tmp_signal'].shift(1)
-        part_data_df['open_signal'] = part_data_df['signal'][part_data_df['signal']>0]
-        part_data_df['open_signal'] = part_data_df['open_signal'].fillna(0)
+        # macd, macdsignal, macdhist = ta.MACD(part_data_df['Close'], 12, 26, 9)
+        macd, macdsignal, macdhist = ta.MACD(part_data_df['Close'], window, window_2, window_3)
+        part_data_df['macd'] = macdhist
+        # part_data_df['macd_filter'] = (macd < 13).astype(int)
+        part_data_df['macd_pos'] = (macdhist > 0).astype(int).replace(0, -1)
+        RSI = ta.RSI(part_data_df['Close'], window)
+        RSI = RSI - 50
+        RSI[RSI > 20] = 20
+        RSI[RSI < -20] = -20
+        part_data_df['RSI'] = RSI
+        part_data_df['RSI_signal'] = Signal.fun_1(part_data_df['RSI'], 1)
+        part_data_df['RSI_pos'] = (RSI > 0).astype(int).replace(0, -1)
 
-        part_data_df['open_signal'] = part_data_df['open_signal'] * part_data_df['time_pos_cut']
+        # aroondown, aroonup = ta.AROON(part_data_df['High'], part_data_df['Low'], test_window)
 
-        target_signal = part_data_df['open_signal'].replace(0, np.nan).dropna()
-        # part_data_df['signal'] = part_data_df['CCI_signal'] * part_data_df['adx_pos'] * \
-        #                          part_data_df['weekday_pos'] * part_data_df['Vol_OI_boll_pos']
-        pos_list = []
-        for now_time, signal in target_signal.items():
-            tmp_data_df = part_data_df.loc[now_time:].iloc[:270 * hold_time]
-            tmp_perc_df = (tmp_data_df['Close'] / tmp_data_df['Close'].iloc[0]) - 1
-            tmp_out_df = (tmp_perc_df > limit).astype(int)
-            first_valid_index = tmp_out_df.replace(0, np.nan).first_valid_index()
-            tmp_index = tmp_data_df.index
-            if first_valid_index is None:
-                tmp_pos_sr = pd.Series([1] * len(tmp_data_df), index=tmp_index)
-            else:
-                cut_index = tmp_index[(tmp_index >= now_time) & (tmp_index <= first_valid_index)]
-                tmp_pos_sr = pd.Series([1] * len(cut_index), index=cut_index)
-            pos_list.append(tmp_pos_sr)
+        obv = ta.OBV(part_data_df['Close'], part_data_df['Volume'])
+        part_data_df['obv'] = obv
+        part_data_df['obv_pos'] = (obv < 1600000).astype(int)
 
-        pos_df = pd.concat(pos_list, axis=1)
-        part_data_df['position'] = pos_df.loc[part_data_df.index].sum(1).fillna(0)
+        atr = ta.ATR(part_data_df['High'], part_data_df['Low'], part_data_df['Close'], window)
+        part_data_df['atr'] = atr
+        part_data_df['atr_pos'] = (atr < 20).astype(int).replace(0, -1)
 
+        adx = ta.ADX(part_data_df['High'], part_data_df['Low'], part_data_df['Close'], window)
+        part_data_df['adx'] = adx
+        part_data_df['adx_pos'] = (adx < 20).astype(int).replace(0, -1)
+
+        trix = ta.TRIX(part_data_df['Close'], window)
+        part_data_df['trix'] = trix
+        part_data_df['trix_pos'] = (trix > -0.05).astype(int)
+
+        willr = ta.WILLR(part_data_df['High'], part_data_df['Low'], part_data_df['Close'], window)
+        part_data_df['willr'] = willr
+        part_data_df['willr_pos'] = ((willr < -70) | (willr > -30)).astype(int).replace(0, -1)
+
+        adosc = ta.ADOSC(part_data_df['High'], part_data_df['Low'], part_data_df['Close'],
+                         part_data_df['Volume'], window, int(window / 2))
+        part_data_df['adosc'] = adosc
+
+        cmo = ta.CMO(part_data_df['Close'], window)
+        part_data_df['cmo'] = cmo
+
+        mfi = ta.MFI(part_data_df['High'], part_data_df['Low'], part_data_df['Close'],
+                     part_data_df['Volume'], window)
+        part_data_df['mfi'] = mfi
+
+        p_window = 5
+        part_data_df['past_min_pct_change'] = (part_data_df['Close'] / part_data_df['Close'].shift(p_window) - 1)
+        part_data_df['past_min_pct_signal'] = part_data_df['past_min_pct_change'] \
+            .apply(lambda x: 1 if abs(x) < 0.01 else -1)
+
+        part_data_df['test_score'] = FutIndex.test_fun(part_data_df['Close'], window,
+                                                       cap=5, num=5, return_line=False)
+        part_data_df['test_signal'] = Signal.fun_1(part_data_df['test_score'], limit)
+        # part_data_df['test_signal'] = Signal.fun_2(part_data_df['test_score'], limit, 0)
+
+        part_data_df['test_pos'] = Position.fun_1(part_data_df['test_signal'])
+
+        part_data_df['boll_score'], ma_n, md_n = FutIndex.boll_fun(part_data_df['Close'], window, return_line=True)
+        part_data_df['boll_signal'] = Signal.fun_1(part_data_df['boll_score'], limit)
+        part_data_df['boll_pos'] = Position.fun_1(part_data_df['boll_signal'])
+
+        part_data_df['CCI_score'] = FutIndex.CCI_fun(part_data_df['High'],
+                                                     part_data_df['Low'],
+                                                     part_data_df['Close'], window)
+
+        # part_data_df['CCI_signal'] = Signal.fun_1(part_data_df['CCI_score'], limit)
+        part_data_df['CCI_signal'] = Signal.fun_2(part_data_df['CCI_score'], limit, 0)
+
+        part_data_df['trend_indicator'] = bt.AZ_Rolling(part_data_df['Close'], 100). \
+            apply(lambda x: (x[-1] / x[0] - 1) / (max(x) / min(x) - 1), raw=False)
+
+        part_data_df['trend_pos'] = (part_data_df['trend_indicator'].abs() > 0.25).astype(int)
+
+        part_data_df['Volume_zscore'] = bt.AZ_Col_zscore(part_data_df[['Volume']], window)
+        part_data_df['Volume_signal'] = Signal.fun_1(part_data_df['Volume_zscore'], 2)
+
+        part_data_df['signal'] = part_data_df['macd_pos']
+        part_data_df['position'] = Position.fun_1(part_data_df['signal'], replace=False) * part_data_df['atr_pos'] * part_data_df['weekday_pos']
+        # part_data_df['position'] = Position.fun_4(part_data_df['signal'], 10, cap=3)
         # part_data_df['test_signal_c'] = Signal.fun_2(part_data_df['test_score'], limit, 0.5)
         # part_data_df['position'] = part_data_df['test_signal_c'].ffill()
         # part_data_df['position_open'] = part_data_df['position'][(part_data_df['position'] != 0) &
@@ -444,9 +533,6 @@ class FutMinPosTest(FutMinPosBase):
 
         part_data_df['price_return'] = part_data_df['next_trade_close'] / part_data_df['next_trade_close'].shift(1) - 1
 
-        part_data_df['price_f_return_20'] = part_data_df['next_trade_close'].shift(20) / \
-                                            part_data_df['next_trade_close'] - 1
-
         part_data_df['pnl'] = part_data_df['position_exe'] * part_data_df['price_return']
 
         part_data_df = part_data_df.truncate(before=active_begin)
@@ -464,7 +550,7 @@ class FutMinPosTest(FutMinPosBase):
         # ax2 = plt.subplot(4, 1, 2)
         # ax3 = plt.subplot(4, 1, 3)
         # ax1.plot(part_data_df['asset'].values)
-        # # ax2.plot(part_data_df['Close'].values, '--', color='#75bbfd')
+        # ax2.plot(part_data_df['Close'].values, '--', color='#75bbfd')
         # ax2.scatter(np.array(range(len(part_data_df.index)))[(part_data_df['position'] > 0)],
         #             part_data_df['Close'][part_data_df['position'] > 0], s=2, color='red')
         #
@@ -604,64 +690,78 @@ def get_news_pos(begin_time=None, end_time=None):
 
 
 if __name__ == '__main__':
-    usecols_list = ['High', 'Low', 'Close', 'Volume', 'OpenInterest']
+    usecols_list = ['High', 'Low', 'Close', 'Volume', 'OpenInterest', 'Date']
     # fut_name, window, limit, cut_num = 'J', 40, 1, 20
     fut_name_list = [
-        'AP', 'B', 'BU', 'C', 'CF', 'CS', 'CU', 'EG', 'FG', 'HC', 'I', 'J', 'JD', 'JM', 'L',
+        'BU', 'C', 'CF', 'CS', 'CU', 'EG', 'FG', 'HC', 'I',
+        'J', 'JD', 'JM', 'L',
         'M', 'MA', 'NI', 'OI', 'P', 'PP', 'RB',
-        'RM', 'RU', 'SC', 'SM', 'SR', 'TA', 'V', 'Y', 'ZN']
-    # fut_name_list = ['RB', 'I', 'J', 'JM', 'MA', 'P', 'M', 'TA', 'EG', 'FG', 'C', 'CF']
-    window_list = [10, 20, 30, 40, 60, 120]
-    limit_list = [1, 1.5, 2]
-    # limit_list = [1]
+        'RM', 'RU', 'SC', 'SM', 'SR', 'TA', 'V', 'Y',
+        'FU', 'AG', 'AU', 'AL', 'PB', 'NI', 'ZN', 'AP', 'A', 'B'
+    ]
+
+    # fut_name_list = [
+    #     'FU', 'AG', 'AU', 'AL', 'PB', 'NI', 'ZN', 'AP', 'A', 'B'
+    # ]
+    # fut_name_list = ['RB', 'I', 'J', 'JM', 'MA', 'P', 'M', 'TA', 'EG', 'FG', 'C', 'CF', ]
+    window_list_list = [10, 20, 30, 40, 60, 120]
+    # window_list_list = [[12, 26, 9],
+    #                     [10, 40, 10], [10, 40, 20], [10, 40, 30],
+    #                     [20, 60, 10], [20, 60, 20], [20, 60, 30],
+    #                     [30, 80, 10], [30, 80, 20], [30, 80, 30],
+    #                     [40, 100, 10], [40, 100, 20], [40, 100, 30],
+    #                     [50, 120, 10], [50, 120, 20], [50, 120, 30],
+    #                     ]
+
+    # limit_list = [1, 1.5, 2]
+    limit_list = [1]
     # limit_list = [0.004, 0.006, 0.008, 0.01]
 
-    # cut_num_list = [3, 5, 10, 20, 30]
-    cut_num_list = [3, 5, 15, 30]
+    cut_num_list = [None, 3, 5, 10, 20, 30]
     # cut_num_list = [3]
     # cut_num_list = [None]
-    for fut_name in fut_name_list:
-        for cut_num in cut_num_list:
-            for window in window_list:
-                for limit in limit_list:
-                    fut_min_pos = FutMinPosTest([fut_name], usecols_list, cut_num)
-                    data_df, sp, pot = fut_min_pos.generation(fut_name, window, limit, concat=False)
+    # for fut_name in fut_name_list:
+    #     for cut_num in cut_num_list:
+    #         for window_list in window_list_list:
+    #             for limit in limit_list:
+    #                 # for hold_time in [int(window/10)]:# , int(window/5), int(window/3), int(window/2)]:
+    #                 #     if hold_time != 0:
+    #                 print(fut_name, cut_num, window_list)
+    #                 fut_min_pos = FutMinPosTest([fut_name], usecols_list, cut_num)
+    #                 data_df, sp, pot = fut_min_pos.generation(fut_name, window_list, limit, 10, concat=False)
 
-    # RB 1.7056 10.368174633647946 30 1
-    # MA sp:1.2876 pot=24.899168410996474 CCI_window:120, CCI_limit:1
-    # RB sp:1.3339 pot=16.364210221856695 CCI_window:60, CCI_limit:1
-    # SC sp:2.5136 pot=58.424689192789835 CCI_window:120, CCI_limit:1
-    # SC 2.8288 156.99334314823741 120 1.5
+    # AG sp:1.8298 pot=5.774339523511669 CCI_window:[30, 80, 20], CCI_limit:1 cut_num=3
+    # AG sp:1.6297 pot=6.46539280520876 CCI_window:[20, 60, 30], CCI_limit:1 cut_num=5
+    # AG sp:1.9304 pot=4.782899965340781 CCI_window:[12, 26, 9], CCI_limit:1 cut_num=10
+    # AG sp:1.995 pot=5.143749697942575 CCI_window:[10, 40, 10], CCI_limit:1 cut_num=10
+    # AU sp:1.4069 pot=6.017163742786434 CCI_window:[40, 100, 30], CCI_limit:1 cut_num=10
+    # AP sp:1.3575 pot=10.745401286326576 CCI_window:[12, 26, 9], CCI_limit:1 cut_num=10
+    # fut_name, window_list, limit, cut_num = 'AG', [10, 40, 10], 1, 10
+    fut_name, window_list, limit, cut_num = 'J', 10, 1, 10
 
-    # fut_name, window, limit, cut_num = 'SM', 20, 2
-    # fut_name, window, limit, cut_num = 'M', 20, 2, 20
-    # fut_name, window, limit, cut_num = 'MA', 20, 1.5, None
-
+    fut_min_pos = FutMinPosTest([fut_name], usecols_list, cut_num, bkt_cut='2017-01-01')
+    # fut_min_pos = FutMinPosTest([fut_name], usecols_list, cut_num, bkt_cut='2018-01-01')
+    data_df, sp, pot = fut_min_pos.generation(fut_name, window_list, limit, None, concat=False)
     # usecols_list = ['High', 'Low', 'Close', 'Volume', 'OpenInterest']
+    # # fut_name, window, limit, cut_num = 'RB', 30, 1, 3
 
-    # hold_time = 4
-    # window_s = 10
-    # window_l = 120
-    # limit = 0.005
-    # fut_name = 'T'
-    # cut_num = None
+    # fut_name, window, limit, cut_num = 'J', 20, 1, 5
     # fut_min_pos = FutMinPosTest([fut_name], usecols_list, cut_num)
-    # data_df, sp, pot = fut_min_pos.generation(fut_name, window_s, window_l, hold_time,
-    #                                           limit, concat=True, test=True)
+    # data_df, sp, pot = fut_min_pos.generation(fut_name, window, limit, 10, concat=True)
 
     # for x, part_data_df in data_df.groupby(['weekday']):
     #     part_pnl = part_data_df['pnl'].fillna(0).values
     #     print(x, part_pnl.sum())
     #     plt.plot(part_pnl.cumsum())
     #     savfig_send(subject=f'{x}  {bt.AZ_Sharpe_y(part_pnl)}')
-
+    #
     # for x, part_data_df in data_df.groupby(['month']):
     #     part_pnl = part_data_df['pnl'].fillna(0).values
-
     #     print(x, part_pnl.sum())
     #     plt.plot(part_pnl.cumsum())
     #     savfig_send(subject=f'{x}  {bt.AZ_Sharpe_y(part_pnl)}')
 
-    # B -1.6891 -3.533891953586101 20 2 3
-
-    # 巡逻现场实录 2018
+    # TA 1.1441 35.49384222330097 60 2 10
+    # TA 1.1449 35.30083786530165 120 1 10
+    # TA 1.2958 52.12335682301401 120 1.5 10
+    # TA 1.4839 51.97506905935244 60 1.5 20

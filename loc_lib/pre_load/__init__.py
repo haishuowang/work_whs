@@ -10,6 +10,9 @@ import matplotlib
 
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
+
 from collections import Counter
 from sklearn.cluster import KMeans
 import random

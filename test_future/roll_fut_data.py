@@ -12,14 +12,14 @@ class RollData(FutData):
     def __init__(self, *args):
         super(RollData, self).__init__(*args)
         instrument_list = [
-            'CU', 'ZN', 'AL', 'PB', 'AU', 'RB', 'RU', 'WR', 'FU', 'AG', 'BU', 'HC', 'NI', 'SN',
+            'T', 'CU', 'ZN', 'AL', 'PB', 'AU', 'RB', 'RU', 'WR', 'FU', 'AG', 'BU', 'HC', 'NI', 'SN',
             'CF', 'SR', 'TA', 'WH', 'RI', 'JR', 'FG', 'OI', 'RM', 'RS', 'LR', 'SF', 'SM', 'MA',
             'ZC', 'CY', 'AP', 'A', 'B', 'C', 'J', 'L', 'M', 'P', 'V', 'Y', 'JD', 'JM', 'I',
-            'FB', 'BB', 'PP', 'CS', 'SC', 'EG'
+            'FB', 'BB', 'PP', 'CS', 'SC', 'EG', 'SM', 'FU'
         ]
         error_list = [
-            'JR', 'WR', 'FU', 'RI', 'LR', 'PB', 'CY', 'RS',
-            'OI', 'ZC', 'SM', 'BB', 'FB', 'B',
+            'JR', 'WR', 'RI', 'LR', 'CY', 'RS',
+            'BB', 'FB',
         ]
         self.instrument_list = sorted(list(set(instrument_list) - set(error_list)))
 

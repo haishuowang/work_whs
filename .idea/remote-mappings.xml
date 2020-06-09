@@ -24,6 +24,20 @@
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@ssh://whs@192.168.16.23:32514/opt/anaconda3_beta/bin/python3.6">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/mnt/mfs/work_whs" />
+            </list>
+          </settings>
+        </remote-mappings>
+        <remote-mappings server-id="python@ssh://dmgr_fut@192.168.16.36:32514/opt/anaconda3_beta/bin/python3.6">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/mnt/mfs/work_whs" />
+            </list>
+          </settings>
+        </remote-mappings>
       </list>
     </list>
   </component>

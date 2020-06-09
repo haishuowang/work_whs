@@ -3,6 +3,9 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
+plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
 sys.path.append('/mnt/mfs')
 from work_whs.loc_lib.shared_tools import send_email
 import work_whs.loc_lib.shared_tools.back_test as bt
@@ -25,9 +28,9 @@ def plot_send_result_mul(pnl_df, subject, text=''):
     assert type(pnl_df) == pd.DataFrame
 
     pnl_num = len(pnl_df.columns)
-    plt.figure(figsize=[16, 8*pnl_num])
+    plt.figure(figsize=[16, 8 * pnl_num])
     for i, col in enumerate(pnl_df.columns):
-        ax = plt.subplot(pnl_num, 1, i+1)
+        ax = plt.subplot(pnl_num, 1, i + 1)
         ax.plot(pnl_df[col].index, pnl_df[col].cumsum(), label=f'{col}, sharpe_ratio={bt.AZ_Sharpe_y(pnl_df[col])}')
     plt.grid()
     plt.legend()
@@ -56,6 +59,3 @@ def savfig_send(subject='tmp', text='', to=None, filepath=None):
     plt.savefig(target_save_path)
     send_email.send_email(text, to, filepath, subject)
     plt.close()
-
-
-

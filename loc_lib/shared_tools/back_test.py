@@ -224,7 +224,8 @@ def AZ_split_stock(stock_list):
     """
     eqa = [x for x in stock_list if (x.startswith('0') or x.startswith('3')) and x.endswith('SZ')
            or x.startswith('6') and x.endswith('SH') or x in ['510050.SH', '510300.SH', '510500.SH',
-                                                              '000001.SH', '000300.SH', '000905.SH', '000906.SH',
+                                                              '000001.SH', '000016.SH', '000300.SH', '000905.SH',
+                                                              '000906.SH',
                                                               ]]
     return eqa
 
